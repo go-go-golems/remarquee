@@ -7,11 +7,22 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: go.work
+      Note: Workspace module list includes ./remarquee
+    - Path: remarquee/cmd/remarquee/cmds/status.go
+      Note: First command implementation (status)
+    - Path: remarquee/cmd/remarquee/main.go
+      Note: remarquee root Cobra command + logging init
+    - Path: remarquee/go.mod
+      Note: remarquee Go submodule definition (module name + replace to local glazed)
+    - Path: remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md
+      Note: Implementation diary for RMQ-0002
 ExternalSources: []
-Summary: "Implement remarquee cloud-only CLI (rmapi-backed) using Glazed+Cobra, one file per command; REPL deferred."
+Summary: Implement remarquee cloud-only CLI (rmapi-backed) using Glazed+Cobra, one file per command; REPL deferred.
 LastUpdated: 2025-12-14T19:22:56.210287111-05:00
 ---
+
 
 # Implement remarquee cloud CLI
 
