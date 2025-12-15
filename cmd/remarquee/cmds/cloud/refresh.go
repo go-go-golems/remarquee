@@ -8,8 +8,6 @@ import (
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/help"
-	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -144,11 +142,6 @@ func NewRefreshCobraCommand() (*cobra.Command, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// Attach the glazed help system under this command tree for discoverability.
-	// This mirrors the common pattern used elsewhere in this monorepo.
-	helpSystem := help.NewHelpSystem()
-	help_cmd.SetupCobraRootCommand(helpSystem, cobraCmd)
 
 	return cobraCmd, nil
 }
