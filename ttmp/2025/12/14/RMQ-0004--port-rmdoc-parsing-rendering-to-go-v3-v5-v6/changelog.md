@@ -36,3 +36,13 @@ Step 2: implemented pkg/rmdoc (open zip, detect legacy vs cPages, build determin
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/open.go — Archive opening
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/reference/01-diary.md — Added Step 2 with commit hash
 
+
+## 2025-12-14
+
+Updated tasks: checked off completed Step 2 work (pkg/rmdoc schema detection + page plan + tests) and expanded remaining items into smaller sub-tasks.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/reference/01-diary.md — Step 2 describes the implementation that was checked off
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/tasks.md — Checked off completed items and broke down remaining tasks
+
