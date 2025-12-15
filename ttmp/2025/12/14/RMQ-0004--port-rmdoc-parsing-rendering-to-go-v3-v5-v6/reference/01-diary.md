@@ -221,3 +221,49 @@ This step makes the `.rmdoc` parsing layer safer to iterate on by adding integra
 ### Code review instructions
 - Start in `remarquee/pkg/rmdoc/open_integration_test.go`.
 - Run `cd remarquee && go test ./pkg/rmdoc -count=1`.
+
+## Step 5: Add legacy PDF rendering CLI (rmapi-backed) as a bridge milestone
+
+This step unblocks end-to-end output for legacy archives by delegating PDF generation to rmapi’s `annotations.PdfGenerator`. It’s not the final architecture, but it provides a working rendering path for V3/V5 while we build the V6 parser/renderer and the unified renderer layer.
+
+**Commit (code):** 05c257d — "RMQ-0004: add legacy rmdoc PDF renderer (rmapi-backed)"
+
+### What I did
+- Added `remarquee rmdoc render-legacy <file.rmdoc|file.zip>`:
+  - opens the archive with `pkg/rmdoc` to confirm it’s legacy schema
+  - delegates to `rmapi/annotations.CreatePdfGenerator(...).Generate()`
+  - writes `<input>-annotations.pdf` by default (or `--out`)
+
+### Why
+- Legacy PDFs exist on-device and we need a usable rendering path ASAP.
+- This is a pragmatic bridge: it validates the “page plan + render” workflow before we commit to the full unified renderer.
+
+### What worked
+- Verified on the legacy fixture without cloud auth:
+  - input: `/home/manuel/workspaces/2025-12-14/build-remarquee-tool/rmapi/archive/test.zip`
+  - output: a valid 1-page PDF
+
+### What didn't work
+- Running `go run` from a temp directory failed (no `go.mod`). Fixed by running from within `remarquee/`.
+
+### What I learned
+- rmapi’s PdfGenerator works fine as a drop-in for legacy archives and produces a PDF without additional wiring.
+
+### What was tricky to build
+- Ensuring we refuse cPages archives early so users don’t get confusing rmapi parsing errors for V6.
+
+### What warrants a second pair of eyes
+- Licensing/footprint implications of using `unipdf` transitively via rmapi inside remarquee.
+- Whether we should keep this as a “prototype command” or treat it as supported behavior.
+
+### What should be done in the future
+- Replace this bridge with the unified renderer once we have:
+  - background PDF assembly based on `PageRef.SourcePDFPage`
+  - V6 stroke rendering
+  - merge logic and highlights
+
+### Code review instructions
+- Start at:
+  - `remarquee/cmd/remarquee/cmds/rmdoc/render_legacy.go`
+- Run:
+  - `cd remarquee && go run ./cmd/remarquee rmdoc render-legacy ../rmapi/archive/test.zip --force`

@@ -35,6 +35,10 @@
   - [ ] Ensure legacy page order follows `pkg/rmdoc.Document.Pages` (not file iteration)
   - [ ] Handle background PDF payload merge for PDF documents
 
+- [x] Add CLI prototype for legacy rendering (rmapi-backed):
+  - [x] `remarquee rmdoc render-legacy <file>` writes `<file>-annotations.pdf` (or `--out`)
+  - [x] Guardrail: refuse cPages archives (V6) for now
+
 ### 3) `cPages`-aware PDF background construction (V6 + PDFs)
 
 - [ ] Implement background PDF assembly based on `PageRef.SourcePDFPage`:

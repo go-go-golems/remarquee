@@ -10,6 +10,8 @@ DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: remarquee/cmd/remarquee/cmds/rmdoc/render_legacy.go
+      Note: Legacy PDF renderer command using rmapi annotations (commit 05c257d)
     - Path: remarquee/pkg/rmdoc/content.go
       Note: Parse .content (legacy + cPages) and build deterministic PageRef plan (commit 49acbde)
     - Path: remarquee/pkg/rmdoc/content_test.go
@@ -32,10 +34,13 @@ RelatedFiles:
       Note: PenColor and RGBA mappings needed for V6 highlights
     - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/go_reimplementation_gaps.md
       Note: Gap analysis and incremental porting strategy
+    - Path: rmapi/annotations/pdf.go
+      Note: Underlying legacy annotations PDF generator (unipdf)
 ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-14T20:59:12.658149443-05:00
 ---
+
 
 
 
