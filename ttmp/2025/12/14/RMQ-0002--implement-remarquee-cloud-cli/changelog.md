@@ -37,3 +37,15 @@ Step 1: initialized remarquee Go submodule + CLI skeleton and implemented first 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/main.go — Root Cobra wiring (commit aa44dec...)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/go.mod — Module definition (commit aa44dec...)
 
+
+## 2025-12-14
+
+Step 2: implemented rmapi-backed cloud CLI group and first verb `remarquee cloud refresh` with Glazed structured output. (commit 37b0012a81366a492e5439b4512a61081a29839f)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/refresh.go — Refresh command implementation (commit 37b0012...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/root.go — Cloud command group wiring (commit 37b0012...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/main.go — Root now registers cloud group (commit 37b0012...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 2
+

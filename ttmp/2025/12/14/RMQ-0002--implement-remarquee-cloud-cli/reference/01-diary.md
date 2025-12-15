@@ -78,3 +78,65 @@ While validating, we hit a real-world dependency sharp edge: `go run` tried to f
 
 ### What I'd do differently next time
 - Initialize git before starting the first implementation step so the diary can capture commit hashes immediately.
+
+## Step 2: Add `remarquee cloud refresh` (rmapi-backed, structured output)
+
+This step added the first real rmapi-backed cloud verb: `remarquee cloud refresh`. The goal was to validate end-to-end cloud connectivity (token bootstrap → ApiCtx creation → Refresh) and to do it in the “house style”: one-file-per-command plus Glazed structured output for automation (`--with-glaze-output --output json`).
+
+We implemented `cloud refresh` as a dual-mode Glazed command: classic human output by default, structured rows when toggled. This is the cornerstone for the rest of the cloud CLI verbs (`ls/get/put/...`) because it establishes the command group (`remarquee cloud`) and the rmapi bootstrap helper.
+
+**Commit (code):** 37b0012a81366a492e5439b4512a61081a29839f — "✨ remarquee: add cloud refresh command"
+
+### What I did
+- Added `remarquee cloud` command group:
+  - `cmd/remarquee/cmds/cloud/root.go`
+- Implemented `remarquee cloud refresh`:
+  - `cmd/remarquee/cmds/cloud/refresh.go`
+  - Uses rmapi `api.AuthHttpCtx`, `api.ParseToken`, `api.CreateApiCtx`, then `ApiCtx.Refresh()`
+  - Supports structured output:
+    - `remarquee cloud refresh --with-glaze-output --output json`
+- Wired `cloud` into the root command:
+  - `cmd/remarquee/main.go`
+
+### Why
+- “Refresh” is the smallest cloud operation that proves:
+  - auth/token handling is working
+  - rmapi API context creation works in-process
+  - we can emit structured output for scripting
+
+### What worked
+- Help output works:
+  - `go run ./cmd/remarquee cloud refresh --help`
+- Structured output works and includes key fields:
+  - `user`, `sync_version`, `hash`, `generation`
+
+### What didn't work
+- N/A
+
+### What I learned
+- Using Glazed dual-mode early makes later commands easier to keep consistent (especially list-like commands).
+
+### What was tricky to build
+- Keeping the Glazed help wiring localized to the subcommand without pulling in a full app-level help system yet.
+
+### What warrants a second pair of eyes
+- Confirm we want the help system setup (`help_cmd.SetupCobraRootCommand`) done per-subcommand vs once at the root.
+- Confirm our rmapi bootstrap helper behavior is acceptable (rmapi’s auth functions can `Fatal` on missing tokens).
+
+### What should be done in the future
+- Factor the rmapi bootstrap (`createApiCtx`) into a shared helper file once the next cloud command lands (avoid repetition).
+
+### Code review instructions
+- Start at `cmd/remarquee/cmds/cloud/refresh.go`:
+  - `NewRefreshCommand`
+  - `Run` / `RunIntoGlazeProcessor`
+  - `createApiCtx`
+- Validate with:
+  - `go run ./cmd/remarquee cloud refresh --with-glaze-output --output json`
+
+### Technical details
+- Example structured output shape:
+  - `[{ "user": "...", "sync_version": "1.5", "hash": "...", "generation": <int> }]`
+
+### What I'd do differently next time
+- N/A
