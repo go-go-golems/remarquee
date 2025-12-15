@@ -1,8 +1,8 @@
 package cloud
 
 import (
+	"github.com/go-go-golems/remarquee/pkg/rmcloud"
 	"github.com/juruen/rmapi/api"
-	"github.com/pkg/errors"
 )
 
 type AuthSettings struct {
@@ -11,16 +11,12 @@ type AuthSettings struct {
 }
 
 func createApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
-	// rmapi does retries in its own main.go; keep this minimal for now and bubble errors.
-	httpCtx := api.AuthHttpCtx(auth.Reauth, auth.NonInteractive)
-	userInfo, err := api.ParseToken(httpCtx.Tokens.UserToken)
+	userInfo, apiCtx, err := rmcloud.CreateApiCtx(rmcloud.AuthSettings{
+		NonInteractive: auth.NonInteractive,
+		Reauth:         auth.Reauth,
+	})
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse rmapi user token")
-	}
-
-	apiCtx, err := api.CreateApiCtx(httpCtx, userInfo.SyncVersion)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create rmapi api context")
+		return nil, nil, err
 	}
 
 	return userInfo, apiCtx, nil
