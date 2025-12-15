@@ -202,3 +202,14 @@ Committed research findings: dual-format support requirement (V3/V5 + V6), updat
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md — Updated with commit hash (commit 70c5421)
 
+
+## 2025-12-14
+
+Added one-shot OCR via LLM vision using Geppetto Turns/Blocks: new `remarquee ocr` dev command + analysis doc.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/ocr/root.go — Implement `remarquee ocr` (build multimodal Turn
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/main.go — Wire new ocr command into remarquee root command
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/analysis/02-ocr-via-llm-vision-using-geppetto-turns-blocks.md — Analysis of OCR flow + how images are encoded/mapped
+
