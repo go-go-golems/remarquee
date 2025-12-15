@@ -364,3 +364,80 @@ button:disabled {
   font-style: italic;
   margin-top: 0.5rem;
 }
+
+/* Internal Structure */
+.internal-structure {
+  margin-top: 2rem;
+  border-top: 2px solid #ecf0f1;
+  padding-top: 1.5rem;
+}
+
+.internal-structure h3 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+.structure-section {
+  margin: 1rem 0;
+  border: 1px solid #ecf0f1;
+  border-radius: 4px;
+  background: #f8f9fa;
+}
+
+.structure-section summary {
+  padding: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+  background: #ecf0f1;
+  border-radius: 4px;
+  transition: background 0.2s;
+  color: #2c3e50;
+}
+
+.structure-section summary:hover {
+  background: #d5dbdb;
+}
+
+.structure-section summary strong {
+  color: #2c3e50;
+}
+
+.structure-content {
+  padding: 1rem;
+}
+
+.json-viewer {
+  background: #2c3e50;
+  color: #ecf0f1;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.rm-files-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.rm-files-table th {
+  background: #ecf0f1;
+  padding: 0.5rem;
+  text-align: left;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.rm-files-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #ecf0f1;
+  color: #2c3e50;
+}
+
+.rm-files-table tbody tr:hover {
+  background: #f8f9fa;
+}

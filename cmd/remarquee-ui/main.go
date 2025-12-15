@@ -40,7 +40,15 @@ func main() {
 	// API routes
 	mux.HandleFunc("/api/health", handleHealth)
 	mux.HandleFunc("/api/test-documents", handleTestDocuments)
-	mux.HandleFunc("/api/document/", api.HandleInspect(testDocsPath))
+	mux.Handle("/api/document/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/inspect") {
+			api.HandleInspect(testDocsPath)(w, r)
+		} else if strings.HasSuffix(r.URL.Path, "/structure") {
+			api.HandleInternalStructure(testDocsPath)(w, r)
+		} else {
+			http.NotFound(w, r)
+		}
+	}))
 	mux.HandleFunc("/api/render/background", api.HandleRenderBackground(testDocsPath, outputsDir))
 	mux.HandleFunc("/api/render/legacy", api.HandleRenderLegacy(testDocsPath, outputsDir))
 	mux.HandleFunc("/api/outputs/", api.HandleOutputs(outputsDir))

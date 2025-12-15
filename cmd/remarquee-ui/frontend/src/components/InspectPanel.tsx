@@ -1,4 +1,5 @@
 import { useAppSelector } from '../store/hooks';
+import InternalStructure from './InternalStructure';
 
 function InspectPanel() {
   const { inspectResult, loading, selectedDocumentId, testDocuments } = useAppSelector(state => state.documents);
@@ -137,6 +138,8 @@ function InspectPanel() {
           </tbody>
         </table>
       </div>
+
+      <InternalStructure />
     </div>
   );
 }
