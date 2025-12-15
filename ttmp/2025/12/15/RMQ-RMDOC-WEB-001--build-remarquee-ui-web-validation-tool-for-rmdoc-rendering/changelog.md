@@ -32,3 +32,8 @@ Phase 1: Core API endpoints (commit c107adb)
 
 Phase 0-5 complete: remarquee-ui web validation tool fully implemented (Go backend + React frontend + validation persistence + production build)
 
+
+## 2025-12-15
+
+UI improvements: 3-column desktop layout, validation guidance panel, enhanced inspect panel with visual highlighting, fixed all CSS contrast issues (commits a163e7b, b78506c, 2866449)
+

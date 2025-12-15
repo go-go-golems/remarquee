@@ -254,6 +254,105 @@ This step completes the frontend by implementing the Redux Toolkit store (3 slic
 - **CSS organization**: all styles in `App.css` (could be split per-component in the future)
 - **Build output**: `frontend/dist/` (ignored by git, served in prod mode)
 
+## Step 6: UI improvements for desktop - 3-column layout, validation guidance, enhanced content display
+
+This step improves the UI for desktop use by adding a 3-column layout (left: document selector, center: content, right: validation guidance), fixing all CSS contrast issues (white-on-white text), and enhancing the inspect panel to show rmdoc content details with visual highlighting for duplicates and inserted pages.
+
+**Commits:** a163e7b (contrast fix), b78506c (3-column layout), 2866449 (final contrast fixes)
+
+### What I did
+
+- Fixed CSS contrast issues:
+  - Added explicit `color: #2c3e50` to all text elements (main panel, sidebar, guidance panel)
+  - Fixed white-on-white text in document selector buttons, checklist items, and guidance panel paragraphs
+  - Added proper color inheritance for `strong` and `small` elements
+- Converted layout to 3-column grid:
+  - Left sidebar (280px): Document selector + render actions
+  - Center panel (flexible): Main content with inspect, PDF viewer, validation form
+  - Right sidebar (320px): New validation guidance panel
+- Created `ValidationGuidance` component:
+  - Shows document-specific info (schema, type, page count)
+  - Dynamic checklist based on schema (legacy vs cPages) and doc type (PDF vs Notebook)
+  - Common issues reference with troubleshooting tips
+  - Visual checkboxes (□) for manual tracking
+- Enhanced `InspectPanel` component:
+  - Shows full document description from test manifest
+  - Color-coded schema badges (cPages = green, legacy = orange)
+  - Color-coded doc type badges (PDF = blue, Notebook = purple)
+  - Grid layout for metadata (better desktop use)
+  - Visual page highlighting in table:
+    - Yellow background = Inserted pages (sourcePdfPage === -1)
+    - Blue background = Duplicate pages (same sourcePdfPage appears multiple times)
+    - "Type" column shows: "Inserted", "Duplicate", or "Normal"
+  - Improved table styling with better contrast
+- Fixed dev mode: Changed Makefile `dev-backend` from `go run main.go` to `go run .` (to include embed.go)
+
+### Why
+
+- **Desktop-first**: most validation work happens on desktop, not mobile
+- **Side-by-side**: guidance panel always visible while inspecting/validating
+- **Visual feedback**: color highlighting makes duplicates and inserted pages obvious at a glance
+- **Contrast**: dark text on light backgrounds is essential for readability
+
+### What worked
+
+- 3-column CSS Grid layout scales well on desktop (2560px+ monitors)
+- Visual highlighting (yellow for inserted, blue for duplicates) is immediately clear
+- Guidance panel provides helpful context without being intrusive
+- All text is now readable (dark on light)
+
+### What didn't work
+
+- Initial attempts missed several white-on-white cases (buttons, guidance panel text, links)
+- Required 3 commits to catch all contrast issues
+
+### What I learned
+
+- CSS color inheritance is tricky: need explicit colors on nested elements (strong, small, span)
+- `color: inherit` on buttons helps maintain contrast in different states (normal vs selected)
+- CSS Grid with named columns is cleaner than flexbox for 3-column layouts
+
+### What was tricky to build
+
+- **Duplicate detection**: needed to scan all pages to find duplicates (same sourcePdfPage appears multiple times)
+- **Color inheritance**: had to set explicit colors at multiple levels (button, button strong, button small, etc.)
+
+### What warrants a second pair of eyes
+
+- **Desktop layout**: confirm 3-column layout works well on standard desktop resolutions (1920x1080, 2560x1440)
+- **Color contrast**: verify all text is readable (WCAG AA compliance)
+- **Guidance panel**: confirm checklist is comprehensive and helpful
+
+### What should be done in the future
+
+- Add responsive breakpoints for smaller screens (collapse to 2-column or single-column)
+- Add "check all" / "uncheck all" buttons for guidance checklist
+- Make checklist interactive (persist checked state in local storage)
+- Add keyboard shortcuts for common actions (e.g., space to check/uncheck)
+
+### Code review instructions
+
+- Review `App.css`: verify 3-column grid layout, guidance panel styling, and all color definitions
+- Review `App.tsx`: verify ValidationGuidance component is wired correctly
+- Review `ValidationGuidance.tsx`: confirm dynamic content based on schema/docType
+- Review `InspectPanel.tsx`: verify duplicate detection logic and color highlighting
+- Test: run `make build`, open browser to http://localhost:8080, verify layout and contrast
+
+### Technical details
+
+- **3-column grid**: `grid-template-columns: 280px 1fr 320px` (fixed sidebars, flexible center)
+- **Color scheme**:
+  - Primary text: `#2c3e50` (dark blue-gray)
+  - Guidance panel background: `#fff9e6` (light yellow)
+  - Guidance panel accent: `#f39c12` (orange)
+  - cPages badge: `#27ae60` (green)
+  - Legacy badge: `#f39c12` (orange)
+  - PDF badge: `#3498db` (blue)
+  - Notebook badge: `#9b59b6` (purple)
+  - Inserted page highlight: `#fff3cd` (yellow)
+  - Duplicate page highlight: `#d1ecf1` (blue)
+- **Duplicate detection**: `pages.filter(p => p.sourcePdfPage === page.sourcePdfPage && page.sourcePdfPage !== -1).length > 1`
+
 ## Step 4: Implement Phase 4 (validation persistence)
 
 This step adds backend validation persistence, writing validation sessions as both JSON (machine-readable) and Markdown (human-readable) to the ticket's `reference/validation/` directory. This enables durable tracking of validation results across UI sessions and provides copy/paste-ready artifacts for documentation.
