@@ -10,6 +10,19 @@ func NewCloudCommand() *cobra.Command {
 		Short: "Interact with the reMarkable cloud (rmapi-backed)",
 	}
 
+	getCmd, err := NewGetCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "get",
+			Short: "Download a remote document as .rmdoc (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(getCmd)
+	}
+
 	lsCmd, err := NewLsCobraCommand()
 	if err != nil {
 		cmd.AddCommand(&cobra.Command{
@@ -21,6 +34,32 @@ func NewCloudCommand() *cobra.Command {
 		})
 	} else {
 		cmd.AddCommand(lsCmd)
+	}
+
+	mkdirCmd, err := NewMkdirCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "mkdir",
+			Short: "Create a remote directory (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(mkdirCmd)
+	}
+
+	putCmd, err := NewPutCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "put",
+			Short: "Upload a local document to the cloud (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(putCmd)
 	}
 
 	refreshCmd, err := NewRefreshCobraCommand()
