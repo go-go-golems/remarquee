@@ -8,25 +8,20 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: remarks/remarks/conversion/parsing.py
-      Note: V6 .rm file parsing
+    - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/extract_rmc_coords.py
+      Note: Analysis script to extract coordinate transform constants from rmc library
+    - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/analyze_remarks_merge.py
+      Note: Analysis script documenting the PDF merge algorithm from remarks
     - Path: remarks/remarks/remarks.py
       Note: Main remarks processing logic (process_document, run_remarks)
     - Path: remarks/remarks/utils.py
       Note: Page ordering and redirection map algorithms
-    - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/analyze_remarks_merge.py
-      Note: Analysis script documenting the PDF merge algorithm from remarks
-    - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/extract_rmc_coords.py
-      Note: Analysis script to extract coordinate transform constants from rmc library
-    - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/go_reimplementation_gaps.md
-      Note: Updated gap analysis with dual-format support requirement (commit 76e1249)
-    - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/trace_rm_parse.py
-      Note: Fixed to handle CrdtSequence properly (commit 76e1249)
+    - Path: remarks/remarks/conversion/parsing.py
+      Note: V6 .rm file parsing
 ExternalSources: []
-Summary: Step-by-step diary of analyzing the .rmdoc format and remarks algorithms to prepare for Go reimplementation
+Summary: "Step-by-step diary of analyzing the .rmdoc format and remarks algorithms to prepare for Go reimplementation"
 LastUpdated: 2025-12-15T00:45:00-05:00
 ---
-
 
 # Diary: .rmdoc format analysis and Go reimplementation prep
 
