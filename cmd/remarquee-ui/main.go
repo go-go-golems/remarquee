@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-go-golems/remarquee/cmd/remarquee-ui/api"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -26,6 +27,13 @@ func init() {
 func main() {
 	flag.Parse()
 
+	// Setup zerolog console output
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if devMode {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+
 	// Directories
 	testDocsPath := "testdata"
 	outputsDir := "outputs"
@@ -33,7 +41,7 @@ func main() {
 
 	// Ensure outputs directory exists
 	if err := os.MkdirAll(outputsDir, 0755); err != nil {
-		log.Fatalf("Failed to create outputs directory: %v", err)
+		log.Fatal().Err(err).Msg("Failed to create outputs directory")
 	}
 
 	mux := http.NewServeMux()
@@ -57,21 +65,21 @@ func main() {
 
 	// Static assets
 	if devMode {
-		log.Println("Running in DEV mode: expecting Vite dev server on :5173")
+		log.Info().Msg("Running in DEV mode: expecting Vite dev server on :5173")
 	} else {
-		log.Println("Running in PROD mode: serving embedded assets")
+		log.Info().Msg("Running in PROD mode: serving embedded assets")
 		frontendFS, err := GetFrontendFS()
 		if err != nil {
-			log.Fatalf("Failed to get frontend filesystem: %v", err)
+			log.Fatal().Err(err).Msg("Failed to get frontend filesystem")
 		}
 		fileServer := http.FileServer(http.FS(frontendFS))
 		mux.Handle("/", fileServer)
 	}
 
 	addr := ":" + port
-	log.Printf("remarquee-ui server listening on %s\n", addr)
+	log.Info().Str("addr", addr).Msg("remarquee-ui server listening")
 	if err := http.ListenAndServe(addr, mux); err != nil {
-		log.Fatalf("Server failed: %v", err)
+		log.Fatal().Err(err).Msg("Server failed")
 	}
 }
 

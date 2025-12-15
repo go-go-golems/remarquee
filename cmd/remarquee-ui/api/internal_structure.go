@@ -5,13 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-go-golems/remarquee/pkg/rmdoc"
+	"github.com/rs/zerolog/log"
 )
 
 // RMFileInfo represents metadata about a .rm file
@@ -41,11 +41,14 @@ func HandleInternalStructure(testDocsPath string) http.HandlerFunc {
 
 		// Extract document ID from URL path
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		log.Info().Strs("pathParts", pathParts).Msg("Parsing URL path")
 		if len(pathParts) != 4 || pathParts[0] != "api" || pathParts[1] != "document" || pathParts[3] != "structure" {
+			log.Warn().Strs("pathParts", pathParts).Msg("Invalid path format")
 			http.Error(w, "Invalid path format, expected /api/document/{id}/structure", http.StatusBadRequest)
 			return
 		}
 		docID := pathParts[2]
+		log.Info().Str("docID", docID).Msg("Processing internal structure request")
 
 		// Load test documents manifest to find the document path
 		docPath, err := findDocumentPath(testDocsPath, docID)
@@ -107,24 +110,29 @@ func HandleInternalStructure(testDocsPath string) http.HandlerFunc {
 			if strings.HasSuffix(file.Name, ".rm") {
 				pageID := strings.TrimSuffix(filepath.Base(file.Name), ".rm")
 				
-				// Try to read first 32 bytes to get version
+				// Try to read first 43 bytes to get version
+				// Format: "reMarkable .lines file, version=X      " (43 bytes total)
 				version := "unknown"
 				if rc, err := file.Open(); err == nil {
-					header := make([]byte, 32)
-					if n, err := rc.Read(header); err == nil && n >= 32 {
-						// Check for V3, V5, or V6 markers
-						headerStr := string(header[:32])
-						if strings.Contains(headerStr, "reMarkable") {
-							if header[32-1] == 3 {
-								version = "V3"
-							} else if header[32-1] == 5 {
-								version = "V5"
-							} else if header[32-1] == 6 {
-								version = "V6"
-							}
+					header := make([]byte, 43)
+					if n, err := rc.Read(header); err == nil && n == 43 {
+						headerStr := string(header)
+						log.Debug().Str("header", headerStr).Str("pageID", pageID).Msg("RM file header")
+						if strings.Contains(headerStr, "version=3") {
+							version = "V3"
+						} else if strings.Contains(headerStr, "version=5") {
+							version = "V5"
+						} else if strings.Contains(headerStr, "version=6") {
+							version = "V6"
+						} else {
+							log.Warn().Str("header", headerStr).Str("pageID", pageID).Msg("Unknown .rm version format")
 						}
+					} else {
+						log.Warn().Int("bytesRead", n).Str("pageID", pageID).Msg("Failed to read full .rm header")
 					}
 					rc.Close()
+				} else {
+					log.Warn().Err(err).Str("pageID", pageID).Msg("Failed to open .rm file for version detection")
 				}
 
 				rmFiles = append(rmFiles, RMFileInfo{
@@ -156,6 +164,12 @@ func HandleInternalStructure(testDocsPath string) http.HandlerFunc {
 				}
 			}
 		}
+
+		log.Info().
+			Str("docID", docID).
+			Int("rmFileCount", len(rmFiles)).
+			Int("totalFiles", len(allFiles)).
+			Msg("Successfully processed internal structure")
 
 		respondJSON(w, http.StatusOK, InternalStructureResponse{
 			ContentJSON:  contentJSONPretty,
