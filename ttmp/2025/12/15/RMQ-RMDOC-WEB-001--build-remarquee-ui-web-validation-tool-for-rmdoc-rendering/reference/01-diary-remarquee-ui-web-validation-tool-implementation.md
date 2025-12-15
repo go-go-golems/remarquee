@@ -648,3 +648,9 @@ This step implements the complete backend API for document inspection and PDF re
 - **JSON response format**: all API responses use `application/json` with proper status codes
 - **Output files**: PDFs written to `outputs/` directory with job-ID-based filenames
 - **Job ID format**: `{documentId}-{action}-{timestamp}` (e.g., `cpage-pdf-background-1765810673`)
+
+### Fix: Missing strings import (commit 7eec974)
+
+**What happened**: The routing logic for `/api/document/:id/inspect` and `/structure` introduced a compilation error — forgot to import the `strings` package.
+
+**Fix**: Added `"strings"` to the imports in `cmd/remarquee-ui/main.go`. Backend now compiles and runs successfully.
