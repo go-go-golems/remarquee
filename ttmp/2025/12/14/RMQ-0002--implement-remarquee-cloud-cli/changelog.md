@@ -49,3 +49,15 @@ Step 2: implemented rmapi-backed cloud CLI group and first verb `remarquee cloud
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/main.go — Root now registers cloud group (commit 37b0012...)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 2
 
+
+## 2025-12-14
+
+Step 3: wired Glazed help system at the remarquee root and added an embedded tutorial/playbook for adding new Glazed CLI commands. (commit daad86289b7658eb534e16bfc39637751b3e6e1e)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/main.go — Root now registers help system (commit daad862...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/doc.go — Embedded doc loader (commit daad862...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/tutorials/01-adding-a-glazed-command-to-remarquee.md — New tutorial/playbook page (commit daad862...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 3
+

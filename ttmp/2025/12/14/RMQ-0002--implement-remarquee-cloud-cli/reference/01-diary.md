@@ -7,11 +7,18 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: cmd/remarquee/main.go
+      Note: Updated in commit daad862... (root help system wiring)
+    - Path: pkg/doc/doc.go
+      Note: Added in commit daad862... (embed + AddDocToHelpSystem)
+    - Path: pkg/doc/tutorials/01-adding-a-glazed-command-to-remarquee.md
+      Note: Added in commit daad862... (tutorial/playbook for adding commands)
 ExternalSources: []
-Summary: "Implementation diary for RMQ-0002 (remarquee cloud CLI): step-by-step narrative with commit hashes."
+Summary: 'Implementation diary for RMQ-0002 (remarquee cloud CLI): step-by-step narrative with commit hashes.'
 LastUpdated: 2025-12-14T19:30:28.750480955-05:00
 ---
+
 
 # Diary
 
@@ -137,6 +144,62 @@ We implemented `cloud refresh` as a dual-mode Glazed command: classic human outp
 ### Technical details
 - Example structured output shape:
   - `[{ "user": "...", "sync_version": "1.5", "hash": "...", "generation": <int> }]`
+
+### What I'd do differently next time
+- N/A
+
+## Step 3: Add embedded help docs and a “how to add a command” tutorial (remarquee/pkg/doc)
+
+This step made it much easier for new contributors to work in this codebase without tribal knowledge. Instead of relying only on Cobra’s `--help`, we wired in Glazed’s Markdown help system at the root command and added a focused tutorial explaining the “one file per command” workflow for adding new Glazed commands to the remarquee binary.
+
+The immediate payoff is discoverability: `remarquee help` now lists our tutorial, and `remarquee help remarquee-add-glazed-command` provides copy/paste steps that match how we’re building RMQ-0002 (cloud CLI first, REPL later).
+
+**Commit (code):** daad86289b7658eb534e16bfc39637751b3e6e1e — "📝 remarquee: add embedded help docs and command tutorial"
+
+### What I did
+- Added an embedded docs loader:
+  - `pkg/doc/doc.go` with `AddDocToHelpSystem(...)` and `//go:embed tutorials/*.md`
+- Added a tutorial page:
+  - `pkg/doc/tutorials/01-adding-a-glazed-command-to-remarquee.md`
+- Wired the help system into the root command:
+  - `cmd/remarquee/main.go` now initializes a `help.HelpSystem`, loads remarquee docs, and registers `remarquee help`.
+- Removed per-subcommand help setup (now centralized at root):
+  - `cmd/remarquee/cmds/cloud/refresh.go`
+
+### Why
+- Make command development repeatable for new contributors and interns.
+- Keep narrative “how to add a command here” docs close to the code (embedded in the binary).
+
+### What worked
+- `go run ./cmd/remarquee help` shows the tutorial list.
+- `go run ./cmd/remarquee help remarquee-add-glazed-command` renders the full tutorial.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Wiring the help system once at the root avoids duplicate help registration per subcommand and scales better as commands grow.
+
+### What was tricky to build
+- Getting the doc embedding + load path correct (`LoadSectionsFromFS(docFS, ".")`) while keeping the docs organized under `pkg/doc/tutorials/`.
+
+### What warrants a second pair of eyes
+- Confirm the desired long-term doc structure (`tutorials/`, `topics/`, etc.) before adding many pages.
+
+### What should be done in the future
+- Add a small `topics/` section explaining our command taxonomy (cloud/extract/upload/...) once more commands exist.
+
+### Code review instructions
+- Start at:
+  - `pkg/doc/doc.go`
+  - `pkg/doc/tutorials/01-adding-a-glazed-command-to-remarquee.md`
+  - `cmd/remarquee/main.go`
+- Validate with:
+  - `go run ./cmd/remarquee help`
+  - `go run ./cmd/remarquee help remarquee-add-glazed-command`
+
+### Technical details
+- Slug: `remarquee-add-glazed-command`
 
 ### What I'd do differently next time
 - N/A
