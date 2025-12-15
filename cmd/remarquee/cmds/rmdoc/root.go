@@ -9,5 +9,6 @@ func NewRmdocCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(NewInspectCommand())
+	cmd.AddCommand(NewRenderLegacyCommand())
 	return cmd
 }
