@@ -85,3 +85,17 @@ Step 5: added rmapi-backed cloud get/put/mkdir verbs (get tested end-to-end; put
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/put.go — Cloud put (commit 760dd34...)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 5
 
+
+## 2025-12-14
+
+Step 6: added cloud mv/rm/find/account/version; rm is safe-by-default and requires --yes to delete. (commit b835c9a794b36526d988410b7db16bf96a55db46)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/account.go — Cloud account (commit b835c9a...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/find.go — Cloud find (commit b835c9a...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/mv.go — Cloud mv (commit b835c9a...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/rm.go — Cloud rm (commit b835c9a...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/version.go — Cloud version (commit b835c9a...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 6
+

@@ -8,14 +8,18 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: cmd/remarquee/cmds/cloud/get.go
-      Note: Added in commit 760dd34... (cloud get)
-    - Path: cmd/remarquee/cmds/cloud/mkdir.go
-      Note: Added in commit 760dd34... (cloud mkdir)
-    - Path: cmd/remarquee/cmds/cloud/put.go
-      Note: Added in commit 760dd34... (cloud put)
+    - Path: cmd/remarquee/cmds/cloud/account.go
+      Note: Added in commit b835c9a... (cloud account)
+    - Path: cmd/remarquee/cmds/cloud/find.go
+      Note: Added in commit b835c9a... (cloud find)
+    - Path: cmd/remarquee/cmds/cloud/mv.go
+      Note: Added in commit b835c9a... (cloud mv)
+    - Path: cmd/remarquee/cmds/cloud/rm.go
+      Note: Added in commit b835c9a... (cloud rm)
     - Path: cmd/remarquee/cmds/cloud/root.go
-      Note: Updated in commit 760dd34... (register get/put/mkdir)
+      Note: Updated in commit b835c9a... (register remaining verbs)
+    - Path: cmd/remarquee/cmds/cloud/version.go
+      Note: Added in commit b835c9a... (cloud version)
 ExternalSources: []
 Summary: 'Implementation diary for RMQ-0002 (remarquee cloud CLI): step-by-step narrative with commit hashes.'
 LastUpdated: 2025-12-14T19:30:28.750480955-05:00
@@ -337,3 +341,48 @@ We tested `get` end-to-end against a real document (auth + fetch + local `.rmdoc
 
 ### What I'd do differently next time
 - N/A
+
+## Step 6: Add remaining cloud verbs: mv, rm (safe), find, account, version
+
+This step completed the “first pass” of the cloud CLI surface by adding the remaining verbs listed in RMQ-0001’s initial taxonomy: move/rename (`mv`), delete (`rm`), recursive search (`find`), and info verbs (`account`, `version`).
+
+The key design constraint here was safety: `rm` refuses to delete anything unless `--yes` is provided. This allows us to ship the verb early without risking accidental destructive use during development.
+
+**Commit (code):** b835c9a794b36526d988410b7db16bf96a55db46 — "✨ remarquee: add remaining cloud verbs (mv/rm/find/account/version)"
+
+### What I did
+- Added `remarquee cloud mv`:
+  - `cmd/remarquee/cmds/cloud/mv.go`
+  - Mirrors rmapi semantics (move into existing dir vs rename to explicit path); includes subdir move protection.
+- Added `remarquee cloud rm`:
+  - `cmd/remarquee/cmds/cloud/rm.go`
+  - Safe default: refuses without `--yes`; supports `--recursive`.
+- Added `remarquee cloud find`:
+  - `cmd/remarquee/cmds/cloud/find.go`
+  - Recursive walk with optional regexp filter; `--compact` formatting.
+- Added `remarquee cloud account`:
+  - `cmd/remarquee/cmds/cloud/account.go`
+  - Prints `user` and `sync_version` based on rmapi token parsing.
+- Added `remarquee cloud version`:
+  - `cmd/remarquee/cmds/cloud/version.go`
+  - Prints `rmapi_version`.
+- Wired these into:
+  - `cmd/remarquee/cmds/cloud/root.go`
+
+### What worked
+- `version` / `account` run successfully:
+  - `go run ./cmd/remarquee cloud version`
+  - `go run ./cmd/remarquee cloud account --non-interactive`
+- `rm` safety works:
+  - `go run ./cmd/remarquee cloud rm / --non-interactive` refuses without `--yes`
+- `find` works (note: piping to `head` may show broken pipe because stdout is closed early).
+
+### What I did NOT do (on purpose)
+- I did not run `mv` or `rm --yes` against real content to avoid remote side effects until we have a dedicated “test sandbox” folder and/or `rm` cleanup workflow agreed.
+
+### What warrants a second pair of eyes
+- `rm` semantics: should we add an explicit `--dry-run` flag (instead of printing and erroring) and/or support `--yes` per-target?
+- `find` matching: currently regexp matches the formatted output string (path plus possible prefix/suffix).
+
+### What should be done next
+- Add a small “manual validation script” section in the ticket docs for safe testing (create temp folder, upload a small PDF, mv it, then rm it).
