@@ -43,3 +43,12 @@ Step 2: Embed upload help docs + add unit tests (commit 6c57171...)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/upload/01-remarquee-upload-getting-started.md — New embedded help page
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/mdpdf/preprocess_test.go — Tests for preprocessing behavior
 
+
+## 2025-12-14
+
+Step 3: Added reusable end-to-end smoke test script for real uploads to /ai/test/...
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/scripts/01-smoke-test-upload-md.sh — Smoke test: create fixtures
+
