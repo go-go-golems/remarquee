@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cmds/logging"
 	"github.com/go-go-golems/remarquee/cmd/remarquee/cmds"
+	"github.com/go-go-golems/remarquee/cmd/remarquee/cmds/cloud"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +22,7 @@ func main() {
 	_ = logging.AddLoggingLayerToRootCommand(rootCmd, "remarquee")
 
 	rootCmd.AddCommand(cmds.NewStatusCommand())
+	rootCmd.AddCommand(cloud.NewCloudCommand())
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
