@@ -34,13 +34,19 @@ function InternalStructure() {
     setLoading(true);
     setError(null);
     try {
+      console.log('[InternalStructure] Fetching structure for:', docId);
       const response = await fetch(`/api/document/${docId}/structure`);
+      console.log('[InternalStructure] Response status:', response.status);
       if (!response.ok) {
-        throw new Error('Failed to fetch internal structure');
+        const errorText = await response.text();
+        console.error('[InternalStructure] Error response:', errorText);
+        throw new Error(`Failed to fetch internal structure: ${response.status} ${errorText}`);
       }
       const data = await response.json();
+      console.log('[InternalStructure] Received structure data:', data);
       setStructure(data);
     } catch (err) {
+      console.error('[InternalStructure] Fetch error:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
