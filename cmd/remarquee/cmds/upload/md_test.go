@@ -62,3 +62,20 @@ func TestResolveRemoteDir_OverrideNormalizes(t *testing.T) {
 		t.Fatalf("unexpected: %q", got)
 	}
 }
+
+func TestJoinRemoteDir(t *testing.T) {
+	base := "/ai/test"
+
+	if got := joinRemoteDir(base, ""); got != "/ai/test" {
+		t.Fatalf("unexpected: %q", got)
+	}
+	if got := joinRemoteDir(base, "."); got != "/ai/test" {
+		t.Fatalf("unexpected: %q", got)
+	}
+	if got := joinRemoteDir(base, "sub"); got != "/ai/test/sub" {
+		t.Fatalf("unexpected: %q", got)
+	}
+	if got := joinRemoteDir(base, "/sub/dir/"); got != "/ai/test/sub/dir" {
+		t.Fatalf("unexpected: %q", got)
+	}
+}

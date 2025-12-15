@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-go-golems/remarquee/pkg/mdpdf"
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
+	"github.com/juruen/rmapi/model"
 	"github.com/juruen/rmapi/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -25,6 +26,7 @@ type uploadMarkdownSettings struct {
 	DryRun          bool
 	PDFOnly         bool
 	OutputDir       string
+	PreserveDirs    bool
 	Date            string
 	RemoteDir       string
 	Pandoc          string
@@ -71,6 +73,7 @@ Safety:
 	cmd.Flags().BoolVar(&s.DryRun, "dry-run", false, "Print what would be done, but do not run pandoc or upload")
 	cmd.Flags().BoolVar(&s.PDFOnly, "pdf-only", false, "Only generate PDFs, do not upload")
 	cmd.Flags().StringVar(&s.OutputDir, "output-dir", "", "Output directory for PDFs in --pdf-only mode (default: current directory)")
+	cmd.Flags().BoolVar(&s.PreserveDirs, "preserve-dirs", false, "When uploading directories, recreate the local relative directory structure remotely")
 
 	// Destination.
 	cmd.Flags().StringVar(&s.Date, "date", "", "Destination date folder under /ai (YYYY/MM/DD or YYYY-MM-DD). Default: today")
@@ -88,27 +91,34 @@ Safety:
 }
 
 func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdownSettings, args []string) error {
-	mdFiles, err := collectMarkdownFiles(args)
+	mdInputs, err := collectMarkdownInputs(args)
 	if err != nil {
 		return err
 	}
-	if len(mdFiles) == 0 {
+	if len(mdInputs) == 0 {
 		return errors.New("no markdown files found")
-	}
-
-	// Detect collisions early: two inputs producing the same document name.
-	seenDocNames := map[string]string{}
-	for _, p := range mdFiles {
-		name := strings.TrimSuffix(filepath.Base(p), filepath.Ext(p))
-		if other, ok := seenDocNames[name]; ok {
-			return errors.Errorf("duplicate document name %q from %q and %q (rename one file or upload to different remote directories)", name, other, p)
-		}
-		seenDocNames[name] = p
 	}
 
 	remoteDir, err := resolveRemoteDir(s.Date, s.RemoteDir)
 	if err != nil {
 		return err
+	}
+
+	// Detect collisions early:
+	// - flat mode: docName collisions are always ambiguous
+	// - preserve-dirs mode: detect collisions at the computed remote location
+	seenRemoteKeys := map[string]string{}
+	for _, in := range mdInputs {
+		docName := strings.TrimSuffix(filepath.Base(in.AbsPath), filepath.Ext(in.AbsPath))
+		relDir := ""
+		if s.PreserveDirs {
+			relDir = in.RelDir()
+		}
+		key := remoteDocKey(remoteDir, relDir, docName)
+		if other, ok := seenRemoteKeys[key]; ok {
+			return errors.Errorf("duplicate document %q from %q and %q (rename one file or upload to different remote directories)", docName, other, in.AbsPath)
+		}
+		seenRemoteKeys[key] = in.AbsPath
 	}
 
 	pandocOpts := mdpdf.DefaultPandocOptions()
@@ -121,17 +131,26 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 
 	if s.DryRun {
 		fmt.Fprintf(cmd.OutOrStdout(), "DRY: remote-dir=%s\n", remoteDir)
-		for _, mdPath := range mdFiles {
+		for _, in := range mdInputs {
+			mdPath := in.AbsPath
 			pdfName := strings.TrimSuffix(filepath.Base(mdPath), filepath.Ext(mdPath)) + ".pdf"
 			if s.PDFOnly {
 				outDir := s.OutputDir
 				if outDir == "" {
 					outDir = "."
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "DRY: pandoc %s -> %s\n", mdPath, filepath.Join(outDir, pdfName))
+				outPDF := filepath.Join(outDir, pdfName)
+				if s.PreserveDirs {
+					outPDF = filepath.Join(outDir, in.RelDir(), pdfName)
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "DRY: pandoc %s -> %s\n", mdPath, outPDF)
 			} else {
 				fmt.Fprintf(cmd.OutOrStdout(), "DRY: pandoc %s -> <tmp>/%s\n", mdPath, pdfName)
-				fmt.Fprintf(cmd.OutOrStdout(), "DRY: upload %s -> %s\n", pdfName, remoteDir)
+				dst := remoteDir
+				if s.PreserveDirs {
+					dst = joinRemoteDir(remoteDir, in.RelDir())
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "DRY: upload %s -> %s\n", pdfName, dst)
 			}
 		}
 		return nil
@@ -147,9 +166,16 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 			return errors.Wrap(err, "failed to create output directory")
 		}
 
-		for _, mdPath := range mdFiles {
+		for _, in := range mdInputs {
+			mdPath := in.AbsPath
 			pdfName := strings.TrimSuffix(filepath.Base(mdPath), filepath.Ext(mdPath)) + ".pdf"
 			outPDF := filepath.Join(outDir, pdfName)
+			if s.PreserveDirs {
+				outPDF = filepath.Join(outDir, in.RelDir(), pdfName)
+				if err := os.MkdirAll(filepath.Dir(outPDF), 0o755); err != nil {
+					return errors.Wrap(err, "failed to create output directory")
+				}
+			}
 			if err := mdpdf.ConvertMarkdownFileToPDF(ctx, mdPath, outPDF, pandocOpts); err != nil {
 				return err
 			}
@@ -167,10 +193,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		return err
 	}
 
-	dstNode, err := rmcloud.MkdirAll(apiCtx, remoteDir)
-	if err != nil {
-		return err
-	}
+	dstNodeCache := map[string]*model.Node{}
 
 	tmpDir, err := os.MkdirTemp("", "remarquee-upload-md-")
 	if err != nil {
@@ -178,9 +201,16 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	for _, mdPath := range mdFiles {
+	for _, in := range mdInputs {
+		mdPath := in.AbsPath
 		pdfName := strings.TrimSuffix(filepath.Base(mdPath), filepath.Ext(mdPath)) + ".pdf"
 		outPDF := filepath.Join(tmpDir, pdfName)
+		if s.PreserveDirs {
+			outPDF = filepath.Join(tmpDir, in.RelDir(), pdfName)
+			if err := os.MkdirAll(filepath.Dir(outPDF), 0o755); err != nil {
+				return errors.Wrap(err, "failed to create temp directory structure")
+			}
+		}
 
 		if err := mdpdf.ConvertMarkdownFileToPDF(ctx, mdPath, outPDF, pandocOpts); err != nil {
 			return err
@@ -188,16 +218,32 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 
 		docName, _ := util.DocPathToName(outPDF)
 
+		dst := remoteDir
+		if s.PreserveDirs {
+			dst = joinRemoteDir(remoteDir, in.RelDir())
+		}
+
+		// Ensure remote directory exists (cache MkdirAll results).
+		dstNode, ok := dstNodeCache[dst]
+		if !ok {
+			node, err := rmcloud.MkdirAll(apiCtx, dst)
+			if err != nil {
+				return err
+			}
+			dstNode = node
+			dstNodeCache[dst] = node
+		}
+
 		// Existence check.
 		existingNode, err := apiCtx.Filetree().NodeByPath(docName, dstNode)
 		if err == nil {
 			if !s.Force {
-				fmt.Fprintf(cmd.OutOrStdout(), "SKIP: %s already exists in %s (use --force to overwrite)\n", docName, remoteDir)
+				fmt.Fprintf(cmd.OutOrStdout(), "SKIP: %s already exists in %s (use --force to overwrite)\n", docName, dst)
 				continue
 			}
 
 			if existingNode.IsDirectory() {
-				return errors.Errorf("cannot overwrite directory %q in %s", docName, remoteDir)
+				return errors.Errorf("cannot overwrite directory %q in %s", docName, dst)
 			}
 
 			if err := apiCtx.DeleteEntry(existingNode, false, false); err != nil {
@@ -211,10 +257,98 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 			return errors.Wrapf(err, "failed to upload file [%s]", outPDF)
 		}
 		apiCtx.Filetree().AddDocument(document)
-		fmt.Fprintf(cmd.OutOrStdout(), "OK: uploaded %s -> %s\n", pdfName, remoteDir)
+		fmt.Fprintf(cmd.OutOrStdout(), "OK: uploaded %s -> %s\n", pdfName, dst)
 	}
 
 	return nil
+}
+
+type markdownInput struct {
+	AbsPath string
+	RelPath string
+}
+
+func (in markdownInput) RelDir() string {
+	d := filepath.Dir(in.RelPath)
+	if d == "." || d == string(filepath.Separator) {
+		return ""
+	}
+	return d
+}
+
+func remoteDocKey(remoteBase string, relDir string, docName string) string {
+	dst := joinRemoteDir(remoteBase, relDir)
+	return dst + "/" + docName
+}
+
+func joinRemoteDir(remoteBase string, relDir string) string {
+	relDir = filepath.ToSlash(relDir)
+	relDir = strings.Trim(relDir, "/")
+	if relDir == "" || relDir == "." {
+		return normalizeRemoteDir(remoteBase)
+	}
+	return normalizeRemoteDir(normalizeRemoteDir(remoteBase) + "/" + relDir)
+}
+
+func collectMarkdownInputs(paths []string) ([]markdownInput, error) {
+	seen := map[string]struct{}{}
+	var out []markdownInput
+
+	for _, p := range paths {
+		pp := strings.TrimSpace(p)
+		if pp == "" {
+			continue
+		}
+		abs, err := filepath.Abs(pp)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to resolve path: %s", p)
+		}
+
+		info, err := os.Stat(abs)
+		if err != nil {
+			return nil, errors.Wrapf(err, "path not found: %s", abs)
+		}
+
+		if info.IsDir() {
+			err := filepath.WalkDir(abs, func(path string, d fs.DirEntry, err error) error {
+				if err != nil {
+					return err
+				}
+				if d.IsDir() {
+					return nil
+				}
+				if strings.EqualFold(filepath.Ext(d.Name()), ".md") {
+					if _, ok := seen[path]; !ok {
+						rel, err := filepath.Rel(abs, path)
+						if err != nil {
+							return errors.Wrap(err, "failed to compute relative path")
+						}
+						seen[path] = struct{}{}
+						out = append(out, markdownInput{AbsPath: path, RelPath: rel})
+					}
+				}
+				return nil
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to walk directory: %s", abs)
+			}
+			continue
+		}
+
+		if !strings.EqualFold(filepath.Ext(abs), ".md") {
+			return nil, errors.Errorf("unsupported file type (expected .md): %s", abs)
+		}
+
+		if _, ok := seen[abs]; !ok {
+			seen[abs] = struct{}{}
+			out = append(out, markdownInput{AbsPath: abs, RelPath: filepath.Base(abs)})
+		}
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		return strings.ToLower(out[i].AbsPath) < strings.ToLower(out[j].AbsPath)
+	})
+	return out, nil
 }
 
 func collectMarkdownFiles(paths []string) ([]string, error) {
