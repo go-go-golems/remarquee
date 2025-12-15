@@ -79,3 +79,15 @@ func TestJoinRemoteDir(t *testing.T) {
 		t.Fatalf("unexpected: %q", got)
 	}
 }
+
+func TestRemoteDocKey(t *testing.T) {
+	if got := remoteDocKey("/ai/test", "sub/dir", "doc"); got != "/ai/test/sub/dir/doc" {
+		t.Fatalf("unexpected: %q", got)
+	}
+	if got := remoteDocKey("/ai/test/", "/sub/dir/", "doc"); got != "/ai/test/sub/dir/doc" {
+		t.Fatalf("unexpected: %q", got)
+	}
+	if got := remoteDocKey("/ai/test", "", "doc"); got != "/ai/test/doc" {
+		t.Fatalf("unexpected: %q", got)
+	}
+}
