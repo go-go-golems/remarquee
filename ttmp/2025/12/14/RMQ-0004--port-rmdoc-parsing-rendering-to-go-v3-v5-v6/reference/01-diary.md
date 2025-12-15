@@ -30,7 +30,7 @@ This diary tracks the step-by-step work of porting `.rmdoc` parsing and annotati
 
 This step creates a clean implementation ticket (RMQ-0004) and turns the prior research into an actionable design. The point is to stop “re-learning” the `.rmdoc`/`.rm` ecosystem and instead lock down the data model boundaries and APIs we’ll build against.
 
-**Commit:** TBD (docs-only; will be filled once committed)
+**Commit:** 0850623 — "RMQ-0004: Seed Go rmdoc port ticket + initial design"
 
 ### What I did
 - Created the RMQ-0004 docmgr ticket workspace.
