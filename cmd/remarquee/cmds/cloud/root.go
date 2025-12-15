@@ -10,6 +10,19 @@ func NewCloudCommand() *cobra.Command {
 		Short: "Interact with the reMarkable cloud (rmapi-backed)",
 	}
 
+	lsCmd, err := NewLsCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "ls",
+			Short: "List remote directory entries (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(lsCmd)
+	}
+
 	refreshCmd, err := NewRefreshCobraCommand()
 	if err != nil {
 		// Keep wiring simple: if we can’t construct a subcommand, expose the error at runtime.
@@ -22,6 +35,19 @@ func NewCloudCommand() *cobra.Command {
 		})
 	} else {
 		cmd.AddCommand(refreshCmd)
+	}
+
+	statCmd, err := NewStatCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "stat",
+			Short: "Show metadata for a remote entry (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(statCmd)
 	}
 
 	return cmd

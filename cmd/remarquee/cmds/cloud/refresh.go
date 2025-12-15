@@ -11,7 +11,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
-	"github.com/juruen/rmapi/api"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -21,8 +20,7 @@ type RefreshCommand struct {
 }
 
 type RefreshSettings struct {
-	NonInteractive bool `glazed.parameter:"non-interactive"`
-	Reauth         bool `glazed.parameter:"reauth"`
+	AuthSettings
 }
 
 var _ glazecmds.BareCommand = &RefreshCommand{}
@@ -81,7 +79,7 @@ func (c *RefreshCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLay
 		return err
 	}
 
-	userInfo, apiCtx, err := createApiCtx(settings_.Reauth, settings_.NonInteractive)
+	userInfo, apiCtx, err := createApiCtx(settings_.AuthSettings)
 	if err != nil {
 		return err
 	}
@@ -105,7 +103,7 @@ func (c *RefreshCommand) RunIntoGlazeProcessor(
 		return err
 	}
 
-	userInfo, apiCtx, err := createApiCtx(settings_.Reauth, settings_.NonInteractive)
+	userInfo, apiCtx, err := createApiCtx(settings_.AuthSettings)
 	if err != nil {
 		return err
 	}
@@ -144,20 +142,4 @@ func NewRefreshCobraCommand() (*cobra.Command, error) {
 	}
 
 	return cobraCmd, nil
-}
-
-func createApiCtx(reAuth bool, nonInteractive bool) (*api.UserInfo, api.ApiCtx, error) {
-	// rmapi does retries in main.go; for now keep this minimal and bubble errors.
-	httpCtx := api.AuthHttpCtx(reAuth, nonInteractive)
-	userInfo, err := api.ParseToken(httpCtx.Tokens.UserToken)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse rmapi user token")
-	}
-
-	apiCtx, err := api.CreateApiCtx(httpCtx, userInfo.SyncVersion)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create rmapi api context")
-	}
-
-	return userInfo, apiCtx, nil
 }
