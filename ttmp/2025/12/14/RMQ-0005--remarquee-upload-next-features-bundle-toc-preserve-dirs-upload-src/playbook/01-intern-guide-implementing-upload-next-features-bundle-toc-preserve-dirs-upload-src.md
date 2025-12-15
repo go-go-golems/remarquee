@@ -7,24 +7,11 @@ Topics:
 DocType: playbook
 Intent: long-term
 Owners: []
-RelatedFiles:
-    - Path: cmd/remarquee/cmds/upload/md.go
-      Note: Current upload implementation to extend (bundle/preserve-dirs)
-    - Path: pkg/doc/upload/01-remarquee-upload-getting-started.md
-      Note: Current embedded upload docs (baseline UX)
-    - Path: pkg/doc/upload/02-remarquee-upload-reference.md
-      Note: Current embedded upload reference
-    - Path: pkg/mdpdf/pandoc.go
-      Note: Pandoc runner that will need new flags (toc/highlight)
-    - Path: pkg/rmcloud/dirs.go
-      Note: Remote mkdir -p helper used by preserve-dirs
-    - Path: ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/scripts/01-smoke-test-upload-md.sh
-      Note: Existing end-to-end smoke test for upload md
+RelatedFiles: []
 ExternalSources: []
-Summary: 'Intern guide for RMQ-0005: context + lay of the land for implementing upload bundle/ToC, preserve-dirs mirroring, and syntax-highlighted source uploads in remarquee.'
+Summary: "Intern guide for RMQ-0005: context + lay of the land for implementing upload bundle/ToC, preserve-dirs mirroring, and syntax-highlighted source uploads in remarquee."
 LastUpdated: 2025-12-14T21:26:16.01337945-05:00
 ---
-
 
 # Intern guide: implementing upload next features (bundle/ToC, preserve dirs, upload src)
 
@@ -50,8 +37,11 @@ The upload pipeline is intentionally straightforward: convert locally → upload
 ## Environment Assumptions
 
 You’re working in:
-- Repo root: `/home/manuel/workspaces/2025-12-14/build-remarquee-tool`
-- Go module + git repo: `/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee`
+- **Repo root (git + Go module)**: `/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee`
+
+Notes:
+- Treat `remarquee/` as the only repo root for this work (don’t run commands from the parent directory).
+- Ticket docs live under `remarquee/ttmp/`.
 
 You have installed:
 - `pandoc`
