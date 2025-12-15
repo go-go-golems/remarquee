@@ -17,20 +17,20 @@ Build `remarquee-ui`: an interactive web UI for validating `.rmdoc` parsing and 
 
 ## Phase 1 — Core API endpoints
 
-- [ ] Create `cmd/remarquee-ui/api/` package structure
-- [ ] Implement `GET /api/document/:id/inspect` (calls `pkg/rmdoc.OpenFile`)
-- [ ] Implement `POST /api/render/background` (calls `pkg/rmdoc/render.BuildBackgroundPDF`)
-- [ ] Implement `POST /api/render/legacy` (calls rmapi `PdfGenerator`)
-- [ ] Implement `GET /api/outputs/:filename` (serve PDFs from outputs/)
-- [ ] Add basic error handling and JSON responses
-- [ ] Smoke-test all endpoints with `curl`
+- [x] Create `cmd/remarquee-ui/api/` package structure
+- [x] Implement `GET /api/document/:id/inspect` (calls `pkg/rmdoc.OpenFile`)
+- [x] Implement `POST /api/render/background` (calls `pkg/rmdoc/render.BuildBackgroundPDF`)
+- [x] Implement `POST /api/render/legacy` (calls rmapi `PdfGenerator`)
+- [x] Implement `GET /api/outputs/:filename` (serve PDFs from outputs/)
+- [x] Add basic error handling and JSON responses
+- [x] Smoke-test all endpoints with `curl`
 
 ## Phase 2 — React frontend scaffold
 
-- [ ] Init React + Vite + TypeScript in `cmd/remarquee-ui/frontend/`
-- [ ] Add `package.json` with React, Redux Toolkit, Vite dependencies
-- [ ] Configure `vite.config.ts` with proxy (`/api/*` → `http://localhost:8080`)
-- [ ] Add `tsconfig.json` with strict TypeScript settings
+- [x] Init React + Vite + TypeScript in `cmd/remarquee-ui/frontend/`
+- [x] Add `package.json` with React, Redux Toolkit, Vite dependencies
+- [x] Configure `vite.config.ts` with proxy (`/api/*` → `http://localhost:8080`)
+- [x] Add `tsconfig.json` with strict TypeScript settings
 - [ ] Setup Redux Toolkit store with 3 slices (documents, render, validation)
 - [ ] Create basic App layout (header, sidebar, main panel)
 - [ ] Smoke-test: `npm run dev` and verify proxy works

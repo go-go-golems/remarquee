@@ -68,8 +68,102 @@ This step creates the ticket workspace, populates tasks from the design doc, and
 - **Dev mode**: `--dev` flag sets a global boolean; in the future this will control asset serving logic
 - **Test documents manifest**: JSON array of objects with `{id, name, path, description, schema, docType, expectedPages}`
 - **Fixtures**: 
-  - `testdata/cpage-pdf.rmdoc` (symlink or copy of `remarks/tests/in/copies of different pages.rmdoc`)
-  - `testdata/legacy-notebook.zip` (symlink or copy of `rmapi/archive/test.zip`)
+  - `testdata/cpage-pdf.rmdoc` (copy of `remarks/tests/in/copies of different pages.rmdoc`)
+  - `testdata/legacy-notebook.zip` (copy of `rmapi/archive/test.zip`)
+
+**Commit (code):** 6c01a1a — "RMQ-RMDOC-WEB-001: Phase 0-2 scaffold (Go backend + API + React frontend init)"
+
+## Step 2: Implement Phase 1 API endpoints + Phase 2 Vite proxy
+
+This step completes the core backend API (inspect, render background, render legacy, outputs serving) and configures the Vite dev server proxy. The backend now provides a complete REST API for document inspection and PDF generation, validated with curl smoke tests.
+
+### What I did
+
+- Implemented `cmd/remarquee-ui/api/inspect.go`: GET /api/document/:id/inspect endpoint
+  - Parses document ID from URL path
+  - Calls `pkg/rmdoc.OpenFile` to parse .rmdoc
+  - Returns JSON with UUID, schema, docType, pageCount, pages array, hasPayloadPDF
+- Implemented `cmd/remarquee-ui/api/render.go`: POST /api/render/background and POST /api/render/legacy endpoints
+  - Accepts JSON body `{document_id}`
+  - Calls `pkg/rmdoc/render.BuildBackgroundPDF` for background rendering
+  - Calls `rmapi/annotations.PdfGenerator` for legacy V3/V5 rendering
+  - Writes PDFs to `outputs/` directory
+  - Returns JSON with `{job_id, output_path}`
+- Implemented `cmd/remarquee-ui/api/outputs.go`: GET /api/outputs/:filename endpoint
+  - Serves PDF files from `outputs/` directory
+  - Sets `Content-Type: application/pdf` header
+- Implemented `cmd/remarquee-ui/api/utils.go`: helper functions for JSON responses and document lookup
+- Updated `main.go` to wire all API endpoints
+- Updated `frontend/vite.config.ts` to add proxy configuration (`/api/*` → `http://localhost:8080`)
+- Smoke-tested all endpoints:
+  - `/api/test-documents` → returns fixture manifest
+  - `/api/document/cpage-pdf/inspect` → returns parsed document metadata
+  - `/api/render/background` → generates background PDF
+  - `/api/render/legacy` → generates annotated PDF (V3/V5)
+  - `/api/outputs/<filename>` → serves PDF files
+
+### Why
+
+- **Complete API surface**: frontend will call these endpoints to perform all document operations
+- **Reuse existing packages**: `pkg/rmdoc` and `rmapi` handle the hard work; API layer is just glue code
+- **Vite proxy**: dev workflow requires frontend (Vite :5173) to proxy `/api/*` requests to backend (:8080)
+
+### What worked
+
+- All API endpoints work as expected and return proper JSON responses
+- `pkg/rmdoc.OpenFile` correctly parses both cPages and legacy fixtures
+- PDF generation works for both background (cPages) and legacy (V3/V5) documents
+- Vite proxy configuration is straightforward
+
+### What didn't work
+
+- (No blockers)
+
+### What I learned
+
+- The `http.ServeMux` pattern matching for `/api/document/` requires manual path parsing (no built-in URL params)
+- `pkg/rmdoc` and `pkg/rmdoc/render` abstractions make the API layer very thin and testable
+
+### What was tricky to build
+
+- **URL path parsing**: extracting document ID from `/api/document/{id}/inspect` requires string splitting
+- **Document lookup**: need to read `test-documents.json` manifest to map document ID to file path
+
+### What warrants a second pair of eyes
+
+- **Error handling**: confirm JSON error responses are consistent and informative
+- **Path traversal**: verify `findDocumentPath` doesn't allow path traversal attacks (e.g., `../../etc/passwd`)
+- **Output directory**: confirm `outputs/` is properly gitignored and cleaned up if needed
+
+### What should be done in the future
+
+- Add request ID/correlation ID for better logging and debugging
+- Consider adding a `/api/render/status/:job_id` endpoint for async long-running renders (not needed for MVP)
+- Add rate limiting or request validation if exposing to untrusted clients
+
+### Code review instructions
+
+- Start in `cmd/remarquee-ui/main.go`: verify all routes are wired correctly
+- Review `cmd/remarquee-ui/api/inspect.go`: confirm document parsing and JSON serialization
+- Review `cmd/remarquee-ui/api/render.go`: confirm both render endpoints work and write to outputs/
+- Review `cmd/remarquee-ui/api/outputs.go`: confirm PDF serving is safe
+- Run smoke tests:
+  ```bash
+  cd cmd/remarquee-ui
+  go run main.go --dev &
+  curl http://localhost:8080/api/test-documents
+  curl http://localhost:8080/api/document/cpage-pdf/inspect
+  curl -X POST http://localhost:8080/api/render/background -H 'Content-Type: application/json' -d '{"document_id":"cpage-pdf"}'
+  ls -lh outputs/
+  ```
+
+### Technical details
+
+- **API package structure**: `cmd/remarquee-ui/api/` with separate files for inspect, render, outputs, utils
+- **JSON response types**: `InspectResponse`, `RenderRequest`, `RenderResponse`
+- **Error handling**: all errors return JSON with `{error: "message"}` field
+- **Output file naming**: `{docId}-{action}-{timestamp}.pdf`
+- **Vite proxy**: configured in `vite.config.ts` with `target: 'http://localhost:8080'`
 
 ## Step 2: Implement Phase 1 — Core API endpoints
 
