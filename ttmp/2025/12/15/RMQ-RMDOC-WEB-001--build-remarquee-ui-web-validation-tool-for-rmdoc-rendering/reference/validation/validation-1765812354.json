@@ -1,0 +1,11 @@
+{
+  "documentId": "cpage-pdf",
+  "actions": [
+    "background: cpage-pdf-background-1765811131.pdf"
+  ],
+  "review": {
+    "status": "pass",
+    "notes": "Test validation"
+  },
+  "timestamp": 1765811200000
+}

@@ -28,6 +28,7 @@ func main() {
 	// Directories
 	testDocsPath := "testdata"
 	outputsDir := "outputs"
+	ticketDir := "../../ttmp/2025/12/15/RMQ-RMDOC-WEB-001--build-remarquee-ui-web-validation-tool-for-rmdoc-rendering"
 
 	// Ensure outputs directory exists
 	if err := os.MkdirAll(outputsDir, 0755); err != nil {
@@ -43,6 +44,7 @@ func main() {
 	mux.HandleFunc("/api/render/background", api.HandleRenderBackground(testDocsPath, outputsDir))
 	mux.HandleFunc("/api/render/legacy", api.HandleRenderLegacy(testDocsPath, outputsDir))
 	mux.HandleFunc("/api/outputs/", api.HandleOutputs(outputsDir))
+	mux.HandleFunc("/api/validation", api.HandleValidation(ticketDir))
 
 	// Static assets (future: serve embedded frontend in prod mode)
 	if devMode {

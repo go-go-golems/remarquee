@@ -47,13 +47,13 @@ Build `remarquee-ui`: an interactive web UI for validating `.rmdoc` parsing and 
 
 ## Phase 4 — Validation persistence
 
-- [ ] Implement `POST /api/validation` handler in backend
-- [ ] Backend: write validation session as JSON to `reference/validation/<timestamp>.json`
-- [ ] Backend: write validation session as Markdown to `reference/validation/<timestamp>.md`
-- [ ] Frontend: dispatch validation submission from `ValidationForm`
+- [x] Implement `POST /api/validation` handler in backend
+- [x] Backend: write validation session as JSON to `reference/validation/<timestamp>.json`
+- [x] Backend: write validation session as Markdown to `reference/validation/<timestamp>.md`
+- [x] Frontend: dispatch validation submission from `ValidationForm`
 - [ ] Frontend: implement `GET /api/validation/history` to fetch past sessions
 - [ ] UI: display validation history list (collapsible)
-- [ ] Manual test: submit validation → verify files created in ticket
+- [x] Manual test: submit validation → verify files created in ticket
 
 ## Phase 5 — Production build + embed
 
