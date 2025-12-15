@@ -199,8 +199,59 @@ The deep-dive doc now contains:
 
 4. **Highlight color mapping**: Extract the full `HARDCODED_COLORMAP` from rmscene
 
+## Step 5: Create intern guide and additional analysis tools
+
+Created a comprehensive playbook for an intern to continue this research now that we have local clones of `rmc` and `rmscene`.
+
+### What I did
+
+- Created `playbook/02-intern-guide-continuing-rmdoc-format-and-algorithm-research.md`
+- Added `scripts/trace_rm_parse.py` to demonstrate V6 parsing
+- Added `scripts/extract_color_map.py` to generate Go color constants
+- Generated `scripts/color_map.go` with ready-to-use Go code
+
+### What I learned
+
+**Repository structure:**
+- `rmc/src/rmc/exporters/` contains the rendering logic (svg.py, pdf.py)
+- `rmscene/src/rmscene/` contains the V6 parser (scene_items.py, tagged_block_reader.py)
+- Both use poetry for dependency management
+- The color mapping is in `rmscene.scene_items.HARDCODED_COLORMAP`
+
+**Key insight**: `rmc` doesn't render directly to PDF — it goes `.rm` → SVG → PDF via CairoSVG. This is important for Go: we could follow the same pattern (render to SVG first) or render directly with a PDF library.
+
+### What was tricky
+
+The `SCALE` constant calculation is split across multiple lines:
+```python
+SCREEN_DPI = 226
+SCALE = 72.0 / SCREEN_DPI  # = 0.3185840707964602
+```
+
+This is actually `72.0 / 226` (PDF points per inch / device DPI), not the `445/1404` I initially thought. Both give the same result, but the DPI-based formula is the "why" behind the magic number.
+
+### What warrants a second pair of eyes
+
+The intern guide assumes familiarity with Python, poetry, and basic binary formats. If the intern is junior, they may need additional guidance on:
+- How to read Python dataclasses
+- What CRDT sequences are (used in rmscene)
+- How to interpret binary block structures
+
+### Technical details
+
+**Generated Go code** (`scripts/color_map.go`):
+- 28 PenColor constants (BLACK through SHADER_CYAN)
+- RGBA struct and color maps
+- Helper function `PenColorToRGB()` for PDF annotations
+- Ready to copy into a Go package
+
+**Analysis scripts created:**
+1. `trace_rm_parse.py` - Demonstrates V6 parsing, shows block types and element counts
+2. `extract_color_map.py` - Generates Go color mapping code
+
 ## Related
 
 - Analysis doc: `analysis/01-deep-dive-rmdoc-format-container-layout-parsing-png-rendering.md`
 - Earlier remarks reference: `reference/02-remarks-package-analysis-parsing-conversion-output-formats.md`
-- Scripts: `scripts/extract_rmc_coords.py`, `scripts/analyze_remarks_merge.py`
+- Intern guide: `playbook/02-intern-guide-continuing-rmdoc-format-and-algorithm-research.md`
+- Scripts: `scripts/extract_rmc_coords.py`, `scripts/analyze_remarks_merge.py`, `scripts/trace_rm_parse.py`, `scripts/extract_color_map.py`, `scripts/color_map.go`
