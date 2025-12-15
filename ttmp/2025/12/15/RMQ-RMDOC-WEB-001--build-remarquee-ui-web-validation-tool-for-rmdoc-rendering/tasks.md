@@ -31,18 +31,18 @@ Build `remarquee-ui`: an interactive web UI for validating `.rmdoc` parsing and 
 - [x] Add `package.json` with React, Redux Toolkit, Vite dependencies
 - [x] Configure `vite.config.ts` with proxy (`/api/*` → `http://localhost:8080`)
 - [x] Add `tsconfig.json` with strict TypeScript settings
-- [ ] Setup Redux Toolkit store with 3 slices (documents, render, validation)
-- [ ] Create basic App layout (header, sidebar, main panel)
+- [x] Setup Redux Toolkit store with 3 slices (documents, render, validation)
+- [x] Create basic App layout (header, sidebar, main panel)
 - [ ] Smoke-test: `npm run dev` and verify proxy works
 
 ## Phase 3 — Core UI components
 
-- [ ] Implement `DocumentSelector` component (list + select from test documents)
-- [ ] Implement `InspectPanel` component (display schema/pages table)
-- [ ] Implement `RenderActions` component (buttons for inspect/background/legacy)
-- [ ] Implement `PDFViewer` component (iframe or download link for outputs)
-- [ ] Implement `ValidationForm` component (PASS/FAIL radio + notes textarea + submit)
-- [ ] Wire all components to Redux slices
+- [x] Implement `DocumentSelector` component (list + select from test documents)
+- [x] Implement `InspectPanel` component (display schema/pages table)
+- [x] Implement `RenderActions` component (buttons for inspect/background/legacy)
+- [x] Implement `PDFViewer` component (iframe or download link for outputs)
+- [x] Implement `ValidationForm` component (PASS/FAIL radio + notes textarea + submit)
+- [x] Wire all components to Redux slices
 - [ ] Manual UI smoke-test: select document → inspect → render → validate
 
 ## Phase 4 — Validation persistence
