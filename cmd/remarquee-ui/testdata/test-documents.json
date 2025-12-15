@@ -1,0 +1,21 @@
+[
+  {
+    "id": "cpage-pdf",
+    "name": "cPages PDF-backed (copies of different pages)",
+    "path": "testdata/cpage-pdf.rmdoc",
+    "description": "Modern cPages schema, PDF-backed document with 4 UI pages: 2 duplicates of page 0, 2 inserted blank pages. Tests UI ordering, page duplication, and inserted pages.",
+    "schema": "cPages",
+    "docType": "PDF",
+    "expectedPages": 4
+  },
+  {
+    "id": "legacy-notebook",
+    "name": "Legacy V3/V5 Notebook",
+    "path": "testdata/legacy-notebook.zip",
+    "description": "Legacy schema, notebook with 1 page. Tests legacy .content parsing, V3/V5 .rm annotation rendering via rmapi.",
+    "schema": "legacy",
+    "docType": "Notebook",
+    "expectedPages": 1
+  }
+]
+
