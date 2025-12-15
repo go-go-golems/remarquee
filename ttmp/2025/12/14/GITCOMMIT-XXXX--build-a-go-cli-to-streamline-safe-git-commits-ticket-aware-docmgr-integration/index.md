@@ -1,0 +1,66 @@
+---
+Title: Build a Go CLI to streamline safe git commits (ticket-aware + docmgr integration)
+Ticket: GITCOMMIT-XXXX
+Status: active
+Topics:
+    - devtools
+    - go
+    - git
+    - productivity
+DocType: index
+Intent: long-term
+Owners: []
+RelatedFiles:
+    - Path: remarquee/cmd/remarquee/cmds/rmdoc/inspect.go
+      Note: Example of why we need ticket-scoped staging and commit guardrails (unrelated files easily slip in)
+    - Path: remarquee/ttmp/2025/12/14/GITCOMMIT-XXXX--build-a-go-cli-to-streamline-safe-git-commits-ticket-aware-docmgr-integration/design-doc/01-project-description-git-commit-helper-cli-go.md
+      Note: Project description and proposed commands
+    - Path: remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/reference/01-diary.md
+      Note: Recent workflow example where staged files from other tickets can accidentally enter a commit
+ExternalSources: []
+Summary: ""
+LastUpdated: 2025-12-14T23:10:48.588217262-05:00
+---
+
+
+# Build a Go CLI to streamline safe git commits (ticket-aware + docmgr integration)
+
+## Overview
+
+This ticket tracks a future Go CLI tool (working name: `gitcommit`) that helps us do safe, ticket-scoped commits efficiently. It is explicitly motivated by mistakes that happen in this repo’s workflow: committing unrelated files, committing in the wrong repo root, and forgetting the docmgr diary/changelog updates that make work reproducible.
+
+The detailed project description lives in:
+- `design-doc/01-project-description-git-commit-helper-cli-go.md`
+
+## Key Links
+
+- **Related Files**: See frontmatter RelatedFiles field
+- **External Sources**: See frontmatter ExternalSources field
+
+## Status
+
+Current status: **active**
+
+## Topics
+
+- devtools
+- go
+- git
+- productivity
+
+## Tasks
+
+See [tasks.md](./tasks.md) for the current task list.
+
+## Changelog
+
+See [changelog.md](./changelog.md) for recent changes and decisions.
+
+## Structure
+
+- design/ - Architecture and design documents
+- reference/ - Prompt packs, API contracts, context summaries
+- playbooks/ - Command sequences and test procedures
+- scripts/ - Temporary code and tooling
+- various/ - Working notes and research
+- archive/ - Deprecated or reference-only artifacts
