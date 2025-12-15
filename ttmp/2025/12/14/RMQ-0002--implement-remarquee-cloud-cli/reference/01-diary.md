@@ -8,14 +8,14 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: cmd/remarquee/cmds/cloud/ls.go
-      Note: Added in commit df3d3b2... (cloud ls)
-    - Path: cmd/remarquee/cmds/cloud/rmapi.go
-      Note: Added in commit df3d3b2... (shared rmapi bootstrap)
+    - Path: cmd/remarquee/cmds/cloud/get.go
+      Note: Added in commit 760dd34... (cloud get)
+    - Path: cmd/remarquee/cmds/cloud/mkdir.go
+      Note: Added in commit 760dd34... (cloud mkdir)
+    - Path: cmd/remarquee/cmds/cloud/put.go
+      Note: Added in commit 760dd34... (cloud put)
     - Path: cmd/remarquee/cmds/cloud/root.go
-      Note: Updated in commit df3d3b2... (register ls/stat)
-    - Path: cmd/remarquee/cmds/cloud/stat.go
-      Note: Added in commit df3d3b2... (cloud stat)
+      Note: Updated in commit 760dd34... (register get/put/mkdir)
 ExternalSources: []
 Summary: 'Implementation diary for RMQ-0002 (remarquee cloud CLI): step-by-step narrative with commit hashes.'
 LastUpdated: 2025-12-14T19:30:28.750480955-05:00
@@ -269,6 +269,71 @@ We validated both commands via `go run`, including structured JSON output for sc
 - `stat /` emits:
   - `modified_client: ""`
   - `modified_time: null`
+
+### What I'd do differently next time
+- N/A
+
+## Step 5: Add `remarquee cloud get`, `put`, and `mkdir`
+
+This step implemented the next “filesystem-like” verbs that make the cloud CLI genuinely useful: downloading documents (`get`), uploading documents (`put`), and creating remote folders (`mkdir`). We mirrored rmapi’s existing semantics closely so users can transfer muscle memory from rmapi, while still keeping the codebase consistent with our one-file-per-command and Glazed parameter parsing patterns.
+
+We tested `get` end-to-end against a real document (auth + fetch + local `.rmdoc` creation). For `mkdir`, we validated behavior against an existing path (no remote changes). For `put`, we validated compilation and `--help`; we intentionally did not upload new content yet to avoid leaving stray documents without a later cleanup verb (`rm`) in place.
+
+**Commit (code):** 760dd34c3c012551a74f6e08e9fd73a12188606a — "✨ remarquee: add cloud get/put/mkdir commands"
+
+### What I did
+- Added `remarquee cloud get`:
+  - `cmd/remarquee/cmds/cloud/get.go`
+  - Downloads a remote document to `<name>.rmdoc` (matches rmapi’s `get` behavior)
+- Added `remarquee cloud mkdir`:
+  - `cmd/remarquee/cmds/cloud/mkdir.go`
+  - Creates a directory (non-recursive; parent must exist)
+- Added `remarquee cloud put`:
+  - `cmd/remarquee/cmds/cloud/put.go`
+  - Supports `--force`, `--content-only`, and `--coverpage` (mirroring rmapi semantics)
+- Wired all three commands into:
+  - `cmd/remarquee/cmds/cloud/root.go`
+
+### Why
+- This unlocks basic “cloud filesystem” workflows:
+  - download for backup/processing
+  - upload to seed documents
+  - create folders for organization
+
+### What worked
+- `get` end-to-end:
+  - `go run ./cmd/remarquee cloud get "/Building BLE Central Applications with ESP-IDF NimBLE on M5Stack Cardputer" --non-interactive`
+  - produced a local `.rmdoc` file as expected
+- `mkdir` against existing dir returns a safe error (`entry already exists`)
+
+### What didn't work
+- `get /Books` intentionally errors (directories are not fetchable as documents); this matches expectations.
+
+### What I learned
+- Long, space-containing document names work fine as long as the remote path is quoted in the shell.
+
+### What was tricky to build
+- Getting the `put` semantics right (especially `--force` vs `--content-only` mutual exclusion) while keeping the command interface simple.
+
+### What warrants a second pair of eyes
+- Review the `put` behavior around overwrite and `--content-only` to ensure we don’t accidentally delete user data unexpectedly.
+
+### What should be done in the future
+- Add `rm` before we start running destructive/creation tests that leave remote artifacts.
+
+### Code review instructions
+- Start at:
+  - `cmd/remarquee/cmds/cloud/get.go`
+  - `cmd/remarquee/cmds/cloud/mkdir.go`
+  - `cmd/remarquee/cmds/cloud/put.go`
+  - `cmd/remarquee/cmds/cloud/root.go`
+- Validate with:
+  - `go run ./cmd/remarquee cloud get --help`
+  - `go run ./cmd/remarquee cloud mkdir --help`
+  - `go run ./cmd/remarquee cloud put --help`
+
+### Technical details
+- `get` output file name: `<remote-name>.rmdoc`
 
 ### What I'd do differently next time
 - N/A

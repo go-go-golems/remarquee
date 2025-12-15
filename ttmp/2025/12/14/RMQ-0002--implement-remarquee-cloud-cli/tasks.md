@@ -10,7 +10,7 @@
 - [x] Implement cloud client bootstrap (rmapi AuthHttpCtx/ParseToken/CreateApiCtx) with non-interactive option
 - [x] Implement cloud command group (remarquee cloud) and one file per command in cmd/remarquee/cmds/cloud/*.go
 - [x] Implement cloud commands: refresh, ls, stat (with --with-glaze-output structured output)
-- [ ] Implement cloud commands: get, put, mkdir
+- [x] Implement cloud commands: get, put, mkdir
 - [ ] Implement cloud commands: mv, rm (safe defaults, explicit confirmation flag for destructive ops)
 - [ ] Implement cloud command: find
 - [ ] Implement cloud commands: account, version

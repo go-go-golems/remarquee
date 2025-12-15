@@ -73,3 +73,15 @@ Step 4: implemented rmapi-backed  and  with Glazed structured output; refactored
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/stat.go — Cloud stat (commit df3d3b2...)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 4
 
+
+## 2025-12-14
+
+Step 5: added rmapi-backed cloud get/put/mkdir verbs (get tested end-to-end; put compiled; mkdir safe error on existing path). (commit 760dd34c3c012551a74f6e08e9fd73a12188606a)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/get.go — Cloud get (commit 760dd34...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/mkdir.go — Cloud mkdir (commit 760dd34...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/put.go — Cloud put (commit 760dd34...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 5
+
