@@ -8,6 +8,7 @@ import (
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
 	"github.com/go-go-golems/remarquee/cmd/remarquee/cmds"
 	"github.com/go-go-golems/remarquee/cmd/remarquee/cmds/cloud"
+	rmdoc_cmd "github.com/go-go-golems/remarquee/cmd/remarquee/cmds/rmdoc"
 	"github.com/go-go-golems/remarquee/cmd/remarquee/cmds/upload"
 	"github.com/go-go-golems/remarquee/pkg/doc"
 	"github.com/spf13/cobra"
@@ -36,6 +37,7 @@ func main() {
 
 	rootCmd.AddCommand(cmds.NewStatusCommand())
 	rootCmd.AddCommand(cloud.NewCloudCommand())
+	rootCmd.AddCommand(rmdoc_cmd.NewRmdocCommand())
 	rootCmd.AddCommand(upload.NewUploadCommand())
 
 	if err := rootCmd.Execute(); err != nil {
