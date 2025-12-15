@@ -10,6 +10,16 @@ DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: remarquee/pkg/rmdoc/content.go
+      Note: Parse .content (legacy + cPages) and build deterministic PageRef plan (commit 49acbde)
+    - Path: remarquee/pkg/rmdoc/content_test.go
+      Note: Unit tests for schema detection and page plan generation (commit 49acbde)
+    - Path: remarquee/pkg/rmdoc/open.go
+      Note: Open .rmdoc zip and extract content/metadata/pagedata/pdf (commit 49acbde)
+    - Path: remarquee/pkg/rmdoc/pagedata.go
+      Note: Apply .pagedata templates to PageRefs (commit 49acbde)
+    - Path: remarquee/pkg/rmdoc/types.go
+      Note: Document/PageRef types for the rmdoc package (commit 49acbde)
     - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/analysis/01-deep-dive-rmdoc-format-container-layout-parsing-png-rendering.md
       Note: Primary deep dive on .rmdoc ZIP layout
     - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/playbook/02-intern-guide-continuing-rmdoc-format-and-algorithm-research.md
@@ -24,6 +34,7 @@ ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-14T20:59:12.658149443-05:00
 ---
+
 
 
 # Port .rmdoc parsing + rendering to Go (V3/V5 + V6)

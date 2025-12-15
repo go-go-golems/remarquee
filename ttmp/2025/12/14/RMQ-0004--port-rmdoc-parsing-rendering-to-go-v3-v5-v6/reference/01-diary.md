@@ -78,3 +78,57 @@ This step creates a clean implementation ticket (RMQ-0004) and turns the prior r
   - deep dive: `../RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/analysis/01-deep-dive-rmdoc-format-container-layout-parsing-png-rendering.md`
   - diary: `../RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md`
   - gap analysis: `../RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/go_reimplementation_gaps.md`
+
+## Step 2: Implement `.rmdoc` open + `.content` schema detection + deterministic page plan
+
+This step starts the actual Go port: a small `pkg/rmdoc` package that can open `.rmdoc` archives, detect whether the `.content` file is legacy or `cPages`, and produce a deterministic `[]PageRef` plan in UI order. The intent is to make every later stage (rendering, highlights, text extraction) depend on a single “page plan” contract instead of ad-hoc parsing.
+
+**Commit (code):** 49acbde — "RMQ-0004: add rmdoc parser (schema detection + page plan)"
+
+### What I did
+- Added `remarquee/pkg/rmdoc` with:
+  - `.rmdoc` zip opening (`OpenFile`, `OpenReaderAt`)
+  - `.content` parsing (`ParseContent`) and schema detection (`cPages` vs legacy)
+  - deterministic `[]PageRef` construction for both schemas
+  - `.pagedata` parsing hook (`ApplyPagedataTemplates`) to fill missing templates
+- Added unit tests for:
+  - V6 `cPages` parsing (including deleted pages + inserted page detection)
+  - legacy parsing (pages + redirection map)
+  - pagedata template application
+
+### Why
+- Everything else (rendering, merge math, highlight placement) depends on having the right page order and PDF redirection map.
+- The format varies across real device documents, so we need a single entrypoint that handles both schemas deterministically.
+
+### What worked
+- `go test ./...` passes in the `remarquee` module.
+- The package yields a stable page plan for both schema families.
+
+### What didn't work
+- N/A (no runtime integration yet; only package + tests).
+
+### What I learned
+- The cPages schema is easy to detect (`"cPages"` key) and produces a clean UI-ordered list once you filter `deleted.value == 1`.
+- Legacy `.content` is still a reality for PDF documents, so this dual-path is required from day 1.
+
+### What was tricky to build
+- Picking “just enough” typed schema: we want correctness and a stable `PageRef` output without prematurely modeling every `.content` field.
+- Handling legacy archives that only provide `pageCount` (no `pages[]`) required generating synthetic page IDs.
+
+### What warrants a second pair of eyes
+- The semantics of “inserted page” for legacy redirection maps: I treated `-1` (InsertedPage) as “no source PDF page”, but we should verify against real legacy `.rmdoc` samples.
+- Whether `pagedata` line ordering always matches the filtered cPages ordering (deleted pages could skew indices).
+
+### What should be done in the future
+- Integrate `pkg/rmdoc` into a CLI subcommand (even a temporary `debug` command) to print schema + page plan for a downloaded `.rmdoc`.
+- Add fixture-based tests using real `.rmdoc` downloads (one legacy PDF doc + one V6 notebook doc).
+
+### Code review instructions
+- Start with `remarquee/pkg/rmdoc/open.go` and `remarquee/pkg/rmdoc/content.go`.
+- Run:
+  - `cd remarquee && go test ./... -count=1`
+
+### Technical details
+- Schema detection rule:
+  - V6: `.content` contains `cPages`
+  - legacy: otherwise; uses `pages`, `pageCount`, `redirectionPageMap`

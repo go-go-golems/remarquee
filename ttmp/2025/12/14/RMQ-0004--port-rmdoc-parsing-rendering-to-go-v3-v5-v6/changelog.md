@@ -25,3 +25,14 @@ Diary Step 1: recorded seed commit hash (0850623) in RMQ-0004 diary (commit 3293
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/reference/01-diary.md — Updated Step 1 commit hash
 
+
+## 2025-12-14
+
+Step 2: implemented pkg/rmdoc (open zip, detect legacy vs cPages, build deterministic page plan + tests). Commit 49acbde.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/content.go — Schema detection + page plan
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/open.go — Archive opening
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/reference/01-diary.md — Added Step 2 with commit hash
+
