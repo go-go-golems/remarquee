@@ -64,6 +64,7 @@ So the port must include format detection + dual pipelines (at least initially).
 ## Key Links
 
 - Design doc: `design-doc/01-design-go-rmdoc-data-model-and-apis.md`
+- Design doc: `design-doc/02-design-interactive-rmdoc-render-validation-ui.md`
 - Diary: `reference/01-diary.md`
 - Prior research (RMQ-0001):
   - `../RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/analysis/01-deep-dive-rmdoc-format-container-layout-parsing-png-rendering.md`

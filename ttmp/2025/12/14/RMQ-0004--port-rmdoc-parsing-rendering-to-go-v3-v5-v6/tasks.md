@@ -9,6 +9,7 @@
   - [ ] Fidelity: pixel-perfect vs “good enough” (and what “good enough” means: strokes only? highlights? typed text?)
   - [ ] Supported inputs: `.rmdoc` only, or also bare folders/unpacked exports?
   - [ ] Performance constraints: acceptable runtime per page / per document
+  - [ ] Validation workflow: define how we manually verify output (interactive UI vs scripts), where feedback is stored
 
 ### 1) `.rmdoc` container + page plan (FOUNDATION)
 
@@ -41,9 +42,9 @@
 
 ### 3) `cPages`-aware PDF background construction (V6 + PDFs)
 
-- [ ] Implement background PDF assembly based on `PageRef.SourcePDFPage`:
-  - [ ] Insert blank pages for inserted pages (`SourcePDFPage == -1`)
-  - [ ] Duplicate pages for “duplicate page” cases (when needed)
+- [x] Implement background PDF assembly based on `PageRef.SourcePDFPage`:
+  - [x] Insert blank pages for inserted pages (`SourcePDFPage == -1`)
+  - [x] Duplicate pages for “duplicate page” cases (when needed)
   - [ ] Define template-to-page-size/template rendering strategy (initially: blank page size constants)
 
 ### 4) V6 `.rm` parsing (PORT rmscene concepts)
@@ -87,4 +88,12 @@
   - [ ] Takes a local `.rmdoc` (or downloads via `remarquee cloud get`)
   - [ ] Emits an annotated PDF (and later PNGs)
   - [ ] Prints clear diagnostics for unsupported formats/features
+
+### 9) Interactive validation UI (human feedback loop)
+
+- [ ] Implement `remarquee-ui` (interactive validation tool) per design doc:
+  - [ ] Design doc: `design-doc/02-design-interactive-rmdoc-render-validation-ui.md`
+  - [ ] Phase 0: skeleton + choose input `.rmdoc` path
+  - [ ] Phase 1: run Inspect / Build Background / Render Legacy actions
+  - [ ] Phase 2: capture PASS/FAIL + notes and persist “validation sessions” in ticket
 

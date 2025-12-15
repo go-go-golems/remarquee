@@ -267,3 +267,53 @@ This step unblocks end-to-end output for legacy archives by delegating PDF gener
   - `remarquee/cmd/remarquee/cmds/rmdoc/render_legacy.go`
 - Run:
   - `cd remarquee && go run ./cmd/remarquee rmdoc render-legacy ../rmapi/archive/test.zip --force`
+
+## Step 6: Implement UI-ordered background PDF assembly (cPages/PDF-backed docs) + convert rmdoc CLIs to Glazed
+
+This step builds the missing foundation for the V6 pipeline: constructing a background PDF in **UI page order** using `PageRef.SourcePDFPage`. It also converts the `rmdoc` CLI commands to the repo’s standard **Glazed command** pattern (as used by the `cloud` command group), so we get consistent parameter parsing and structured output.
+
+### What I did
+- Added `pkg/rmdoc/render` with a `BuildBackgroundPDF` helper that:
+  - opens the payload PDF (if present) and copies the referenced pages in UI order
+  - inserts blank pages for `InsertedPage` (`SourcePDFPage == -1`)
+  - duplicates payload pages when the UI references the same PDF page multiple times
+- Added a fixture-based test that asserts “one background page per UI page”.
+- Added `remarquee rmdoc build-background <file.rmdoc>` as a debug utility to emit the assembled background PDF.
+- Converted `remarquee rmdoc inspect` and `remarquee rmdoc render-legacy` to Glazed commands (dual-mode), enabling:
+  - default human output
+  - structured output via `--with-glaze-output --output json|yaml|csv`
+
+### Why
+- The `remarks` algorithm relies on constructing a “background PDF” that already matches UI order (including inserted pages and duplicates). Without this, later merge math becomes fragile.
+- Using Glazed for `rmdoc` commands keeps remarquee consistent across command groups and makes scripting easier.
+
+### What worked
+- `go test ./... -count=1` passes.
+- Smoke-tested:
+  - `remarquee rmdoc inspect ../remarks/tests/in/copies of different pages.rmdoc`
+  - `remarquee rmdoc inspect ... --with-glaze-output --output json`
+  - `remarquee rmdoc build-background ... --out /tmp/rmq4-bg.pdf --force`
+
+### What didn't work
+- Initially, the background PDF page count was wrong for the cPages fixture because both UI pages 0 and 1 point to the same payload PDF page (`redir=0`). Adding the same `*PdfPage` instance twice can collapse into fewer pages. Fix: duplicate the page (`PdfPage.Duplicate()`) when adding it to the output.
+
+### What I learned
+- `creator.PageSize` is a `[2]float64` (not a `{Width,Height}` struct), so defaults need to treat it like an array.
+- In `cPages`-based PDFs, it’s common to see “duplicate pages” at the UI layer (multiple UI pages with identical `redir`), so duplication needs to be a first-class part of background assembly.
+
+### What was tricky to build
+- Getting duplication correct without prematurely implementing a full PDF merge engine. The minimal builder still needs to handle “copy, blank insert, duplicate” correctly.
+
+### What warrants a second pair of eyes
+- The default blank page size we currently use for inserted pages/templates (445x594 pt) is a stopgap; we should confirm the right size rules for real notebooks/templates once we start V6 rendering.
+
+### What should be done in the future
+- Implement template-backed background rendering for notebooks (instead of plain blank pages).
+- Move on to V6 `.rm` parsing and stroke rendering now that background assembly exists.
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/render/background.go`
+  - `remarquee/cmd/remarquee/cmds/rmdoc/build_background.go`
+- Run:
+  - `cd remarquee && go test ./... -count=1`
