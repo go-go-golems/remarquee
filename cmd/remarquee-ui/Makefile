@@ -2,7 +2,7 @@
 
 # Development: run backend + frontend in separate terminals
 dev-backend:
-	go run main.go --dev
+	go run . --dev
 
 dev-frontend:
 	cd frontend && npm install && npm run dev
