@@ -10,5 +10,6 @@ func NewUploadCommand() *cobra.Command {
 
 	cmd.AddCommand(NewUploadMarkdownCommand())
 	cmd.AddCommand(NewUploadBundleCommand())
+	cmd.AddCommand(NewUploadSourceCommand())
 	return cmd
 }
