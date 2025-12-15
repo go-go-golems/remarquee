@@ -8,18 +8,14 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: cmd/remarquee/cmds/cloud/account.go
-      Note: Added in commit b835c9a... (cloud account)
-    - Path: cmd/remarquee/cmds/cloud/find.go
-      Note: Added in commit b835c9a... (cloud find)
-    - Path: cmd/remarquee/cmds/cloud/mv.go
-      Note: Added in commit b835c9a... (cloud mv)
-    - Path: cmd/remarquee/cmds/cloud/rm.go
-      Note: Added in commit b835c9a... (cloud rm)
-    - Path: cmd/remarquee/cmds/cloud/root.go
-      Note: Updated in commit b835c9a... (register remaining verbs)
-    - Path: cmd/remarquee/cmds/cloud/version.go
-      Note: Added in commit b835c9a... (cloud version)
+    - Path: pkg/doc/cloud/01-getting-started-remarquee-cloud.md
+      Note: Added in commit d5f95e4... (cloud getting started help page)
+    - Path: pkg/doc/cloud/02-remarquee-cloud-reference.md
+      Note: Added in commit d5f95e4... (cloud reference help page)
+    - Path: pkg/doc/cloud/03-remarquee-cloud-usage-examples.md
+      Note: Added in commit d5f95e4... (cloud usage examples help page)
+    - Path: pkg/doc/doc.go
+      Note: Updated in commit d5f95e4... (embed cloud docs)
 ExternalSources: []
 Summary: 'Implementation diary for RMQ-0002 (remarquee cloud CLI): step-by-step narrative with commit hashes.'
 LastUpdated: 2025-12-14T19:30:28.750480955-05:00
@@ -386,3 +382,24 @@ The key design constraint here was safety: `rm` refuses to delete anything unles
 
 ### What should be done next
 - Add a small “manual validation script” section in the ticket docs for safe testing (create temp folder, upload a small PDF, mv it, then rm it).
+
+## Step 7: Add user-facing remarquee cloud documentation pages (embedded help)
+
+This step added a small documentation suite under `remarquee/pkg/doc` that targets end users rather than contributors. The goal is to make the cloud CLI approachable and self-service: a new user should be able to authenticate, understand how paths and tokens work, and then immediately apply the tool to real workflows without reading the codebase.
+
+We created three pages: a “getting started” guide, a verb-by-verb reference, and a usage examples page with copy/pasteable workflows (including a recommended safe sandbox flow for validating destructive operations). These pages are embedded into the `remarquee` binary and accessible via `remarquee help <slug>`, which keeps them available even when you don’t have the repo checked out.
+
+**Commit (docs):** d5f95e440953f1ec43efc8117512387c98fd986e — "📝 remarquee: add cloud docs (getting started, reference, examples)"
+
+### What I did
+- Added new docs under `pkg/doc/cloud/`:
+  - `pkg/doc/cloud/01-getting-started-remarquee-cloud.md` (`remarquee-cloud-getting-started`)
+  - `pkg/doc/cloud/02-remarquee-cloud-reference.md` (`remarquee-cloud-reference`)
+  - `pkg/doc/cloud/03-remarquee-cloud-usage-examples.md` (`remarquee-cloud-usage-examples`)
+- Updated docs embedding patterns:
+  - `pkg/doc/doc.go` now embeds both `tutorials/*.md` and `cloud/*.md`
+
+### How to read them
+- `remarquee help remarquee-cloud-getting-started`
+- `remarquee help remarquee-cloud-reference`
+- `remarquee help remarquee-cloud-usage-examples`

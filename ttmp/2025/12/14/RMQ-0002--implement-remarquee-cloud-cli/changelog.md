@@ -99,3 +99,16 @@ Step 6: added cloud mv/rm/find/account/version; rm is safe-by-default and requir
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/version.go — Cloud version (commit b835c9a...)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 6
 
+
+## 2025-12-14
+
+Step 7: added embedded remarquee cloud docs (getting started, reference, usage examples) under pkg/doc/cloud and extended doc embedding. (commit d5f95e440953f1ec43efc8117512387c98fd986e)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/cloud/01-getting-started-remarquee-cloud.md — Help page (commit d5f95e4...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/cloud/02-remarquee-cloud-reference.md — Help page (commit d5f95e4...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/cloud/03-remarquee-cloud-usage-examples.md — Help page (commit d5f95e4...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/doc.go — Embed update (commit d5f95e4...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 7
+
