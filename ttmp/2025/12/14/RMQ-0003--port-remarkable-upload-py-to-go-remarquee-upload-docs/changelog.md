@@ -33,3 +33,13 @@ Step 1: Add 'remarquee upload md' (general-purpose markdown uploader) and factor
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/mdpdf/pandoc.go — Pandoc/xelatex integration (commit d70169e...)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmcloud/auth.go — Shared rmapi CreateApiCtx helper (commit d70169e...)
 
+
+## 2025-12-14
+
+Step 2: Embed upload help docs + add unit tests (commit 6c57171...)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/upload/01-remarquee-upload-getting-started.md — New embedded help page
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/mdpdf/preprocess_test.go — Tests for preprocessing behavior
+

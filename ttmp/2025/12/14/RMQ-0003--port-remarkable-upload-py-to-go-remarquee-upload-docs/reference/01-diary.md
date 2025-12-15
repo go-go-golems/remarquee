@@ -12,20 +12,18 @@ RelatedFiles:
       Note: Existing upload semantics to mirror
     - Path: cmd/remarquee/cmds/cloud/rmapi.go
       Note: Current rmapi bootstrap helper to refactor
-    - Path: cmd/remarquee/cmds/upload/md.go
-      Note: Implementation of 'remarquee upload md' (commit d70169e...)
-    - Path: cmd/remarquee/cmds/upload/root.go
-      Note: Upload command group wiring (commit d70169e...)
+    - Path: cmd/remarquee/cmds/upload/md_test.go
+      Note: Unit tests for recursion/date normalization (commit 6c57171...)
     - Path: cmd/remarquee/main.go
       Note: Wiring point for new upload command group
-    - Path: pkg/mdpdf/pandoc.go
-      Note: Pandoc/xelatex runner (commit d70169e...)
-    - Path: pkg/mdpdf/preprocess.go
-      Note: Frontmatter stripping + list normalization (commit d70169e...)
-    - Path: pkg/rmcloud/auth.go
-      Note: Shared rmapi CreateApiCtx helper (commit d70169e...)
-    - Path: pkg/rmcloud/dirs.go
-      Note: Recursive remote mkdir helper MkdirAll (commit d70169e...)
+    - Path: pkg/doc/doc.go
+      Note: Embed patterns updated to include upload docs (commit 6c57171...)
+    - Path: pkg/doc/upload/01-remarquee-upload-getting-started.md
+      Note: Embedded getting started guide (commit 6c57171...)
+    - Path: pkg/doc/upload/02-remarquee-upload-reference.md
+      Note: Embedded command reference (commit 6c57171...)
+    - Path: pkg/mdpdf/preprocess_test.go
+      Note: Unit tests for preprocessing contracts (commit 6c57171...)
     - Path: ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/design-doc/01-port-remarkable-upload-py-to-go-remarquee-upload-docs.md
       Note: Spec/design for the implementation steps
 ExternalSources: []
@@ -121,3 +119,57 @@ To keep auth handling consistent across commands, we also factored rmapi bootstr
 
 ### What I'd do differently next time
 - Add a tiny smoke test that only builds the CLI packages (fast) so we catch simple compile issues before running the full `go test ./...`.
+
+## Step 2: Add embedded help docs for upload + unit tests
+
+This step made the new upload functionality easier to discover and safer to evolve. We embedded two help pages (`getting started` and `reference`) directly into the `remarquee` binary, and we added small unit tests to lock down the tricky-but-important behavior (frontmatter stripping, list spacing normalization, directory recursion, and date parsing).
+
+The immediate payoff is that `remarquee help remarquee-upload-getting-started` works out of the box, and we have quick tests that protect our preprocessing semantics from accidental drift.
+
+**Commit (code):** 6c5717188f23328f287af5cf2b2c460985345ba6 — "remarquee: add upload help docs and tests"
+
+### What I did
+- Embedded upload docs:
+  - Added `pkg/doc/upload/01-remarquee-upload-getting-started.md`
+  - Added `pkg/doc/upload/02-remarquee-upload-reference.md`
+  - Updated `pkg/doc/doc.go` embed patterns to include `upload/*.md`
+- Added tests:
+  - `pkg/mdpdf/preprocess_test.go` (frontmatter stripping + list normalization)
+  - `cmd/remarquee/cmds/upload/md_test.go` (directory recursion + date parsing + remote dir normalization)
+- Verified:
+  - `go test ./... -count=1`
+  - `go run ./cmd/remarquee help remarquee-upload-getting-started`
+
+### Why
+- Make the new `upload` command self-service: users should not need to read the codebase to use it.
+- Protect our preprocessing behavior (which is intentionally “simple and strict”) with tests.
+
+### What worked
+- Embedded help pages render correctly via `remarquee help ...`.
+- Unit tests run fast and cover the core behavior.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Embedding docs is low-effort but high leverage for CLI tools; it keeps “how to use it” close to the shipping artifact.
+
+### What was tricky to build
+- Choosing what to test without overfitting: the tests focus on contracts (inputs/outputs), not internal implementation details.
+
+### What warrants a second pair of eyes
+- Confirm the upload docs content matches the intended UX (especially the safety warning around `--force`).
+
+### What should be done in the future
+- If we add more advanced upload behaviors (exclude globs, preserve directory structure, etc.), update both:
+  - embedded help docs
+  - tests covering the new contracts
+
+### Code review instructions
+- Start at:
+  - `pkg/doc/doc.go` and `pkg/doc/upload/*.md`
+  - `pkg/mdpdf/preprocess_test.go`
+  - `cmd/remarquee/cmds/upload/md_test.go`
+- Validate with:
+  - `go test ./... -count=1`
+  - `go run ./cmd/remarquee help remarquee-upload-reference`
