@@ -21,9 +21,9 @@
   - [x] Add `pkg/rmdoc.ApplyPagedataTemplates` to fill missing templates from `.pagedata`
   - [x] Unit tests for legacy + cPages parsing/page plan
 
-- [ ] Add a tiny debug CLI command to inspect a local `.rmdoc`:
-  - [ ] Print detected schema + doc type
-  - [ ] Print page plan table (Index, PageID, SourcePDFPage, Template)
+- [x] Add a tiny debug CLI command to inspect a local `.rmdoc`:
+  - [x] Print detected schema + doc type
+  - [x] Print page plan table (Index, PageID, SourcePDFPage, Template)
 
 ### 2) Legacy (V3/V5) rendering pipeline (REUSE rmapi)
 

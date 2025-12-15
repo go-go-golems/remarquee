@@ -14,6 +14,12 @@ RelatedFiles:
       Note: PDF merge algorithm reference
     - Path: remarks/remarks/utils.py
       Note: cPages parsing + redirection map reference
+    - Path: remarquee/cmd/remarquee/cmds/rmdoc/inspect.go
+      Note: New CLI command to inspect schema/page plan (commit c804b36)
+    - Path: remarquee/cmd/remarquee/cmds/rmdoc/root.go
+      Note: New CLI command group for .rmdoc (commit c804b36)
+    - Path: remarquee/cmd/remarquee/main.go
+      Note: Wires remarquee rmdoc into the root CLI (commit c804b36)
     - Path: remarquee/pkg/rmdoc/content.go
       Note: Implemented .content parsing (legacy + cPages) and PageRef plan (commit 49acbde)
     - Path: remarquee/pkg/rmdoc/content_test.go

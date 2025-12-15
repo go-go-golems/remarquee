@@ -132,3 +132,51 @@ This step starts the actual Go port: a small `pkg/rmdoc` package that can open `
 - Schema detection rule:
   - V6: `.content` contains `cPages`
   - legacy: otherwise; uses `pages`, `pageCount`, `redirectionPageMap`
+
+## Step 3: Add `remarquee rmdoc inspect` CLI for schema + page plan debugging
+
+This step turns the foundational `pkg/rmdoc` work into an actual tool you can run during development. The new CLI command prints schema, doc type, and the computed page plan, which will be invaluable when validating legacy vs cPages behavior and later when debugging V6 rendering issues.
+
+**Commit (code):** c804b36 — "RMQ-0004: add rmdoc inspect CLI (schema + page plan)"
+
+### What I did
+- Added a new `remarquee rmdoc` command group with:
+  - `remarquee rmdoc inspect <file.rmdoc>`: prints schema + doc type + page plan table
+  - `--json`: dumps the parsed `pkg/rmdoc.Document` as JSON for scripts
+
+### Why
+- We need a fast, deterministic way to inspect what we’re going to render:
+  - Is this legacy or cPages?
+  - What is the UI page order?
+  - Which UI pages map to which source PDF pages (`redir`)?
+  - Which pages are inserted (`-1`)?
+
+### What worked
+- Command wiring is minimal and `go test ./...` passes.
+- Verified against the repo fixture:
+  - `remarquee rmdoc inspect ../remarks/tests/in/copies of different pages.rmdoc`
+
+### What didn't work
+- A cloud-based smoke test failed due to expired rmapi token:
+  - `Error: failed to parse rmapi user token: token Expired`
+
+### What I learned
+- Having an inspect command early prevents a lot of “why is page order wrong?” guesswork later.
+
+### What was tricky to build
+- Keeping the output stable and easy to diff (tabular output) while still offering a script-friendly JSON mode.
+
+### What warrants a second pair of eyes
+- Whether the JSON output should be a “stable contract” (if so, we should define a dedicated output struct instead of dumping the internal `pkg/rmdoc.Document`).
+
+### What should be done in the future
+- Add an inspect mode that also prints the raw `.content` schema summary (keys present, page counts).
+- Add a follow-up command that validates invariants (e.g., page indices are contiguous, templates line count matches pages).
+
+### Code review instructions
+- Start at:
+  - `remarquee/cmd/remarquee/cmds/rmdoc/inspect.go`
+  - `remarquee/cmd/remarquee/cmds/rmdoc/root.go`
+  - `remarquee/cmd/remarquee/main.go`
+- Run:
+  - `cd remarquee && go run ./cmd/remarquee rmdoc inspect <some.rmdoc>`
