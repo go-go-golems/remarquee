@@ -7,11 +7,26 @@ Topics:
 DocType: design-doc
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: remarquee/cmd/remarquee/cmds/cloud/mkdir.go
+      Note: Existing mkdir command (upload needs recursive mkdir helper)
+    - Path: remarquee/cmd/remarquee/cmds/cloud/put.go
+      Note: Existing rmapi-backed upload primitive (reuse semantics)
+    - Path: remarquee/cmd/remarquee/cmds/cloud/rmapi.go
+      Note: Auth/apiCtx bootstrap helper to factor out into shared package
+    - Path: remarquee/pkg/doc/doc.go
+      Note: Embedded help docs mechanism to extend with upload docs
+    - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/03-remarkable-upload-py-script-analysis-markdown-to-pdf-conversion-and-upload.md
+      Note: Deep analysis of script workflow
+    - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/remarkable_upload.py
+      Note: Python reference implementation (behavioral parity target)
+    - Path: rmapi/util/util.go
+      Note: rmapi naming semantics helper (DocPathToName)
 ExternalSources: []
-Summary: "Design proposal to port remarkable_upload.py into remarquee as a Go CLI command: Markdown preprocessing, pandoc/xelatex PDF generation, and rmapi-backed upload into /ai/YYYY/MM/DD/ with ticket-aware mirroring."
+Summary: 'Design proposal to port remarkable_upload.py into remarquee as a general-purpose Go CLI command: take markdown files and/or directories (recursively scanned for *.md), preprocess markdown, generate PDFs via pandoc/xelatex, and upload via rmapi into /ai/YYYY/MM/DD/.'
 LastUpdated: 2025-12-14T20:39:43.523522929-05:00
 ---
+
 
 # Port remarkable_upload.py to Go (remarquee upload docs)
 
@@ -26,7 +41,7 @@ The proposal adds a new command group:
 Key design goals:
 - Keep **output fidelity** identical to the Python script by continuing to use **pandoc + xelatex** (not a new renderer).
 - Reuse existing rmapi-backed plumbing already present in `remarquee cloud` commands.
-- Provide a **ticket-aware bulk workflow** for docmgr (`--ticket`, `--ticket-dir`, `--mirror-ticket-structure`).
+- Be a **general-purpose uploader**: accept only markdown files and/or directories (directories are recursively scanned for `*.md`).
 - Be **safe by default**: do not overwrite existing documents unless `--force` is provided; support `--dry-run`.
 
 ## Problem Statement
@@ -52,23 +67,25 @@ We want a first-class `remarquee` command that:
 
 Add a new top-level command group `remarquee upload` and at least one subcommand:
 
-- `remarquee upload md [<file1.md> <file2.md> ...]`
+- `remarquee upload md <path...>`
+
+Where each `<path>` is either:
+- a Markdown file (`*.md`), or
+- a directory (recursively scanned for `*.md` files).
 
 Core modes and flags (porting Python behavior, with small Go-idiomatic adjustments):
 
 - **Input selection**
-  - Positional args: explicit Markdown paths.
-  - `--ticket <RMQ-xxxx>`: locate a ticket directory under `--root` (best-effort match, requires `index.md` like the Python script).
-  - `--ticket-dir <path>`: explicit ticket directory (highest priority).
-  - `--root <path>`: docs root used for `--ticket` lookup (default: `remarquee/ttmp` resolved from CWD).
-  - `--mirror-ticket-structure`: upload all `*.md` under the ticket directory and mirror subdirectories on-device.
-  - `--remote-ticket-root <name>`: override the on-device folder name for the ticket when mirroring (default: ticket directory name).
-  - (Optional, proposed) `--include-globs` / `--exclude-globs`: refine which markdown files are included when mirroring.
+  - Positional args: one or more paths to markdown files and/or directories.
+  - Directories are recursively scanned for `*.md`.
+  - (Optional, proposed) `--exclude-glob <glob>` (repeatable): exclude matching paths while scanning directories.
+  - (Optional, proposed) `--follow-symlinks` (default: false): whether directory traversal follows symlinks.
 
 - **Destination directory**
   - `--date <YYYY/MM/DD|YYYY-MM-DD>`: choose upload folder date.
-  - Default: infer from ticket path `.../ttmp/YYYY/MM/DD/<ticket>`; fallback to today (same as Python).
+  - Default: today’s date.
   - Upload base: `/ai/YYYY/MM/DD/` (note leading `/` to match `remarquee cloud` path semantics).
+  - (Optional, proposed) `--remote-dir <path>`: override the remote base directory (default remains `/ai/YYYY/MM/DD/`).
 
 - **Behavior**
   - `--force`: overwrite if exists (mirrors `remarquee cloud put --force` semantics).
@@ -106,7 +123,7 @@ For each target Markdown file:
 4. Else:
    - compute remote directory:
      - base: `/ai/YYYY/MM/DD/`
-     - if mirroring: `/ai/YYYY/MM/DD/<ticket-root>/<relative-subdir>/`
+     - (if `--remote-dir` is provided, use it as the base instead)
    - ensure remote directory exists (recursive mkdir)
    - if not `--force`: check existence and skip or error (TBD; see “Design Decisions”)
    - upload PDF using rmapi library calls (same primitives used by `remarquee cloud put`)
@@ -129,7 +146,7 @@ Create small internal packages so logic is testable and reusable:
   - “mkdir -p” helper implemented via rmapi `CreateDir` and file tree resolution
   - upload helper that mirrors `cloud put` behavior
 
-This keeps command files small and makes it easier to reuse this functionality later (e.g., “upload directory”, “upload docmgr ticket”, “upload from stdin”).
+This keeps command files small and makes it easier to reuse this functionality later (e.g., “upload directory”, “upload from stdin”, “watch + upload”).
 
 ## Design Decisions
 
@@ -183,7 +200,7 @@ The Python script ensures intermediate directories exist.
 
 We should implement a true recursive mkdir helper in Go (a `mkdir -p` equivalent) in `pkg/rmcloud`, because:
 - `cloud mkdir` is explicitly non-recursive today.
-- `upload md` needs recursive behavior to mirror ticket structures.
+- `upload md` needs recursive behavior for date-based directories and (optionally) user-provided `--remote-dir` paths that include multiple segments.
 
 We should consider later whether to extend `cloud mkdir` to support `-p` as well.
 
