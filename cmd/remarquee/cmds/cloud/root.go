@@ -10,6 +10,19 @@ func NewCloudCommand() *cobra.Command {
 		Short: "Interact with the reMarkable cloud (rmapi-backed)",
 	}
 
+	accountCmd, err := NewAccountCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "account",
+			Short: "Show cloud account info (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(accountCmd)
+	}
+
 	getCmd, err := NewGetCobraCommand()
 	if err != nil {
 		cmd.AddCommand(&cobra.Command{
@@ -21,6 +34,19 @@ func NewCloudCommand() *cobra.Command {
 		})
 	} else {
 		cmd.AddCommand(getCmd)
+	}
+
+	findCmd, err := NewFindCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "find",
+			Short: "Find entries recursively (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(findCmd)
 	}
 
 	lsCmd, err := NewLsCobraCommand()
@@ -36,6 +62,19 @@ func NewCloudCommand() *cobra.Command {
 		cmd.AddCommand(lsCmd)
 	}
 
+	mvCmd, err := NewMvCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "mv",
+			Short: "Move or rename a remote entry (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(mvCmd)
+	}
+
 	mkdirCmd, err := NewMkdirCobraCommand()
 	if err != nil {
 		cmd.AddCommand(&cobra.Command{
@@ -47,6 +86,19 @@ func NewCloudCommand() *cobra.Command {
 		})
 	} else {
 		cmd.AddCommand(mkdirCmd)
+	}
+
+	rmCmd, err := NewRmCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "rm",
+			Short: "Delete remote entries (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(rmCmd)
 	}
 
 	putCmd, err := NewPutCobraCommand()
@@ -87,6 +139,19 @@ func NewCloudCommand() *cobra.Command {
 		})
 	} else {
 		cmd.AddCommand(statCmd)
+	}
+
+	versionCmd, err := NewVersionCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "version",
+			Short: "Show rmapi version (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(versionCmd)
 	}
 
 	return cmd
