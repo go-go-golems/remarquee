@@ -37,3 +37,8 @@ Phase 0-5 complete: remarquee-ui web validation tool fully implemented (Go backe
 
 UI improvements: 3-column desktop layout, validation guidance panel, enhanced inspect panel with visual highlighting, fixed all CSS contrast issues (commits a163e7b, b78506c, 2866449)
 
+
+## 2025-12-15
+
+Added internal structure display: expandable sections show .rm files (with V3/V5/V6 detection), .content/.metadata JSON, and full file list (commit 32606b6)
+

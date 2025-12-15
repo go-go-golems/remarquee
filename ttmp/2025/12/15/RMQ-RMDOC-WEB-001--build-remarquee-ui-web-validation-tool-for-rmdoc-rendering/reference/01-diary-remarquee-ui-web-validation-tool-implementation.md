@@ -353,6 +353,84 @@ This step improves the UI for desktop use by adding a 3-column layout (left: doc
   - Duplicate page highlight: `#d1ecf1` (blue)
 - **Duplicate detection**: `pages.filter(p => p.sourcePdfPage === page.sourcePdfPage && page.sourcePdfPage !== -1).length > 1`
 
+## Step 7: Add internal structure display for deep rmdoc inspection
+
+This step adds expandable sections to show the internal structure of rmdoc files, including .rm annotation files with version detection (V3/V5/V6), pretty-printed .content and .metadata JSON, and the full list of files in the archive. This helps validate that the correct annotation format is being used and debug parsing issues.
+
+**Commit (code):** 32606b6 — "RMQ-RMDOC-WEB-001: Add internal structure display - shows .rm files with versions, content/metadata JSON, and all files in archive"
+
+### What I did
+
+- Created `cmd/remarquee-ui/api/internal_structure.go`:
+  - `HandleInternalStructure`: new API endpoint `/api/document/:id/structure`
+  - Opens rmdoc as zip file and inspects all files
+  - Detects .rm file version by reading first 32 bytes (checks for V3/V5/V6 markers)
+  - Pretty-prints .content and .metadata JSON
+  - Returns list of all files in archive
+- Created `frontend/src/components/InternalStructure.tsx`:
+  - Fetches internal structure when document is selected
+  - Expandable `<details>` sections for each category
+  - Table view for .rm files with version badges (V6=green, V3/V5=orange, unknown=gray)
+  - Pretty-printed JSON viewers with dark theme
+  - File list with scrollable container
+- Updated `InspectPanel.tsx` to include `<InternalStructure />` at bottom
+- Added CSS styling for expandable sections, JSON viewers, and .rm file table
+- Updated `main.go` routing to handle both `/inspect` and `/structure` endpoints
+
+### Why
+
+- **Version detection**: knowing if .rm files are V3/V5/V6 is critical for choosing render strategy
+- **JSON inspection**: pretty-printed .content/.metadata helps debug schema detection and page ordering issues
+- **Transparency**: full file list helps verify archive completeness
+
+### What worked
+
+- Version detection via header byte inspection works reliably
+- Expandable sections keep UI clean while providing deep inspection capability
+- Dark-themed JSON viewer is easy to read
+
+### What didn't work
+
+- (No issues)
+
+### What I learned
+
+- .rm version is stored in byte 32 of the header (3, 5, or 6)
+- Pretty-printing JSON in Go is simple: `json.MarshalIndent(obj, "", "  ")`
+- React `<details>` element provides native expandable sections without JavaScript
+
+### What was tricky to build
+
+- **Routing**: needed to distinguish `/api/document/:id/inspect` from `/api/document/:id/structure` (solved with custom handler checking URL suffix)
+- **Version detection**: header format isn't well-documented; used empirical testing to verify byte positions
+
+### What warrants a second pair of eyes
+
+- **Version detection**: confirm byte 32 check works for all .rm file variants
+- **JSON pretty-printing**: verify no sensitive data is exposed
+- **Performance**: confirm reading all .rm headers doesn't cause slowdown for large documents
+
+### What should be done in the future
+
+- Add stroke count / object count to .rm file info
+- Parse .rm files to show more detail (e.g., number of lines, text blocks)
+- Add "download .rm file" button for offline analysis
+- Add V6 test fixture with annotations to verify version detection
+
+### Code review instructions
+
+- Review `api/internal_structure.go`: verify version detection logic and JSON pretty-printing
+- Review `InternalStructure.tsx`: confirm expandable sections and styling
+- Test: select both test documents and verify internal structure displays correctly
+
+### Technical details
+
+- **API endpoint**: `GET /api/document/:id/structure`
+- **Version detection**: reads first 32 bytes, checks byte 32 for value 3, 5, or 6
+- **JSON format**: `json.MarshalIndent` with 2-space indentation
+- **Expandable sections**: native HTML `<details>` element
+- **Version badge colors**: V6=green (#27ae60), V3/V5=orange (#f39c12), unknown=gray (#95a5a6)
+
 ## Step 4: Implement Phase 4 (validation persistence)
 
 This step adds backend validation persistence, writing validation sessions as both JSON (machine-readable) and Markdown (human-readable) to the ticket's `reference/validation/` directory. This enables durable tracking of validation results across UI sessions and provides copy/paste-ready artifacts for documentation.

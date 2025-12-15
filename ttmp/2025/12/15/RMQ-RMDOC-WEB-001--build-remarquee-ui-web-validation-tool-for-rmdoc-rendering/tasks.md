@@ -63,13 +63,26 @@ Build `remarquee-ui`: an interactive web UI for validating `.rmdoc` parsing and 
 - [x] Test single-binary deployment: `./remarquee-ui` (prod mode)
 - [x] Add `.gitignore` entries: `frontend/dist`, `frontend/node_modules`, `outputs/`
 
+## Phase 6 — UI Enhancements
+
+- [x] Fix CSS contrast issues (white-on-white text)
+- [x] Convert to 3-column desktop layout
+- [x] Add validation guidance panel with dynamic checklist
+- [x] Enhance inspect panel with visual highlighting (duplicates, inserted pages)
+- [x] Add internal structure display (expandable sections for .rm files, JSON content)
+- [ ] Add V6 rmdoc test fixture with annotations
+- [ ] Test internal structure display with V6 document
+
 ## Acceptance Criteria
 
-- [ ] Can select from pre-prepared test documents via web UI
-- [ ] Can inspect a document and see schema + pages in a table
-- [ ] Can build background PDF and view/download it
-- [ ] Can render legacy PDF (V3/V5) and view/download it
-- [ ] Can submit validation (PASS/FAIL + notes) and see it persisted to ticket
-- [ ] Single `make build` produces a standalone binary with embedded frontend
-- [ ] Dev mode (`make dev-backend` + `make dev-frontend`) works with hot reload
+- [x] Can select from pre-prepared test documents via web UI
+- [x] Can inspect a document and see schema + pages in a table
+- [x] Can build background PDF and view/download it
+- [x] Can render legacy PDF (V3/V5) and view/download it
+- [x] Can submit validation (PASS/FAIL + notes) and see it persisted to ticket
+- [x] Single `make build` produces a standalone binary with embedded frontend
+- [x] Dev mode (`make dev-backend` + `make dev-frontend`) works with hot reload
+- [x] Desktop-optimized 3-column layout with validation guidance
+- [x] Visual highlighting for duplicates and inserted pages
+- [x] Internal structure inspection (shows .rm files, versions, JSON content)
 
