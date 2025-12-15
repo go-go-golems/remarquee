@@ -162,3 +162,47 @@ The immediate payoff is that `remarquee help remarquee-upload-getting-started` w
 - Validate with:
   - `go test ./... -count=1`
   - `go run ./cmd/remarquee help remarquee-upload-reference`
+
+## Step 3: End-to-end smoke test (real upload to cloud test folder)
+
+This step validated the new command for real against the reMarkable cloud. We generated a handful of representative markdown fixtures (frontmatter, lists, unicode, code blocks, nested directory), uploaded them into a fresh `/ai/test/...` folder, and verified that they exist by listing the folder via `remarquee cloud ls`.
+
+There were no code changes in this step; it’s a reproducible manual validation script we can re-run whenever we touch upload semantics.
+
+### What I did
+- Ran an end-to-end smoke test:
+  - create markdown fixtures in a temp dir
+  - upload with `remarquee upload md --remote-dir /ai/test/<timestamp> <tempdir>`
+  - verify with `remarquee cloud ls /ai/test/<timestamp>`
+- Saved the exact smoke test as a reusable script:
+  - `ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/scripts/01-smoke-test-upload-md.sh`
+
+### Why
+- Prove the whole pipeline works against a real account/device:
+  - pandoc/xelatex conversion works
+  - rmapi upload works
+  - created docs appear in the cloud file tree
+
+### What worked
+- Upload succeeded and `cloud ls` showed the expected documents in the remote test folder.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Listing the folder with `remarquee cloud ls` is a good “visibility” check that doesn’t require device interaction.
+
+### What was tricky to build
+- N/A (scripted validation only)
+
+### What warrants a second pair of eyes
+- Confirm we’re happy with using `/ai/test/...` as the default manual testing location (vs `/ai/YYYY/MM/DD/...`).
+
+### What should be done in the future
+- If we add new preprocessing rules or flags, extend the smoke test fixtures to cover them.
+
+### Code review instructions
+- Review the script:
+  - `ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/scripts/01-smoke-test-upload-md.sh`
+- Run it from `remarquee/`:
+  - `REMOTE_DIR="/ai/test/your-folder" ./ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/scripts/01-smoke-test-upload-md.sh`
