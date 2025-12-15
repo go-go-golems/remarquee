@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-go-golems/remarquee/cmd/remarquee-ui/api"
 )
