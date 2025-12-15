@@ -1,7 +1,7 @@
 ---
 Title: Port remarkable_upload.py to Go (remarquee upload docs)
 Ticket: RMQ-0003
-Status: active
+Status: complete
 Topics:
     - backend
 DocType: index
@@ -22,8 +22,9 @@ RelatedFiles:
       Note: Python reference implementation we are porting
 ExternalSources: []
 Summary: 'Port remarkable_upload.py into remarquee as a Go command (upload md): docmgr-friendly markdown preprocessing + pandoc/xelatex PDF generation + rmapi-backed upload to /ai/YYYY/MM/DD/.'
-LastUpdated: 2025-12-14T20:43:31.985187816-05:00
+LastUpdated: 2025-12-14T21:20:57.157487274-05:00
 ---
+
 
 
 

@@ -52,3 +52,8 @@ Step 3: Added reusable end-to-end smoke test script for real uploads to /ai/test
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/scripts/01-smoke-test-upload-md.sh — Smoke test: create fixtures
 
+
+## 2025-12-14
+
+Closed RMQ-0003: upload md shipped + smoke test + next feature batch captured in design-doc/02 (bundle+ToC, preserve-dirs, upload src).
+
