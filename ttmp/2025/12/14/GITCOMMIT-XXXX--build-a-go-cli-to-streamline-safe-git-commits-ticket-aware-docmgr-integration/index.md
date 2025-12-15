@@ -12,15 +12,20 @@ Intent: long-term
 Owners: []
 RelatedFiles:
     - Path: remarquee/cmd/remarquee/cmds/rmdoc/inspect.go
-      Note: Example of why we need ticket-scoped staging and commit guardrails (unrelated files easily slip in)
+      Note: Example motivating ticket-scoped staging and commit guardrails
     - Path: remarquee/ttmp/2025/12/14/GITCOMMIT-XXXX--build-a-go-cli-to-streamline-safe-git-commits-ticket-aware-docmgr-integration/design-doc/01-project-description-git-commit-helper-cli-go.md
-      Note: Project description and proposed commands
+      Note: Project description and proposed CLI commands
+    - Path: remarquee/ttmp/2025/12/14/GITCOMMIT-XXXX--build-a-go-cli-to-streamline-safe-git-commits-ticket-aware-docmgr-integration/scripts/01-gitcommit-prototype.sh
+      Note: |-
+        Prototype helper script (safe staging + commit templates)
+        Prototype script (preview-first safe staging/commit)
     - Path: remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/reference/01-diary.md
-      Note: Recent workflow example where staged files from other tickets can accidentally enter a commit
+      Note: Recent workflow example where unrelated staged files can slip into commits
 ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-14T23:10:48.588217262-05:00
 ---
+
 
 
 # Build a Go CLI to streamline safe git commits (ticket-aware + docmgr integration)

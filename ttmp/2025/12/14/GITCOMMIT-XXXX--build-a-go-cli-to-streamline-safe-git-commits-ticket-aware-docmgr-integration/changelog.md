@@ -14,3 +14,12 @@ Created ticket and wrote initial project description design doc for a Go git com
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/GITCOMMIT-XXXX--build-a-go-cli-to-streamline-safe-git-commits-ticket-aware-docmgr-integration/design-doc/01-project-description-git-commit-helper-cli-go.md — Initial detailed project description
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/GITCOMMIT-XXXX--build-a-go-cli-to-streamline-safe-git-commits-ticket-aware-docmgr-integration/tasks.md — Initial task list
 
+
+## 2025-12-14
+
+Added first prototype script for safe ticket-scoped staging/commit prep (preview-first).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/GITCOMMIT-XXXX--build-a-go-cli-to-streamline-safe-git-commits-ticket-aware-docmgr-integration/scripts/01-gitcommit-prototype.sh — New prototype script
+
