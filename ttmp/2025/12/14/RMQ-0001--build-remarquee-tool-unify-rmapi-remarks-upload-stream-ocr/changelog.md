@@ -103,3 +103,32 @@ Updated remarkable_upload.py (ticket-local) to support mirroring ticket director
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/05-diary.md — Recorded Step 5 (ticket upload workflow)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/remarkable_upload.py — Added --mirror-ticket-structure + mkdir -p behavior
 
+
+## 2025-12-14
+
+Added an in-depth analysis doc of the .rmdoc container format (legacy vs cPages), parsing flow (remarks vs rmapi), and practical PNG derivation via PDF rasterization.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/analysis/01-deep-dive-rmdoc-format-container-layout-parsing-png-rendering.md — New analysis doc
+
+
+## 2025-12-14
+
+Fleshed out Part II of rmdoc analysis: coordinate transforms (SCALE=0.3185...), page ordering (cPages vs legacy), PDF merge algorithm, smart highlights, Go reimplementation checklist. Added analysis scripts.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/analysis/01-deep-dive-rmdoc-format-container-layout-parsing-png-rendering.md — Added Part II with full algorithmic details for Go reimplementation
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/analyze_remarks_merge.py — New analysis script
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/extract_rmc_coords.py — New analysis script
+
+
+## 2025-12-14
+
+Improved rmdoc analysis doc readability: added topic-focused intro paragraphs to all major sections, better explanations of WHY before HOW, more context about design trade-offs. Follows Glazed documentation style guide.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/analysis/01-deep-dive-rmdoc-format-container-layout-parsing-png-rendering.md — Added prose for better readability
+

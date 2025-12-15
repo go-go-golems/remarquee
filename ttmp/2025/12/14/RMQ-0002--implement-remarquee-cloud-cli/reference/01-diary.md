@@ -7,20 +7,11 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles:
-    - Path: cmd/remarquee/cmds/status.go
-      Note: Added in commit aa44dec22ccaedd4ef7e02cbc32aa2d36dcfb9db (first command)
-    - Path: cmd/remarquee/main.go
-      Note: Added in commit aa44dec22ccaedd4ef7e02cbc32aa2d36dcfb9db (Cobra root + logging)
-    - Path: go.mod
-      Note: Added in commit aa44dec22ccaedd4ef7e02cbc32aa2d36dcfb9db (remarquee module + deps)
-    - Path: ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/tasks.md
-      Note: Tasks 2/3/4 checked in Step 1
+RelatedFiles: []
 ExternalSources: []
-Summary: 'Implementation diary for RMQ-0002 (remarquee cloud CLI): step-by-step narrative with commit hashes.'
+Summary: "Implementation diary for RMQ-0002 (remarquee cloud CLI): step-by-step narrative with commit hashes."
 LastUpdated: 2025-12-14T19:30:28.750480955-05:00
 ---
-
 
 # Diary
 
