@@ -2,6 +2,7 @@ package mdpdf
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,6 +17,12 @@ type PandocOptions struct {
 	MonoFont        string
 	Geometry        string
 	LatexHeaderFile string
+
+	TOC      bool
+	TOCDepth int
+
+	HighlightStyle string
+	Listings       bool
 }
 
 func DefaultPandocOptions() PandocOptions {
@@ -87,6 +94,19 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 		"-V", "mainfont=" + opts.MainFont,
 		"-V", "monofont=" + opts.MonoFont,
 		"-V", "geometry:" + opts.Geometry,
+	}
+
+	if opts.TOC {
+		argv = append(argv, "--toc")
+		if opts.TOCDepth > 0 {
+			argv = append(argv, fmt.Sprintf("--toc-depth=%d", opts.TOCDepth))
+		}
+	}
+	if opts.HighlightStyle != "" {
+		argv = append(argv, "--highlight-style="+opts.HighlightStyle)
+	}
+	if opts.Listings {
+		argv = append(argv, "--listings")
 	}
 
 	cmd := exec.CommandContext(ctx, opts.PandocPath, argv...)
