@@ -8,6 +8,17 @@ const (
 	SchemaCPages
 )
 
+func (s ArchiveSchema) String() string {
+	switch s {
+	case SchemaLegacy:
+		return "legacy"
+	case SchemaCPages:
+		return "cPages"
+	default:
+		return "unknown"
+	}
+}
+
 type DocumentType int
 
 const (
@@ -16,6 +27,19 @@ const (
 	DocTypePDF
 	DocTypeEPUB
 )
+
+func (t DocumentType) String() string {
+	switch t {
+	case DocTypeNotebook:
+		return "Notebook"
+	case DocTypePDF:
+		return "PDF"
+	case DocTypeEPUB:
+		return "EPUB"
+	default:
+		return "Unknown"
+	}
+}
 
 // InsertedPage indicates that a UI page has no corresponding source PDF page.
 // This usually means a blank page inserted into a PDF-based document.

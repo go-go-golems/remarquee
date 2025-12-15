@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/go-go-golems/remarquee/cmd/remarquee-ui/api"
 )
 
 var (
@@ -23,11 +25,24 @@ func init() {
 func main() {
 	flag.Parse()
 
+	// Directories
+	testDocsPath := "testdata"
+	outputsDir := "outputs"
+
+	// Ensure outputs directory exists
+	if err := os.MkdirAll(outputsDir, 0755); err != nil {
+		log.Fatalf("Failed to create outputs directory: %v", err)
+	}
+
 	mux := http.NewServeMux()
 
 	// API routes
-	mux.HandleFunc("/api/test-documents", handleTestDocuments)
 	mux.HandleFunc("/api/health", handleHealth)
+	mux.HandleFunc("/api/test-documents", handleTestDocuments)
+	mux.HandleFunc("/api/document/", api.HandleInspect(testDocsPath))
+	mux.HandleFunc("/api/render/background", api.HandleRenderBackground(testDocsPath, outputsDir))
+	mux.HandleFunc("/api/render/legacy", api.HandleRenderLegacy(testDocsPath, outputsDir))
+	mux.HandleFunc("/api/outputs/", api.HandleOutputs(outputsDir))
 
 	// Static assets (future: serve embedded frontend in prod mode)
 	if devMode {
