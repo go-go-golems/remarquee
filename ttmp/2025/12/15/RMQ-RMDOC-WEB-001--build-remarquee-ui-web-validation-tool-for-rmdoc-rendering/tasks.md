@@ -57,10 +57,10 @@ Build `remarquee-ui`: an interactive web UI for validating `.rmdoc` parsing and 
 
 ## Phase 5 — Production build + embed
 
-- [ ] Create `cmd/remarquee-ui/embed.go` with `//go:embed frontend/dist`
-- [ ] Update `main.go` to serve embedded assets in prod mode (no `--dev` flag)
-- [ ] Update Makefile `build` target: `npm run build` → `go build`
-- [ ] Test single-binary deployment: `./remarquee-ui` (prod mode)
+- [x] Create `cmd/remarquee-ui/embed.go` with `//go:embed frontend/dist`
+- [x] Update `main.go` to serve embedded assets in prod mode (no `--dev` flag)
+- [x] Update Makefile `build` target: `npm run build` → `go build`
+- [x] Test single-binary deployment: `./remarquee-ui` (prod mode)
 - [x] Add `.gitignore` entries: `frontend/dist`, `frontend/node_modules`, `outputs/`
 
 ## Acceptance Criteria

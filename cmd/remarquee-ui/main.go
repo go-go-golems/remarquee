@@ -46,11 +46,17 @@ func main() {
 	mux.HandleFunc("/api/outputs/", api.HandleOutputs(outputsDir))
 	mux.HandleFunc("/api/validation", api.HandleValidation(ticketDir))
 
-	// Static assets (future: serve embedded frontend in prod mode)
+	// Static assets
 	if devMode {
 		log.Println("Running in DEV mode: expecting Vite dev server on :5173")
 	} else {
-		log.Println("Running in PROD mode: serving embedded assets (not yet implemented)")
+		log.Println("Running in PROD mode: serving embedded assets")
+		frontendFS, err := GetFrontendFS()
+		if err != nil {
+			log.Fatalf("Failed to get frontend filesystem: %v", err)
+		}
+		fileServer := http.FileServer(http.FS(frontendFS))
+		mux.Handle("/", fileServer)
 	}
 
 	addr := ":" + port

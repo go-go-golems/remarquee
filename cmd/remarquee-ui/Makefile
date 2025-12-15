@@ -12,7 +12,7 @@ build:
 	@echo "Building frontend..."
 	cd frontend && npm install && npm run build
 	@echo "Building Go binary..."
-	go build -o remarquee-ui main.go
+	go build -o remarquee-ui .
 	@echo "Done: ./remarquee-ui"
 
 # Clean build artifacts
