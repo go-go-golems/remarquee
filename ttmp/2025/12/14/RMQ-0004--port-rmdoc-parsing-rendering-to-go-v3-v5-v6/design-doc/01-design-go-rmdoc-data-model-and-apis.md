@@ -14,6 +14,16 @@ RelatedFiles:
       Note: PDF merge algorithm reference
     - Path: remarks/remarks/utils.py
       Note: cPages parsing + redirection map reference
+    - Path: remarquee/pkg/rmdoc/content.go
+      Note: Implemented .content parsing (legacy + cPages) and PageRef plan (commit 49acbde)
+    - Path: remarquee/pkg/rmdoc/content_test.go
+      Note: Unit tests for schema detection + page plan (commit 49acbde)
+    - Path: remarquee/pkg/rmdoc/open.go
+      Note: Implemented .rmdoc zip open + extraction (commit 49acbde)
+    - Path: remarquee/pkg/rmdoc/pagedata.go
+      Note: Implemented pagedata template application (commit 49acbde)
+    - Path: remarquee/pkg/rmdoc/types.go
+      Note: Implemented Document/PageRef types (commit 49acbde)
     - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/color_map.go
       Note: Highlight color map extracted from rmscene
     - Path: rmapi/annotations/pdf.go
@@ -28,6 +38,7 @@ ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-14T20:59:20.835901819-05:00
 ---
+
 
 
 # Design: Go rmdoc data model and APIs
@@ -85,6 +96,13 @@ Split the problem into three layers:
 #### `remarquee/pkg/rmdoc`
 
 Responsibility: `.rmdoc` ZIP parsing and document-level metadata.
+
+**Status (implemented):** The initial version of this layer exists as `remarquee/pkg/rmdoc` (commit `49acbde`). It provides:
+- zip opening (`OpenFile`, `OpenReaderAt`)
+- `.content` schema detection (`cPages` vs legacy)
+- deterministic `[]PageRef` page plan generation
+- `.pagedata` template application helper
+- unit tests for legacy + cPages parsing
 
 Key types:
 
@@ -159,6 +177,8 @@ Notes:
 #### `remarquee/pkg/rmdoc/content`
 
 Responsibility: parse `.content` into typed structs and compute a deterministic `[]PageRef`.
+
+**Status (implemented):** This lives in `remarquee/pkg/rmdoc/content.go` (commit `49acbde`) and is exercised by `remarquee/pkg/rmdoc/content_test.go`.
 
 Core idea: parse both schemas, then build a single page plan:
 
@@ -253,6 +273,23 @@ We should *not* replicate `rmc`’s SVG → CairoSVG pipeline in Go. Instead:
 - Convert V6 scene items into the same internal stroke primitives used by the V3/V5 renderer.
 
 This keeps the “brush math” in one place and avoids dragging SVG/Pango/Cairo dependencies into Go.
+
+## Current implementation status (as of this design doc)
+
+### Implemented
+
+- `remarquee/pkg/rmdoc` (commit `49acbde`)
+  - `.rmdoc` open (zip) + reads `.content/.metadata/.pagedata/.pdf`
+  - schema detection: legacy vs `cPages`
+  - deterministic page plan (`[]PageRef`) for both schemas
+  - `.pagedata` template fill helper
+  - unit tests
+
+### Not implemented yet (next milestones)
+
+- A debug CLI command to print the schema + page plan for a local `.rmdoc`
+- Legacy PDF render path wired through the new `pkg/rmdoc` Document/PageRef model
+- V6 `.rm` parser (scene tree) and V6 rendering + merge/highlights
 
 ## Design Decisions
 

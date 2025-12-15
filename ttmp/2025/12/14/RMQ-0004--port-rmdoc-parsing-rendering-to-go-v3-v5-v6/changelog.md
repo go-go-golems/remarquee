@@ -46,3 +46,12 @@ Updated tasks: checked off completed Step 2 work (pkg/rmdoc schema detection + p
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/reference/01-diary.md — Step 2 describes the implementation that was checked off
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/tasks.md — Checked off completed items and broke down remaining tasks
 
+
+## 2025-12-14
+
+Updated design doc to reference current implementation status (pkg/rmdoc) and linked new Go files.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/design-doc/01-design-go-rmdoc-data-model-and-apis.md — Now references pkg/rmdoc implementation (commit 49acbde)
+
