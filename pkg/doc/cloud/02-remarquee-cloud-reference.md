@@ -24,7 +24,7 @@ SectionType: GeneralTopic
 
 # remarquee cloud Reference
 
-This page is a practical reference for the `remarquee cloud` command group. It describes each verb’s purpose, arguments, safety properties, and where it intentionally mirrors rmapi behavior so existing rmapi users can transfer expectations. Use this as a “what does it do?” and “what does it accept?” document; for ready-to-run workflows, see:
+This page is a practical reference for the `remarquee cloud` command group. It describes each verb's purpose, arguments, safety properties, and where it intentionally mirrors rmapi behavior so existing rmapi users can transfer expectations. Think of this as the "man page" for cloud commands: it tells you what each verb does, what arguments it accepts, and what the output looks like. If you're looking for narrative explanations or step-by-step workflows, start with the getting started guide instead. For ready-to-run command sequences, see:
 
 ```
 remarquee help remarquee-cloud-usage-examples
@@ -41,16 +41,20 @@ These flags exist so you can choose between interactive “developer ergonomics�
 
 ## Output modes and structured data
 
-Some commands support “dual-mode” output using Glazed:
+Some commands support "dual-mode" output using Glazed, which means the same command can produce either human-friendly text or machine-parseable structured data:
 
-- default mode: human-oriented text
-- structured mode: pass `--with-glaze-output` plus `--output json|yaml|csv|...`
+- **default mode**: human-oriented text, optimized for reading in a terminal
+- **structured mode**: pass `--with-glaze-output` plus `--output json|yaml|csv|...`
+
+Structured output is especially useful when you're building scripts, feeding results into tools like `jq` or spreadsheets, or integrating remarquee into larger workflows. You get consistent JSON/YAML schemas without needing to parse text output yourself.
 
 Currently, the following verbs support structured output:
 
 - `refresh`
 - `ls`
 - `stat`
+
+Other verbs (`get`, `put`, `mkdir`, `mv`, `rm`, `find`, `account`, `version`) produce text output only, but they do so in a predictable format that's easy to wrap in shell scripts.
 
 Example:
 
@@ -169,7 +173,7 @@ Safety: prevents moving a folder into itself (e.g., `a` -> `a/subdir`).
 
 ### cloud rm <target...>
 
-Deletes one or more entries. This is intentionally “safe by default”: it will refuse to delete unless you pass `--yes`. Without `--yes`, it prints what it *would* delete and exits with an error so you can inspect the resolved targets.
+Deletes one or more entries. This is intentionally "safe by default": it will refuse to delete unless you pass `--yes`. Without `--yes`, it prints what it *would* delete and exits with an error, which gives you a chance to inspect the resolved targets before committing to a destructive operation. This design makes `rm` work well in scripts: you can do a "dry run" first (let it fail safely), review the output, and then add `--yes` once you're confident the paths are correct.
 
 **Usage:**
 
