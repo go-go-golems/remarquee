@@ -70,3 +70,83 @@ This step creates the ticket workspace, populates tasks from the design doc, and
 - **Fixtures**: 
   - `testdata/cpage-pdf.rmdoc` (symlink or copy of `remarks/tests/in/copies of different pages.rmdoc`)
   - `testdata/legacy-notebook.zip` (symlink or copy of `rmapi/archive/test.zip`)
+
+## Step 2: Implement Phase 1 — Core API endpoints
+
+This step implements the complete backend API for document inspection and PDF rendering. All 5 endpoints now work: test documents listing, document inspection (schema + pages), background PDF building (cPages/PDF-backed docs), legacy PDF rendering (V3/V5), and output file serving. The API is ready for frontend integration.
+
+**Commit (code):** c107adb — "RMQ-RMDOC-WEB-001: Phase 1 - Core API endpoints"
+
+### What I did
+
+- Created `cmd/remarquee-ui/api/` package with 4 files:
+  - `inspect.go`: `GET /api/document/:id/inspect` endpoint
+  - `render.go`: `POST /api/render/background` and `POST /api/render/legacy` endpoints
+  - `outputs.go`: `GET /api/outputs/:filename` endpoint  
+  - `utils.go`: JSON helpers (`respondJSON`, `readJSON`)
+- Added `String()` methods to `pkg/rmdoc.ArchiveSchema` and `pkg/rmdoc.DocumentType` for JSON serialization
+- Wired all handlers into `main.go` with proper path routing
+- Tested all endpoints with `curl`: inspect, render background, render legacy, outputs serving
+
+### Why
+
+- **API-first design**: implementing the backend API before the frontend ensures the data contracts are solid
+- **Reuses existing code**: all handlers delegate to `pkg/rmdoc` and `rmapi` directly (no duplicate logic)
+- **Simple routing**: plain `http.ServeMux` with path-based routing is sufficient for this small API
+- **Error handling**: each endpoint returns JSON errors with appropriate HTTP status codes
+
+### What worked
+
+- Path-based routing in `http.ServeMux` (e.g., `/api/document/` catches `/api/document/:id/inspect`)
+- Extracting document ID from URL path by splitting on `/`
+- Using `findDocumentPath` helper to resolve document IDs to file paths via the manifest
+- `http.ServeFile` for outputs serving (handles Range requests, Last-Modified, etc. automatically)
+
+### What didn't work
+
+- Initially used `doc.DocType` instead of `doc.Type` (field name mismatch)
+- `ArchiveSchema` and `DocumentType` didn't have `String()` methods initially (added them to `types.go`)
+- Forgot to allow HEAD requests in outputs handler (fixed by checking both GET and HEAD)
+
+### What I learned
+
+- Adding `String()` methods to enum types in Go makes JSON serialization cleaner
+- `http.ServeFile` is more robust than manually reading and writing file bytes (handles caching, range requests)
+- Simple path splitting is adequate for small APIs; no need for a full router library yet
+
+### What was tricky to build
+
+- **Document ID resolution**: mapping document IDs (from URL) to file paths (from manifest) required a helper function that parses the manifest JSON
+- **Schema validation**: the legacy render endpoint checks that the document is actually legacy before calling rmapi
+
+### What warrants a second pair of eyes
+
+- **Path parsing**: confirm the URL path splitting logic is robust for the expected paths (e.g., `/api/document/cpage-pdf/inspect`)
+- **Error responses**: verify all error paths return appropriate HTTP status codes and JSON error messages
+- **Security**: outputs handler blocks path traversal (`..` and `/` in filenames), but confirm this is sufficient
+
+### What should be done in the future
+
+- If the API grows beyond ~10 endpoints, consider a proper router library (gorilla/mux, chi)
+- Add request logging middleware (currently just using `log.Printf` in handlers)
+- Consider rate limiting for render endpoints if they become expensive
+
+### Code review instructions
+
+- Start in `cmd/remarquee-ui/api/inspect.go`: verify document ID extraction and JSON response structure
+- Check `cmd/remarquee-ui/api/render.go`: verify background and legacy rendering logic
+- Review `cmd/remarquee-ui/api/outputs.go`: confirm path traversal protection
+- Run smoke tests: `cd cmd/remarquee-ui && make dev-backend`, then curl all 5 endpoints
+
+### Technical details
+
+- **API endpoints**:
+  - `GET /api/health` — health check
+  - `GET /api/test-documents` — list test documents from manifest
+  - `GET /api/document/:id/inspect` — inspect document (schema, pages, etc.)
+  - `POST /api/render/background` — build background PDF (cPages/PDF-backed)
+  - `POST /api/render/legacy` — render legacy PDF (V3/V5 annotations via rmapi)
+  - `GET /api/outputs/:filename` — serve generated PDF files
+- **JSON response format**: all API responses use `application/json` with proper status codes
+- **Output files**: PDFs written to `outputs/` directory with job-ID-based filenames
+- **Job ID format**: `{documentId}-{action}-{timestamp}` (e.g., `cpage-pdf-background-1765810673`)
