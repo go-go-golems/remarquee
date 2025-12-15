@@ -42,7 +42,8 @@ def main(rm_file_path):
         build_tree(tree, blocks)
         
         print(f"\nScene tree built:")
-        print(f"  Root children: {len(tree.root.children)}")
+        root_children_count = sum(1 for _ in tree.root.children.values())
+        print(f"  Root children: {root_children_count}")
         print(f"  Has root text: {tree.root_text is not None}")
         
         # Walk tree and count elements

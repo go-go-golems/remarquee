@@ -145,3 +145,51 @@ Created intern guide playbook for continuing .rmdoc research. Added trace_rm_par
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/extract_color_map.py — New code generator script
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/trace_rm_parse.py — New analysis script
 
+
+## 2025-12-14
+
+Completed Phase 1-3 of intern guide: explored rmc coordinate transforms, bounding box calculation, PDF rendering pipeline, rmscene scene tree structure, binary block format, and traced V6 parsing with real .rm file. Fixed trace_rm_parse.py to handle CrdtSequence. Updated diary with Step 6 documenting findings.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md — Updated with Step 6
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/trace_rm_parse.py — Fixed to handle CrdtSequence properly
+
+
+## 2025-12-14
+
+Created gap analysis document mapping Go reimplementation requirements. Identified 8 major gaps: V6 parser, cPages parsing, coordinate transforms, bounding box, PDF merge, smart highlights, GlyphRange extraction, and typed text. Recommended starting with Python wrapper (Option 2) then migrating to native Go (Option 1).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/go_reimplementation_gaps.md — New gap analysis document
+
+
+## 2025-12-14
+
+Updated diary with Step 7 documenting gap analysis work. Identified rmapi limitations and 8 major gaps. Recommended porting strategy: start with Python wrapper then migrate to native Go.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md — Updated with Step 7
+
+
+## 2025-12-14
+
+Completed Phase 5 testing: processed real V6 document with remarks, verified output, analyzed rmapi incompatibility. Updated gap analysis to reflect V6-only support constraint. Documented findings: rmapi cannot process V6 at all (no cPages support, V3/V5 parser incompatible). Updated diary with Step 8.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md — Updated with Step 8
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/go_reimplementation_gaps.md — Updated with V6-only constraint
+
+
+## 2025-12-14
+
+Discovered that both V3/V5 and V6 formats are in active use on reMarkable tablet. PDF-based documents use V3/V5, notebooks use V6. Updated gap analysis to require dual-format support. Can reuse rmapi's V3/V5 parser. Added format detection as Phase 1 priority. Updated diary with Step 9.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md — Updated with Step 9
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/go_reimplementation_gaps.md — Updated with dual-format support requirement
+
