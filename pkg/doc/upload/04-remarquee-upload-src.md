@@ -32,6 +32,14 @@ Note: `*.md` files are ignored by `upload src` (use `upload md` / `upload bundle
 - `--listings`: use LaTeX listings (pandoc `--listings`)
 - `--title-mode name|path`: choose whether the PDF title uses basename or relative path (default: `path`)
 
+### Bundle mode
+
+You can bundle multiple source files into a single PDF with a ToC:
+
+- `--bundle`: enable bundle mode (one PDF total)
+- `--name`: bundle document name
+- `--toc-depth`: ToC depth (default 1)
+
 ### Safety / overwrite
 
 - Default: if a document with the same name already exists in the destination dir, the upload is skipped.

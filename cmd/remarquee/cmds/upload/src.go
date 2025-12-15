@@ -29,10 +29,16 @@ type uploadSourceSettings struct {
 	Date      string
 	RemoteDir string
 
+	// Bundle mode.
+	Bundle   bool
+	Name     string
+	TOCDepth int
+
 	// Source rendering.
-	Theme     string
-	Listings  bool
-	TitleMode string // name|path
+	Theme      string
+	Listings   bool
+	TitleMode  string // name|path
+	IncludeExt []string
 
 	// Pandoc/xelatex.
 	Pandoc          string
@@ -97,10 +103,16 @@ Destination:
 	cmd.Flags().StringVar(&s.Date, "date", "", "Destination date folder under /ai (YYYY/MM/DD or YYYY-MM-DD). Default: today")
 	cmd.Flags().StringVar(&s.RemoteDir, "remote-dir", "", "Override remote directory (default: /ai/YYYY/MM/DD/)")
 
+	// Bundle mode.
+	cmd.Flags().BoolVar(&s.Bundle, "bundle", false, "Bundle multiple source inputs into a single PDF (with ToC) instead of one PDF per file")
+	cmd.Flags().StringVar(&s.Name, "name", "", "Bundle document name (only valid with --bundle)")
+	cmd.Flags().IntVar(&s.TOCDepth, "toc-depth", 1, "Table of contents depth for bundle mode (pandoc --toc-depth)")
+
 	// Source rendering.
 	cmd.Flags().StringVar(&s.Theme, "theme", "tango", "Pandoc highlight style (pandoc --highlight-style)")
 	cmd.Flags().BoolVar(&s.Listings, "listings", false, "Use LaTeX listings for code blocks (pandoc --listings)")
 	cmd.Flags().StringVar(&s.TitleMode, "title-mode", "path", "Title mode: name|path (default: path)")
+	cmd.Flags().StringSliceVar(&s.IncludeExt, "include-ext", nil, "Only include files with these extensions (repeatable, e.g. --include-ext .go). Empty means include all (except .md)")
 
 	// Pandoc/xelatex.
 	cmd.Flags().StringVar(&s.Pandoc, "pandoc", "pandoc", "Pandoc binary to run")
@@ -114,7 +126,11 @@ Destination:
 }
 
 func runUploadSource(ctx context.Context, cmd *cobra.Command, s *uploadSourceSettings, args []string) error {
-	inputs, err := collectSourceInputs(args)
+	if !s.Bundle && strings.TrimSpace(s.Name) != "" {
+		return errors.New("--name is only valid with --bundle")
+	}
+
+	inputs, err := collectSourceInputs(args, s.IncludeExt, s.Bundle)
 	if err != nil {
 		return err
 	}
@@ -147,8 +163,39 @@ func runUploadSource(ctx context.Context, cmd *cobra.Command, s *uploadSourceSet
 	pandocOpts.HighlightStyle = strings.TrimSpace(s.Theme)
 	pandocOpts.Listings = s.Listings
 
+	if s.Bundle {
+		pandocOpts.TOC = true
+		pandocOpts.TOCDepth = s.TOCDepth
+	}
+
 	if s.DryRun {
 		fmt.Fprintf(cmd.OutOrStdout(), "DRY: remote-dir=%s\n", remoteDir)
+		if s.Bundle {
+			bundleName := strings.TrimSpace(s.Name)
+			if bundleName == "" {
+				bundleName = "src-bundle"
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "DRY: bundle name=%s\n", bundleName)
+			for _, in := range inputs {
+				src := in.AbsPath
+				title := in.Title(s.TitleMode)
+				lang := languageForPath(src)
+				fmt.Fprintf(cmd.OutOrStdout(), "DRY: include %s (lang=%q, title=%q)\n", src, lang, title)
+			}
+			pdfName := ensurePDFSuffix(bundleName)
+			if s.PDFOnly {
+				outDir := s.OutputDir
+				if outDir == "" {
+					outDir = "."
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "DRY: render bundle -> %s\n", filepath.Join(outDir, pdfName))
+			} else {
+				fmt.Fprintf(cmd.OutOrStdout(), "DRY: render bundle -> <tmp>/%s\n", pdfName)
+				fmt.Fprintf(cmd.OutOrStdout(), "DRY: upload %s -> %s\n", pdfName, remoteDir)
+			}
+			return nil
+		}
+
 		for _, in := range inputs {
 			src := in.AbsPath
 			pdfName := strings.TrimSuffix(filepath.Base(src), filepath.Ext(src)) + ".pdf"
@@ -176,6 +223,19 @@ func runUploadSource(ctx context.Context, cmd *cobra.Command, s *uploadSourceSet
 		}
 		if err := os.MkdirAll(outDir, 0o755); err != nil {
 			return errors.Wrap(err, "failed to create output directory")
+		}
+
+		if s.Bundle {
+			bundleName := strings.TrimSpace(s.Name)
+			if bundleName == "" {
+				bundleName = "src-bundle"
+			}
+			outPDF := filepath.Join(outDir, ensurePDFSuffix(bundleName))
+			if err := convertSourceBundleToPDF(ctx, inputs, s.TitleMode, outPDF, pandocOpts); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "OK: generated %s\n", outPDF)
+			return nil
 		}
 
 		for _, in := range inputs {
@@ -209,6 +269,47 @@ func runUploadSource(ctx context.Context, cmd *cobra.Command, s *uploadSourceSet
 		return errors.Wrap(err, "failed to create temp directory")
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	if s.Bundle {
+		bundleName := strings.TrimSpace(s.Name)
+		if bundleName == "" {
+			bundleName = "src-bundle"
+		}
+		pdfName := ensurePDFSuffix(bundleName)
+		outPDF := filepath.Join(tmpDir, pdfName)
+
+		if err := convertSourceBundleToPDF(ctx, inputs, s.TitleMode, outPDF, pandocOpts); err != nil {
+			return err
+		}
+
+		docName, _ := util.DocPathToName(outPDF)
+
+		// Existence check.
+		existingNode, err := apiCtx.Filetree().NodeByPath(docName, dstNode)
+		if err == nil {
+			if !s.Force {
+				fmt.Fprintf(cmd.OutOrStdout(), "SKIP: %s already exists in %s (use --force to overwrite)\n", docName, remoteDir)
+				return nil
+			}
+
+			if existingNode.IsDirectory() {
+				return errors.Errorf("cannot overwrite directory %q in %s", docName, remoteDir)
+			}
+
+			if err := apiCtx.DeleteEntry(existingNode, false, false); err != nil {
+				return errors.Wrap(err, "failed to delete existing file")
+			}
+			apiCtx.Filetree().DeleteNode(existingNode)
+		}
+
+		document, err := apiCtx.UploadDocument(dstNode.Id(), outPDF, true, nil)
+		if err != nil {
+			return errors.Wrapf(err, "failed to upload file [%s]", outPDF)
+		}
+		apiCtx.Filetree().AddDocument(document)
+		fmt.Fprintf(cmd.OutOrStdout(), "OK: uploaded %s -> %s\n", pdfName, remoteDir)
+		return nil
+	}
 
 	for _, in := range inputs {
 		src := in.AbsPath
@@ -250,9 +351,11 @@ func runUploadSource(ctx context.Context, cmd *cobra.Command, s *uploadSourceSet
 	return nil
 }
 
-func collectSourceInputs(paths []string) ([]sourceInput, error) {
+func collectSourceInputs(paths []string, includeExt []string, deterministic bool) ([]sourceInput, error) {
 	seen := map[string]struct{}{}
 	var out []sourceInput
+
+	allowed := normalizeExtList(includeExt)
 
 	for _, p := range paths {
 		pp := strings.TrimSpace(p)
@@ -270,6 +373,7 @@ func collectSourceInputs(paths []string) ([]sourceInput, error) {
 		}
 
 		if info.IsDir() {
+			var dirFiles []sourceInput
 			err := filepath.WalkDir(abs, func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					return err
@@ -279,6 +383,9 @@ func collectSourceInputs(paths []string) ([]sourceInput, error) {
 				}
 				// Skip obvious markdown inputs; those belong to `upload md` / `upload bundle`.
 				if strings.EqualFold(filepath.Ext(d.Name()), ".md") {
+					return nil
+				}
+				if len(allowed) > 0 && !extAllowed(path, allowed) {
 					return nil
 				}
 
@@ -291,13 +398,33 @@ func collectSourceInputs(paths []string) ([]sourceInput, error) {
 					return errors.Wrap(err, "failed to compute relative path")
 				}
 
-				seen[path] = struct{}{}
-				out = append(out, sourceInput{AbsPath: path, RelPath: rel})
+				dirFiles = append(dirFiles, sourceInput{AbsPath: path, RelPath: rel})
 				return nil
 			})
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to walk directory: %s", abs)
 			}
+
+			if deterministic {
+				sort.Slice(dirFiles, func(i, j int) bool {
+					return strings.ToLower(dirFiles[i].RelPath) < strings.ToLower(dirFiles[j].RelPath)
+				})
+			}
+
+			for _, f := range dirFiles {
+				if _, ok := seen[f.AbsPath]; ok {
+					continue
+				}
+				seen[f.AbsPath] = struct{}{}
+				out = append(out, f)
+			}
+			continue
+		}
+
+		if strings.EqualFold(filepath.Ext(abs), ".md") {
+			continue
+		}
+		if len(allowed) > 0 && !extAllowed(abs, allowed) {
 			continue
 		}
 
@@ -308,9 +435,11 @@ func collectSourceInputs(paths []string) ([]sourceInput, error) {
 		out = append(out, sourceInput{AbsPath: abs, RelPath: filepath.Base(abs)})
 	}
 
-	sort.Slice(out, func(i, j int) bool {
-		return strings.ToLower(out[i].AbsPath) < strings.ToLower(out[j].AbsPath)
-	})
+	if !deterministic {
+		sort.Slice(out, func(i, j int) bool {
+			return strings.ToLower(out[i].AbsPath) < strings.ToLower(out[j].AbsPath)
+		})
+	}
 	return out, nil
 }
 
@@ -332,6 +461,60 @@ func convertSourceFileToPDF(ctx context.Context, srcPath string, title string, o
 	}
 
 	return mdpdf.ConvertMarkdownFileToPDF(ctx, mdPath, outPDF, pandocOpts)
+}
+
+func convertSourceBundleToPDF(ctx context.Context, inputs []sourceInput, titleMode string, outPDF string, pandocOpts mdpdf.PandocOptions) error {
+	body, err := buildSourceBundleMarkdown(inputs, titleMode)
+	if err != nil {
+		return err
+	}
+
+	tmpDir, err := os.MkdirTemp("", "remarquee-src-bundle-md-")
+	if err != nil {
+		return errors.Wrap(err, "failed to create temp directory")
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	mdPath := filepath.Join(tmpDir, "src-bundle.md")
+	if err := os.WriteFile(mdPath, []byte(body), 0o644); err != nil {
+		return errors.Wrap(err, "failed to write source bundle markdown")
+	}
+
+	return mdpdf.ConvertMarkdownFileToPDF(ctx, mdPath, outPDF, pandocOpts)
+}
+
+func buildSourceBundleMarkdown(inputs []sourceInput, titleMode string) (string, error) {
+	var b strings.Builder
+
+	for i, in := range inputs {
+		srcBytes, err := os.ReadFile(in.AbsPath)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to read source file: %s", in.AbsPath)
+		}
+		src := string(srcBytes)
+
+		title := in.Title(titleMode)
+		lang := languageForPath(in.AbsPath)
+		fence := fenceForCode(src)
+
+		fmt.Fprintf(&b, "# %s\n\n", title)
+		if lang != "" {
+			b.WriteString(fence + lang + "\n")
+		} else {
+			b.WriteString(fence + "\n")
+		}
+		b.WriteString(src)
+		if !strings.HasSuffix(src, "\n") {
+			b.WriteString("\n")
+		}
+		b.WriteString(fence + "\n\n")
+
+		if i < len(inputs)-1 {
+			b.WriteString("```{=latex}\n\\newpage\n```\n\n")
+		}
+	}
+
+	return b.String(), nil
 }
 
 func buildSourceMarkdown(srcPath string, title string) (string, error) {
@@ -426,4 +609,25 @@ func languageForPath(p string) string {
 	default:
 		return ""
 	}
+}
+
+func normalizeExtList(exts []string) map[string]struct{} {
+	out := map[string]struct{}{}
+	for _, e := range exts {
+		ee := strings.TrimSpace(strings.ToLower(e))
+		if ee == "" {
+			continue
+		}
+		if !strings.HasPrefix(ee, ".") {
+			ee = "." + ee
+		}
+		out[ee] = struct{}{}
+	}
+	return out
+}
+
+func extAllowed(path string, allowed map[string]struct{}) bool {
+	ext := strings.ToLower(filepath.Ext(path))
+	_, ok := allowed[ext]
+	return ok
 }
