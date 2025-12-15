@@ -193,3 +193,12 @@ Discovered that both V3/V5 and V6 formats are in active use on reMarkable tablet
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md — Updated with Step 9
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/go_reimplementation_gaps.md — Updated with dual-format support requirement
 
+
+## 2025-12-14
+
+Committed research findings: dual-format support requirement (V3/V5 + V6), updated gap analysis and diary. Commits: 76e1249 (main changes), 70c5421 (diary update).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md — Updated with commit hash (commit 70c5421)
+
