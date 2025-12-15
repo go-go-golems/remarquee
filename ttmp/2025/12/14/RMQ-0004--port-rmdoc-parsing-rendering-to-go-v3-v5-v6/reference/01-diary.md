@@ -180,3 +180,44 @@ This step turns the foundational `pkg/rmdoc` work into an actual tool you can ru
   - `remarquee/cmd/remarquee/main.go`
 - Run:
   - `cd remarquee && go run ./cmd/remarquee rmdoc inspect <some.rmdoc>`
+
+## Step 4: Add integration tests for `pkg/rmdoc.OpenFile` using real fixtures (legacy + cPages)
+
+This step makes the `.rmdoc` parsing layer safer to iterate on by adding integration tests against real `.rmdoc`-style fixtures already present in the repo: a modern `cPages` fixture from `remarks` and a legacy fixture from `rmapi`. This anchors schema detection and page-plan logic to concrete files, so future refactors don’t silently break one of the formats.
+
+**Commit (code):** 3036c7e — "RMQ-0004: rmdoc OpenFile integration tests (legacy + cPages fixtures)"
+
+### What I did
+- Added `remarquee/pkg/rmdoc/open_integration_test.go` with tests that open:
+  - `../remarks/tests/in/copies of different pages.rmdoc` (cPages + PDF payload)
+  - `../rmapi/archive/test.zip` (legacy `.content` + V3 `.rm`)
+- Asserted schema detection, doc type detection, and basic page-plan expectations (page counts + inserted pages).
+
+### Why
+- We need confidence that we keep supporting both schema families while we build rendering.
+- Unit tests against hand-rolled JSON aren’t enough; the zip layout and file naming matter too.
+
+### What worked
+- `go test ./pkg/rmdoc -count=1` passes.
+- `go test ./... -count=1` in `remarquee/` passes.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- The rmapi legacy fixture’s `.content` can omit `pages[]` entirely and rely only on `pageCount`.
+- The cPages fixture contains inserted pages that surface directly as `SourcePDFPage == -1` in our model.
+
+### What was tricky to build
+- Computing fixture paths robustly across `go test` execution contexts; solved via `runtime.Caller` relative path resolution.
+
+### What warrants a second pair of eyes
+- Are these tests “too coupled” to the current fixtures, and should we copy minimal fixtures into `remarquee/pkg/rmdoc/testdata/` instead?
+
+### What should be done in the future
+- Add a real-device legacy PDF `.rmdoc` fixture (downloaded from cloud) once auth is stable again.
+- Add fixture-driven golden PDF rendering tests once the render pipeline exists.
+
+### Code review instructions
+- Start in `remarquee/pkg/rmdoc/open_integration_test.go`.
+- Run `cd remarquee && go test ./pkg/rmdoc -count=1`.

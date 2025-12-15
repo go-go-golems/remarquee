@@ -16,6 +16,8 @@ RelatedFiles:
       Note: Unit tests for schema detection and page plan generation (commit 49acbde)
     - Path: remarquee/pkg/rmdoc/open.go
       Note: Open .rmdoc zip and extract content/metadata/pagedata/pdf (commit 49acbde)
+    - Path: remarquee/pkg/rmdoc/open_integration_test.go
+      Note: Integration tests for OpenFile against legacy + cPages fixtures (commit 3036c7e)
     - Path: remarquee/pkg/rmdoc/pagedata.go
       Note: Apply .pagedata templates to PageRefs (commit 49acbde)
     - Path: remarquee/pkg/rmdoc/types.go
@@ -34,6 +36,7 @@ ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-14T20:59:12.658149443-05:00
 ---
+
 
 
 

@@ -67,3 +67,13 @@ Step 3: added remarquee rmdoc inspect CLI for schema/page-plan debugging (commit
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/reference/01-diary.md — Added Step 3
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/tasks.md — Checked off inspect task
 
+
+## 2025-12-14
+
+Step 4: added integration tests for pkg/rmdoc.OpenFile using legacy + cPages fixtures (commit 3036c7e).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/open_integration_test.go — New integration tests
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/reference/01-diary.md — Added Step 4
+
