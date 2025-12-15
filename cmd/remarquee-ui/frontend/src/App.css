@@ -17,13 +17,14 @@
 }
 
 .app-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
   flex: 1;
   min-height: 0;
+  gap: 0;
 }
 
 .sidebar {
-  width: 300px;
   background: #ecf0f1;
   border-right: 1px solid #bdc3c7;
   padding: 1rem;
@@ -31,11 +32,52 @@
 }
 
 .main-panel {
-  flex: 1;
   padding: 2rem;
   overflow-y: auto;
-  background: #f8f9fa;
+  background: #ffffff;
   color: #2c3e50;
+}
+
+.guidance-panel {
+  background: #fff9e6;
+  border-left: 3px solid #f39c12;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.guidance-panel h2 {
+  margin-top: 0;
+  color: #d68910;
+  font-size: 1.1rem;
+}
+
+.guidance-panel h3 {
+  color: #2c3e50;
+  font-size: 1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.guidance-panel ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.guidance-panel li {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.guidance-panel .checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.guidance-panel .checklist-item::before {
+  content: "□";
+  font-size: 1.2rem;
+  color: #7f8c8d;
 }
 
 /* Document Selector */

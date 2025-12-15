@@ -7,6 +7,7 @@ import InspectPanel from './components/InspectPanel'
 import RenderActions from './components/RenderActions'
 import PDFViewer from './components/PDFViewer'
 import ValidationForm from './components/ValidationForm'
+import ValidationGuidance from './components/ValidationGuidance'
 
 function App() {
   const dispatch = useAppDispatch();
@@ -33,6 +34,10 @@ function App() {
           <PDFViewer />
           <ValidationForm />
         </main>
+
+        <aside className="guidance-panel">
+          <ValidationGuidance />
+        </aside>
       </div>
     </div>
   )
