@@ -70,3 +70,25 @@ Outcome: extended `remarquee upload md` with `--preserve-dirs` so when uploading
   - Collision detection is done on the computed remote location (`remoteDir/<relDir>/<docName>`), not just basename.
 - Added a unit test for remote directory joining (`joinRemoteDir`).
 
+## Step 3: Add `upload src` (syntax-highlighted source uploads)
+
+Outcome: added `remarquee upload src` to render source code files as PDFs (pandoc + xelatex) with syntax highlighting, then upload them as documents.
+
+**Commit (code):** 44fe8d80f46d891b1a414bf1b9c5bb62faecc15b — "remarquee: add upload src (syntax-highlighted PDFs)"
+
+### What I did
+- Added `remarquee upload src`:
+  - `cmd/remarquee/cmds/upload/src.go`
+  - supports `--theme` (pandoc `--highlight-style`), `--listings`, and `--title-mode name|path`
+  - reuses the same auth/destination/overwrite flags as other upload commands
+- Implemented `code -> markdown -> pdf`:
+  - wrapper markdown uses a safe fence length (handles code containing ``` sequences)
+  - language tag inferred from file extension (best-effort; unknown ext uses plain code block)
+- Added unit tests:
+  - fence selection (`fenceForCode`)
+  - extension→language mapping (`languageForPath`)
+
+### Next
+- Add a smoke test script for `upload src` (and likely a shared fixture directory).
+- Add embedded help docs for `upload bundle` and `upload src` (pkg/doc/upload/03,04).
+

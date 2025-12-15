@@ -34,3 +34,12 @@ Phase 2 (mirror dirs): extended `remarquee upload md` with `--preserve-dirs` to 
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/upload/md.go — Added preserve-dirs mode and per-file remote dir creation
 
+
+## 2025-12-15
+
+Phase 3 (source upload): added `remarquee upload src` to render source files as syntax-highlighted PDFs (pandoc/xelatex) and upload them (commit 44fe8d8...).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/upload/src.go — New `upload src` command
+
