@@ -17,13 +17,13 @@ Build `remarquee-ui`: an interactive web UI for validating `.rmdoc` parsing and 
 
 ## Phase 1 — Core API endpoints
 
-- [x] Create `cmd/remarquee-ui/api/` package structure
-- [x] Implement `GET /api/document/:id/inspect` (calls `pkg/rmdoc.OpenFile`)
-- [x] Implement `POST /api/render/background` (calls `pkg/rmdoc/render.BuildBackgroundPDF`)
-- [x] Implement `POST /api/render/legacy` (calls rmapi `PdfGenerator`)
-- [x] Implement `GET /api/outputs/:filename` (serve PDFs from outputs/)
-- [x] Add basic error handling and JSON responses
-- [x] Smoke-test all endpoints with `curl`
+- [ ] Create `cmd/remarquee-ui/api/` package structure
+- [ ] Implement `GET /api/document/:id/inspect` (calls `pkg/rmdoc.OpenFile`)
+- [ ] Implement `POST /api/render/background` (calls `pkg/rmdoc/render.BuildBackgroundPDF`)
+- [ ] Implement `POST /api/render/legacy` (calls rmapi `PdfGenerator`)
+- [ ] Implement `GET /api/outputs/:filename` (serve PDFs from outputs/)
+- [ ] Add basic error handling and JSON responses
+- [ ] Smoke-test all endpoints with `curl`
 
 ## Phase 2 — React frontend scaffold
 
