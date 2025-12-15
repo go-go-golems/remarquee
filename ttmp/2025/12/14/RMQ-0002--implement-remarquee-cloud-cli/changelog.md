@@ -112,3 +112,15 @@ Step 7: added embedded remarquee cloud docs (getting started, reference, usage e
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/doc.go — Embed update (commit d5f95e4...)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 7
 
+
+## 2025-12-14
+
+Step 8: expanded prose in cloud docs (getting started, reference, usage examples) to make them more user-friendly while staying concise. (commit cf805ccf17d75d96da243a24f85ee5513adb6358)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/cloud/01-getting-started-remarquee-cloud.md — Prose expansion (commit cf805cc...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/cloud/02-remarquee-cloud-reference.md — Prose expansion (commit cf805cc...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/cloud/03-remarquee-cloud-usage-examples.md — Prose expansion (commit cf805cc...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 8
+

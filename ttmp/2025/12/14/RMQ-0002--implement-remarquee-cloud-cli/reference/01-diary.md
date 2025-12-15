@@ -403,3 +403,26 @@ We created three pages: a “getting started” guide, a verb-by-verb reference,
 - `remarquee help remarquee-cloud-getting-started`
 - `remarquee help remarquee-cloud-reference`
 - `remarquee help remarquee-cloud-usage-examples`
+
+## Step 8: Expand cloud docs prose for user-friendliness
+
+This step improved the three cloud documentation pages by expanding the prose to be more user-friendly while staying concise. We added explanatory context about what rmapi is, why token-based auth is safer, what `.rmdoc` files contain, why structured output is useful for scripting, and how "safe by default" design makes `rm` work well in scripts. The expansions followed the documentation style guide and added about 20-30 lines per document without making them verbose.
+
+**Commit (docs):** cf805ccf17d75d96da243a24f85ee5513adb6358 — "📝 remarquee: expand cloud docs prose for user-friendliness"
+
+### What I did
+- Expanded introduction in `01-getting-started-remarquee-cloud.md`:
+  - Added context about rmapi being a battle-tested library
+  - Explained why scriptable workflows matter
+  - Expanded auth section to explain the two-token flow and why it's safer than password-based auth
+  - Clarified what `.rmdoc` files are (zip archives with metadata + content + annotations)
+  - Expanded troubleshooting to cover more common gotchas (case-sensitive paths, broken pipe errors)
+- Expanded explanations in `02-remarquee-cloud-reference.md`:
+  - Made the intro clearer about this being a "man page" style reference
+  - Expanded dual-mode output section to explain why structured output is useful for scripts
+  - Clarified `rm`'s safe-by-default design and how it enables dry-run patterns
+- Expanded workflow context in `03-remarquee-cloud-usage-examples.md`:
+  - Added more context about defensive habits and why they matter
+  - Expanded explanation of scriptable discovery (why JSON is better than text parsing)
+  - Clarified why `find` is powerful for locating content
+  - Expanded safe validation workflow section to explain the sandbox pattern
