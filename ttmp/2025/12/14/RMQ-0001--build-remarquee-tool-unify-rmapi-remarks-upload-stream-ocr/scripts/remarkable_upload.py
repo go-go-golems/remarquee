@@ -29,6 +29,19 @@ class UploadTarget:
     pdf_name: str
 
 
+@dataclass(frozen=True)
+class RemoteLocation:
+    """
+    Where to upload a given PDF.
+
+    - remote_dir: remote directory (must end with '/'), suitable for `rmapi put <pdf> <remote_dir>`
+    - remote_dir_mkdir: remote directory without trailing '/', suitable for `rmapi mkdir <path>`
+    """
+
+    remote_dir: str
+    remote_dir_mkdir: str
+
+
 def _run(
     argv: list[str],
     *,
@@ -242,6 +255,16 @@ def _rm_get(remote_path: str) -> int:
     return cp.returncode
 
 
+def _rm_mkdir(remote_path: str) -> tuple[int, str]:
+    """
+    Returns (exit_code, output). Uses rmapi's shell command runner.
+
+    Note: rmapi mkdir expects no trailing slash.
+    """
+    cp = _run(["rmapi", "mkdir", remote_path], check=False, capture=True)
+    return cp.returncode, (cp.stdout or "")
+
+
 def _remote_file_exists(remote_dir: str, pdf_name: str) -> bool:
     # First try ls (cheap, doesn't download)
     rc, out = _rm_ls(remote_dir)
@@ -266,10 +289,45 @@ def _upload_pdf(local_pdf: Path, remote_dir: str, *, force: bool) -> None:
     _run(argv, check=True, capture=False)
 
 
+def _ensure_remote_dir_exists(remote_dir: str, *, dry_run: bool) -> None:
+    """
+    Ensures remote_dir exists by creating intermediate directories if needed.
+
+    remote_dir should be like "ai/YYYY/MM/DD/..." and may end with "/".
+    """
+    rd = remote_dir.strip().strip("/")
+    if rd == "":
+        return
+
+    parts = [p for p in rd.split("/") if p]
+    current = ""
+    for part in parts:
+        current = f"{current}/{part}" if current else part
+
+        rc, _out = _rm_ls(current + "/")
+        if rc == 0:
+            continue
+
+        if dry_run:
+            print(f"DRY: rmapi mkdir {current}")
+            continue
+
+        rc2, out2 = _rm_mkdir(current)
+        if rc2 == 0:
+            continue
+
+        # "entry already exists" is printed by rmapi's mkdir command in some cases.
+        if "entry already exists" in out2.lower():
+            continue
+
+        raise RuntimeError(f"rmapi mkdir failed for {current!r}: {out2.strip()}")
+
+
 def _targets_from_args(
     md_files: list[str],
     *,
     ticket_dir: Path,
+    mirror_ticket_structure: bool,
 ) -> list[UploadTarget]:
     if md_files:
         targets: list[UploadTarget] = []
@@ -277,6 +335,14 @@ def _targets_from_args(
             p = Path(f).expanduser()
             if not p.is_absolute():
                 p = (Path.cwd() / p).resolve()
+            targets.append(UploadTarget(md_path=p, pdf_name=p.with_suffix(".pdf").name))
+        return targets
+
+    if mirror_ticket_structure:
+        targets = []
+        for p in sorted(ticket_dir.rglob("*.md"), key=lambda x: str(x).lower()):
+            if not p.is_file():
+                continue
             targets.append(UploadTarget(md_path=p, pdf_name=p.with_suffix(".pdf").name))
         return targets
 
@@ -345,6 +411,19 @@ def main(argv: Optional[list[str]] = None) -> int:
         default=None,
         help="Output directory for PDF when using --pdf-only (default: current directory).",
     )
+    parser.add_argument(
+        "--mirror-ticket-structure",
+        action="store_true",
+        help=(
+            "Upload all .md files under the ticket directory and mirror the ticket's directory structure on-device. "
+            "Files are uploaded under: ai/YYYY/MM/DD/<ticket-dir-name>/<relative-subdir>/"
+        ),
+    )
+    parser.add_argument(
+        "--remote-ticket-root",
+        default=None,
+        help="Override the on-device ticket root folder name (default: ticket directory name).",
+    )
 
     args = parser.parse_args(argv)
 
@@ -379,16 +458,25 @@ def main(argv: Optional[list[str]] = None) -> int:
         ticket_dir = found
 
     date_ymd = args.date or _default_date(ticket_dir)
-    remote_dir = _normalize_rm_dir(date_ymd)
+    base_remote_dir = _normalize_rm_dir(date_ymd)
 
-    targets = _targets_from_args(args.md, ticket_dir=ticket_dir)
+    targets = _targets_from_args(
+        args.md,
+        ticket_dir=ticket_dir,
+        mirror_ticket_structure=bool(args.mirror_ticket_structure),
+    )
 
     print(f"Ticket dir: {ticket_dir}")
     if not args.pdf_only:
-        print(f"Remote dir: {remote_dir}")
+        if args.mirror_ticket_structure:
+            ticket_root_name = args.remote_ticket_root or ticket_dir.name
+            print(f"Remote dir: {base_remote_dir}{ticket_root_name}/ (mirroring ticket structure)")
+        else:
+            print(f"Remote dir: {base_remote_dir}")
     print(f"Force: {bool(args.force)}")
     print(f"Dry-run: {bool(args.dry_run)}")
     print(f"PDF-only: {bool(args.pdf_only)}")
+    print(f"Mirror ticket structure: {bool(args.mirror_ticket_structure)}")
 
     # Determine output directory for PDF-only mode
     output_dir = Path.cwd()
@@ -408,16 +496,38 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"\n=== {t.md_path} ===")
         print(f"PDF name: {t.pdf_name}")
 
+        # Decide remote directory per file
+        remote_dir = base_remote_dir
+        if args.mirror_ticket_structure:
+            ticket_root_name = args.remote_ticket_root or ticket_dir.name
+            try:
+                rel = t.md_path.relative_to(ticket_dir)
+                rel_parent = rel.parent.as_posix()
+            except ValueError:
+                # File not under ticket_dir; fall back to flat upload under ticket root.
+                rel_parent = ""
+
+            remote_dir = base_remote_dir.rstrip("/") + "/" + ticket_root_name.strip("/") + "/"
+            if rel_parent and rel_parent != ".":
+                remote_dir = remote_dir + rel_parent.strip("/") + "/"
+
         # Skip reMarkable existence check if PDF-only mode
-        if not args.pdf_only and not args.force and not args.dry_run:
-            exists = _remote_file_exists(remote_dir, t.pdf_name)
-            if exists:
-                print(
-                    f"SKIP: `{remote_dir}{t.pdf_name}` already exists on reMarkable.\n"
-                    f"Re-run with `--force` to overwrite.",
-                    file=sys.stderr,
-                )
-                continue
+        if not args.pdf_only:
+            try:
+                _ensure_remote_dir_exists(remote_dir, dry_run=bool(args.dry_run))
+            except Exception as e:
+                print(f"\nERROR: failed to ensure remote directory exists: {remote_dir}\n{e}", file=sys.stderr)
+                return 2
+
+            if not args.force and not args.dry_run:
+                exists = _remote_file_exists(remote_dir, t.pdf_name)
+                if exists:
+                    print(
+                        f"SKIP: `{remote_dir}{t.pdf_name}` already exists on reMarkable.\n"
+                        f"Re-run with `--force` to overwrite.",
+                        file=sys.stderr,
+                    )
+                    continue
 
         # Determine output PDF location
         if args.pdf_only:

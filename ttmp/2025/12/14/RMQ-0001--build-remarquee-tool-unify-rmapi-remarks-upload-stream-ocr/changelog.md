@@ -72,3 +72,34 @@ Added comprehensive prose paragraphs to major technical sections explaining cont
 
 Re-linked all source files to analysis documents. All four documents now have complete RelatedFiles entries: rmapi (13 Go files), remarks (13 Python files), remarkable_upload.py (1 Python script), goMarkableStream (13 Go files). Total 40 source files properly linked for bidirectional navigation.
 
+
+## 2025-12-14
+
+Added initial product design doc defining remarquee capability scope and UX surfaces (CLI/REPL/Web), plus a stable command taxonomy grounded in rmapi/remarks/upload/stream analyses.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/design-doc/01-product-design-remarquee-capability-scope-and-ux-surfaces-cli-repl-web.md — New design-doc baseline
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/index.md — Linked design doc from ticket index
+
+
+## 2025-12-14
+
+Added intern-oriented implementation guide for remarquee CLI + rmapi-backed cloud module, and created/backfilled an implementation diary.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/index.md — Linked playbook + diary from ticket index
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/playbook/01-implementation-guide-remarquee-cli-cloud-module-glazed-cobra-rmapi.md — New playbook with CLI/cloud implementation plan
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/05-diary.md — New diary doc (backfilled steps)
+
+
+## 2025-12-14
+
+Updated remarkable_upload.py (ticket-local) to support mirroring ticket directory structure on-device and uploaded all ticket markdown docs as PDFs under ai/YYYY/MM/DD/<ticket>/...
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/05-diary.md — Recorded Step 5 (ticket upload workflow)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/remarkable_upload.py — Added --mirror-ticket-structure + mkdir -p behavior
+

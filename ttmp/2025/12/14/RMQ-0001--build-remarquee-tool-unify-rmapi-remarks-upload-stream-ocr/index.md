@@ -205,6 +205,9 @@ These documents provide the foundation for integration. Next steps:
 
 - **Related Files**: See frontmatter RelatedFiles field
 - **External Sources**: See frontmatter ExternalSources field
+- **Design doc**: `design-doc/01-product-design-remarquee-capability-scope-and-ux-surfaces-cli-repl-web.md` (top-level product scope + CLI/REPL/Web taxonomy)
+- **Implementation guide (CLI + cloud)**: `playbook/01-implementation-guide-remarquee-cli-cloud-module-glazed-cobra-rmapi.md`
+- **Diary**: `reference/05-diary.md`
 
 ## Status
 
@@ -226,7 +229,7 @@ See [changelog.md](./changelog.md) for recent changes and decisions.
 
 - design/ - Architecture and design documents
 - reference/ - Prompt packs, API contracts, context summaries
-- playbooks/ - Command sequences and test procedures
+- playbook/ - Command sequences, implementation guides, and operational procedures
 - scripts/ - Temporary code and tooling
 - various/ - Working notes and research
 - archive/ - Deprecated or reference-only artifacts
