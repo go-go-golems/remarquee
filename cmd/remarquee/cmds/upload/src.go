@@ -143,14 +143,16 @@ func runUploadSource(ctx context.Context, cmd *cobra.Command, s *uploadSourceSet
 		return err
 	}
 
-	// Detect collisions early: two inputs producing the same document name.
-	seenDocNames := map[string]string{}
-	for _, in := range inputs {
-		name := strings.TrimSuffix(filepath.Base(in.AbsPath), filepath.Ext(in.AbsPath))
-		if other, ok := seenDocNames[name]; ok {
-			return errors.Errorf("duplicate document name %q from %q and %q (rename one file or upload to different remote directories)", name, other, in.AbsPath)
+	if !s.Bundle {
+		// Detect collisions early: two inputs producing the same document name (one-PDF-per-file mode).
+		seenDocNames := map[string]string{}
+		for _, in := range inputs {
+			name := strings.TrimSuffix(filepath.Base(in.AbsPath), filepath.Ext(in.AbsPath))
+			if other, ok := seenDocNames[name]; ok {
+				return errors.Errorf("duplicate document name %q from %q and %q (rename one file or upload to different remote directories)", name, other, in.AbsPath)
+			}
+			seenDocNames[name] = in.AbsPath
 		}
-		seenDocNames[name] = in.AbsPath
 	}
 
 	pandocOpts := mdpdf.DefaultPandocOptions()
