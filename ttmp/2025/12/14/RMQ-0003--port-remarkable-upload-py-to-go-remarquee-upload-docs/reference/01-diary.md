@@ -8,29 +8,18 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: cmd/remarquee/cmds/cloud/put.go
+    - Path: remarquee/cmd/remarquee/cmds/cloud/put.go
       Note: Existing upload semantics to mirror
-    - Path: cmd/remarquee/cmds/cloud/rmapi.go
+    - Path: remarquee/cmd/remarquee/cmds/cloud/rmapi.go
       Note: Current rmapi bootstrap helper to refactor
-    - Path: cmd/remarquee/cmds/upload/md_test.go
-      Note: Unit tests for recursion/date normalization (commit 6c57171...)
-    - Path: cmd/remarquee/main.go
+    - Path: remarquee/cmd/remarquee/main.go
       Note: Wiring point for new upload command group
-    - Path: pkg/doc/doc.go
-      Note: Embed patterns updated to include upload docs (commit 6c57171...)
-    - Path: pkg/doc/upload/01-remarquee-upload-getting-started.md
-      Note: Embedded getting started guide (commit 6c57171...)
-    - Path: pkg/doc/upload/02-remarquee-upload-reference.md
-      Note: Embedded command reference (commit 6c57171...)
-    - Path: pkg/mdpdf/preprocess_test.go
-      Note: Unit tests for preprocessing contracts (commit 6c57171...)
-    - Path: ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/design-doc/01-port-remarkable-upload-py-to-go-remarquee-upload-docs.md
+    - Path: remarquee/ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/design-doc/01-port-remarkable-upload-py-to-go-remarquee-upload-docs.md
       Note: Spec/design for the implementation steps
 ExternalSources: []
-Summary: Implementation diary for RMQ-0003 (port remarkable_upload.py into remarquee as a general-purpose markdown uploader).
+Summary: "Implementation diary for RMQ-0003 (port remarkable_upload.py into remarquee as a general-purpose markdown uploader)."
 LastUpdated: 2025-12-14T20:55:51.275801633-05:00
 ---
-
 
 
 # Diary
