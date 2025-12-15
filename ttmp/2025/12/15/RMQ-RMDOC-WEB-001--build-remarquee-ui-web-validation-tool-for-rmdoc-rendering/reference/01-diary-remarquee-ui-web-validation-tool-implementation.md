@@ -254,6 +254,144 @@ This step completes the frontend by implementing the Redux Toolkit store (3 slic
 - **CSS organization**: all styles in `App.css` (could be split per-component in the future)
 - **Build output**: `frontend/dist/` (ignored by git, served in prod mode)
 
+## Step 4: Implement Phase 4 (validation persistence)
+
+This step adds backend validation persistence, writing validation sessions as both JSON (machine-readable) and Markdown (human-readable) to the ticket's `reference/validation/` directory. This enables durable tracking of validation results across UI sessions and provides copy/paste-ready artifacts for documentation.
+
+**Commit (code):** 6061879 — "RMQ-RMDOC-WEB-001: Phase 4 - Validation persistence (backend writes JSON and MD to ticket reference/validation)"
+
+### What I did
+
+- Created `cmd/remarquee-ui/api/validation.go`:
+  - `HandleValidation`: POST endpoint that receives `ValidationSession` JSON
+  - Generates session ID from Unix timestamp
+  - Creates `reference/validation/` directory if it doesn't exist
+  - Writes JSON file: `validation-<timestamp>.json`
+  - Writes Markdown file: `validation-<timestamp>.md` with formatted session details
+  - Returns `{session_id, saved_paths}` response
+  - `formatValidationMarkdown`: helper to generate human-readable Markdown
+- Updated `main.go` to wire `/api/validation` endpoint with ticket directory path
+- Smoke-tested: submitted validation via curl, verified files created in ticket
+
+### Why
+
+- **Dual format**: JSON for programmatic access, Markdown for human review
+- **Ticket-relative paths**: validation sessions stored in ticket (not ephemeral outputs/)
+- **Timestamp-based IDs**: deterministic, sortable, collision-resistant
+
+### What worked
+
+- Both JSON and Markdown files created successfully
+- Markdown format is readable and includes all relevant context (document ID, actions, status, notes)
+
+### What didn't work
+
+- (No issues)
+
+### What I learned
+
+- Go's `os.MkdirAll` with `0755` creates parent directories automatically
+- Relative paths in `ticketDir` work fine when running from `cmd/remarquee-ui/`
+
+### What was tricky to build
+
+- **Relative paths**: ensuring `ticketDir` path is correct relative to where the binary runs
+
+### What warrants a second pair of eyes
+
+- **Path security**: confirm `ticketDir` path is safe and doesn't allow path traversal
+- **File permissions**: confirm 0644 for files and 0755 for directories is appropriate
+
+### What should be done in the future
+
+- Add validation history GET endpoint to list past sessions (skipped for MVP)
+- Add timestamp to UI (currently only in backend response)
+- Consider compressing old validation sessions (e.g., archive after 30 days)
+
+### Code review instructions
+
+- Review `cmd/remarquee-ui/api/validation.go`: confirm JSON/MD generation logic
+- Review `main.go`: confirm ticket directory path is correct
+- Test: run server, submit validation, check files in `reference/validation/`
+
+### Technical details
+
+- **Session ID format**: `validation-<unix_timestamp>`
+- **JSON structure**: matches frontend `ValidationSession` interface
+- **Markdown format**: heading + metadata + actions list + notes section
+- **Directory**: `ttmp/2025/12/15/RMQ-RMDOC-WEB-001--build-remarquee-ui-web-validation-tool-for-rmdoc-rendering/reference/validation/`
+
+## Step 5: Implement Phase 5 (production build + embed)
+
+This step completes the tool by implementing production build with embedded frontend assets via `go:embed`. The result is a single self-contained binary (`remarquee-ui`) that serves the entire web application without requiring a separate Vite dev server. This makes deployment and distribution trivial: copy one file and run it.
+
+**Commit (code):** b01ec7e — "RMQ-RMDOC-WEB-001: Phase 5 - Production build with embedded assets (go:embed frontend/dist)"
+
+### What I did
+
+- Created `cmd/remarquee-ui/embed.go`:
+  - `//go:embed frontend/dist` directive to embed frontend build artifacts
+  - `GetFrontendFS()` helper to extract embedded filesystem
+- Updated `main.go`:
+  - Added prod mode logic: serves embedded assets via `http.FileServer(http.FS(frontendFS))`
+  - Dev mode unchanged: still expects Vite dev server on `:5173`
+- Updated `Makefile` `build` target:
+  - Runs `npm run build` first to generate `frontend/dist/`
+  - Then runs `go build` to embed and compile
+- Smoke-tested: `make build` → `./remarquee-ui` → verified index.html served + API endpoints work
+
+### Why
+
+- **Single binary deployment**: no need to ship frontend/ directory or run separate Vite server
+- **Production-ready**: embedded assets are minified and optimized by Vite
+- **Dev/prod parity**: same codebase, different modes via `--dev` flag
+
+### What worked
+
+- `go:embed` works perfectly with Vite's `dist/` output
+- `fs.Sub` correctly strips the `frontend/dist` prefix
+- `http.FileServer(http.FS(...))` serves embedded assets correctly
+- Production binary is ~10MB (includes React + Redux Toolkit)
+
+### What didn't work
+
+- (No issues)
+
+### What I learned
+
+- `go:embed` requires the embedded directory to exist at build time (Makefile ensures this)
+- `fs.Sub` is necessary to strip the embed path prefix before serving
+
+### What was tricky to build
+
+- **Embed path**: needed `fs.Sub(frontendDist, "frontend/dist")` to strip the prefix
+- **Makefile dependency**: must build frontend before Go binary
+
+### What warrants a second pair of eyes
+
+- **Embed directive**: confirm `//go:embed frontend/dist` includes all necessary files
+- **Build order**: confirm Makefile always builds frontend first
+- **Prod mode detection**: confirm `--dev` flag is the right way to switch modes
+
+### What should be done in the future
+
+- Add versioning/build info (e.g., `--version` flag with commit hash + build timestamp)
+- Consider adding a health check endpoint that returns build info
+- Add CORS headers if exposing to non-localhost clients
+
+### Code review instructions
+
+- Review `embed.go`: confirm `go:embed` directive and `GetFrontendFS` logic
+- Review `main.go` prod mode: confirm file server setup
+- Test: `cd cmd/remarquee-ui && make build && ./remarquee-ui` → open browser to `http://localhost:8080`
+
+### Technical details
+
+- **Embed directive**: `//go:embed frontend/dist` (must be directly above var)
+- **Binary size**: ~10MB (includes Go runtime + React + Redux Toolkit + app code)
+- **Dev mode**: `./remarquee-ui --dev` expects Vite on :5173
+- **Prod mode**: `./remarquee-ui` serves embedded assets + API on :8080
+
 ## Step 2: Implement Phase 1 — Core API endpoints
 
 This step implements the complete backend API for document inspection and PDF rendering. All 5 endpoints now work: test documents listing, document inspection (schema + pages), background PDF building (cPages/PDF-backed docs), legacy PDF rendering (V3/V5), and output file serving. The API is ready for frontend integration.
