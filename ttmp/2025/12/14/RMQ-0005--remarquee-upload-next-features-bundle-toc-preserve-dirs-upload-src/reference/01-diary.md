@@ -92,3 +92,9 @@ Outcome: added `remarquee upload src` to render source code files as PDFs (pando
 - Add a smoke test script for `upload src` (and likely a shared fixture directory).
 - Add embedded help docs for `upload bundle` and `upload src` (pkg/doc/upload/03,04).
 
+## Step 4: Add smoke test scripts + embedded help docs for new commands
+
+Outcome:
+- Added smoke test scripts for the new upload workflows (bundle, preserve-dirs, src).
+- Added embedded help docs for `upload bundle` and `upload src`, and updated the upload reference doc to mention them and `--preserve-dirs`.
+

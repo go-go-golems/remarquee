@@ -39,6 +39,7 @@ Before running pandoc:
 
 - `--dry-run`: prints planned conversions/uploads; does not run pandoc or upload
 - `--pdf-only --output-dir`: generate PDFs locally only
+- `--preserve-dirs`: when uploading directories, recreate the local relative directory structure remotely
 - `--pandoc`, `--pdf-engine`: control conversion tooling
 - `--mainfont`, `--monofont`, `--geometry`, `--latex-header-file`: typography customization
 
@@ -47,4 +48,12 @@ Before running pandoc:
 - `--non-interactive`: never prompt; fails if tokens are missing
 - `--reauth`: re-authenticate
 
+
+## remarquee upload bundle
+
+See `pkg/doc/upload/03-remarquee-upload-bundle.md`.
+
+## remarquee upload src
+
+See `pkg/doc/upload/04-remarquee-upload-src.md`.
 

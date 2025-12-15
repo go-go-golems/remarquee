@@ -43,3 +43,17 @@ Phase 3 (source upload): added `remarquee upload src` to render source files as 
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/upload/src.go — New `upload src` command
 
+
+## 2025-12-15
+
+Docs/tests: added embedded help docs for `upload bundle` + `upload src`, updated upload reference, and added smoke test scripts for bundle/preserve-dirs/src.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/upload/02-remarquee-upload-reference.md — Mention `--preserve-dirs` and link to new pages
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/upload/03-remarquee-upload-bundle.md — New embedded help page
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/upload/04-remarquee-upload-src.md — New embedded help page
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0005--remarquee-upload-next-features-bundle-toc-preserve-dirs-upload-src/scripts/01-smoke-test-upload-bundle.sh — Bundle smoke test
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0005--remarquee-upload-next-features-bundle-toc-preserve-dirs-upload-src/scripts/02-smoke-test-upload-md-preserve-dirs.sh — Preserve-dirs smoke test
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0005--remarquee-upload-next-features-bundle-toc-preserve-dirs-upload-src/scripts/03-smoke-test-upload-src.sh — Src smoke test
+
