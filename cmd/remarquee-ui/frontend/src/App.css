@@ -34,12 +34,15 @@
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  background: #f8f9fa;
+  color: #2c3e50;
 }
 
 /* Document Selector */
 .document-selector h2 {
   margin-top: 0;
   font-size: 1.1rem;
+  color: #2c3e50;
 }
 
 .document-list {
@@ -92,6 +95,7 @@
 
 .render-actions h2 {
   font-size: 1.1rem;
+  color: #2c3e50;
 }
 
 .action-buttons {
