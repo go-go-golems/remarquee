@@ -6,7 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help"
 )
 
-//go:embed tutorials/*.md
+//go:embed tutorials/*.md cloud/*.md
 var docFS embed.FS
 
 func AddDocToHelpSystem(helpSystem *help.HelpSystem) error {
