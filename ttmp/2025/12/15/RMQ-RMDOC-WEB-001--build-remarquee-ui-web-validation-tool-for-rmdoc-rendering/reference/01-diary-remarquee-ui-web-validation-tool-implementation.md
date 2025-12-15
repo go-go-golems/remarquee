@@ -165,6 +165,95 @@ This step completes the core backend API (inspect, render background, render leg
 - **Output file naming**: `{docId}-{action}-{timestamp}.pdf`
 - **Vite proxy**: configured in `vite.config.ts` with `target: 'http://localhost:8080'`
 
+## Step 3: Implement Phase 2+3 (Redux store + UI components)
+
+This step completes the frontend by implementing the Redux Toolkit store (3 slices: documents, render, validation) and all 5 core UI components (DocumentSelector, InspectPanel, RenderActions, PDFViewer, ValidationForm). The UI is now fully wired to the backend API and provides a complete validation workflow: select document → inspect → render → view PDF → submit validation.
+
+**Commit (code):** 3598a7b — "RMQ-RMDOC-WEB-001: Phase 2+3 - Redux store + UI components (DocumentSelector, InspectPanel, RenderActions, PDFViewer, ValidationForm)"
+
+### What I did
+
+- Created Redux store structure in `frontend/src/store/`:
+  - `store.ts`: main store configuration with 3 reducers
+  - `hooks.ts`: typed hooks (`useAppDispatch`, `useAppSelector`)
+  - `documentsSlice.ts`: manages test documents list, document selection, and inspect results
+  - `renderSlice.ts`: manages render jobs (background, legacy) and output paths
+  - `validationSlice.ts`: manages validation review state (status, notes) and submission
+- Updated `main.tsx` to wrap App in Redux `<Provider>`
+- Created 5 UI components in `frontend/src/components/`:
+  - `DocumentSelector.tsx`: displays test documents list, handles selection + inspect dispatch
+  - `InspectPanel.tsx`: displays parsed document metadata and pages table
+  - `RenderActions.tsx`: buttons for "Build Background" and "Render Legacy" actions
+  - `PDFViewer.tsx`: displays latest PDF output in iframe with open/download links, shows job history
+  - `ValidationForm.tsx`: PASS/FAIL/UNKNOWN radio buttons, notes textarea, submit/reset buttons
+- Updated `App.tsx` to use new layout (header + sidebar + main panel) and render all components
+- Updated `App.css` with comprehensive styling for all components (layout, buttons, tables, forms)
+- Fixed TypeScript errors: used `type` imports for `PayloadAction` and `TypedUseSelectorHook`
+- Verified build success: `npm run build` completes without errors
+
+### Why
+
+- **Redux Toolkit**: provides type-safe state management with minimal boilerplate
+- **3 slices**: logical separation of concerns (documents, rendering, validation)
+- **Typed hooks**: enforce type safety throughout the app
+- **Component-per-concern**: each component has a single responsibility and is easy to test/modify
+- **Iframe PDF viewer**: allows in-page PDF preview without requiring external viewer
+
+### What worked
+
+- Redux Toolkit async thunks handle API calls cleanly
+- All components compile and build successfully
+- TypeScript strict mode catches import errors early
+- CSS Grid/Flexbox layout provides responsive UI
+
+### What didn't work
+
+- Initial TypeScript errors due to `verbatimModuleSyntax` requiring type-only imports (fixed with `type` keyword)
+
+### What I learned
+
+- React 19 + Redux Toolkit 2.x work well together with modern TypeScript
+- `type` imports are required when `verbatimModuleSyntax` is enabled in TypeScript
+- Vite builds are very fast (~1.3s for this app)
+
+### What was tricky to build
+
+- **Type imports**: needed to use `import { type PayloadAction }` syntax to satisfy TypeScript strict mode
+- **Job history UI**: balancing between showing all jobs vs. only the latest (solved with `<details>` for history)
+
+### What warrants a second pair of eyes
+
+- **Redux slice design**: confirm the 3-slice separation makes sense (vs. combining documents+render)
+- **PDF viewer iframe**: confirm this works across browsers (especially with CORS/CSP)
+- **Validation form**: confirm UX is intuitive (status radio buttons + notes textarea)
+
+### What should be done in the future
+
+- Add loading spinners for async operations
+- Add error notifications (toast/banner) for API failures
+- Add keyboard shortcuts (e.g., Ctrl+Enter to submit validation)
+- Consider adding a "Clear all outputs" button to clean up the outputs/ directory
+
+### Code review instructions
+
+- Start in `frontend/src/store/store.ts`: verify 3 slices are configured
+- Review each slice (`documentsSlice.ts`, `renderSlice.ts`, `validationSlice.ts`): confirm async thunks and reducers
+- Review `App.tsx`: confirm layout and component hierarchy
+- Review each component in `components/`: confirm Redux hooks usage and event handlers
+- Run frontend build: `cd frontend && npm run build` (should succeed)
+- Visually inspect `App.css` for layout/styling
+
+### Technical details
+
+- **Redux slices**:
+  - `documents`: `{testDocuments, selectedDocumentId, inspectResult, loading, error}`
+  - `render`: `{jobs: RenderJob[], loading, error}`
+  - `validation`: `{currentReview: {status, notes}, history, loading, error}`
+- **Async thunks**: `fetchTestDocuments`, `fetchInspect`, `renderBackground`, `renderLegacy`, `submitValidation`
+- **Component props**: all components use Redux hooks (no prop drilling)
+- **CSS organization**: all styles in `App.css` (could be split per-component in the future)
+- **Build output**: `frontend/dist/` (ignored by git, served in prod mode)
+
 ## Step 2: Implement Phase 1 — Core API endpoints
 
 This step implements the complete backend API for document inspection and PDF rendering. All 5 endpoints now work: test documents listing, document inspection (schema + pages), background PDF building (cPages/PDF-backed docs), legacy PDF rendering (V3/V5), and output file serving. The API is ready for frontend integration.
