@@ -8,12 +8,14 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: cmd/remarquee/main.go
-      Note: Updated in commit daad862... (root help system wiring)
-    - Path: pkg/doc/doc.go
-      Note: Added in commit daad862... (embed + AddDocToHelpSystem)
-    - Path: pkg/doc/tutorials/01-adding-a-glazed-command-to-remarquee.md
-      Note: Added in commit daad862... (tutorial/playbook for adding commands)
+    - Path: cmd/remarquee/cmds/cloud/ls.go
+      Note: Added in commit df3d3b2... (cloud ls)
+    - Path: cmd/remarquee/cmds/cloud/rmapi.go
+      Note: Added in commit df3d3b2... (shared rmapi bootstrap)
+    - Path: cmd/remarquee/cmds/cloud/root.go
+      Note: Updated in commit df3d3b2... (register ls/stat)
+    - Path: cmd/remarquee/cmds/cloud/stat.go
+      Note: Added in commit df3d3b2... (cloud stat)
 ExternalSources: []
 Summary: 'Implementation diary for RMQ-0002 (remarquee cloud CLI): step-by-step narrative with commit hashes.'
 LastUpdated: 2025-12-14T19:30:28.750480955-05:00
@@ -200,6 +202,73 @@ The immediate payoff is discoverability: `remarquee help` now lists our tutorial
 
 ### Technical details
 - Slug: `remarquee-add-glazed-command`
+
+### What I'd do differently next time
+- N/A
+
+## Step 4: Add `remarquee cloud ls` and `remarquee cloud stat` (rmapi-backed)
+
+This step expanded the cloud CLI from a connectivity check (`refresh`) into two practical inspection commands: `ls` for browsing and `stat` for metadata. The goal was to keep the “one file per command” constraint while also keeping rmapi bootstrap logic DRY, so we factored auth/context creation into a small shared helper file.
+
+We validated both commands via `go run`, including structured JSON output for scripting. We also fixed a real edge case: `stat /` initially failed because the root node has an empty `ModifiedClient` timestamp; `stat` now emits `modified_time: null` for that case instead of erroring.
+
+**Commit (code):** df3d3b2d34c84b86f6dac8f5151693c3bc162add — "✨ remarquee: add cloud ls and stat commands"
+
+### What I did
+- Implemented `remarquee cloud ls`:
+  - `cmd/remarquee/cmds/cloud/ls.go`
+  - Supports dual-mode output (`--with-glaze-output --output json`)
+  - Implements sorting/filter flags similar to rmapi’s shell (`--long`, `--compact`, `--time`, etc.)
+- Implemented `remarquee cloud stat`:
+  - `cmd/remarquee/cmds/cloud/stat.go`
+  - Handles root node timestamp edge case (`modified_time: null`)
+- Refactored rmapi bootstrap into a helper:
+  - `cmd/remarquee/cmds/cloud/rmapi.go`
+  - `refresh`, `ls`, `stat` share `createApiCtx(AuthSettings)`
+- Wired both commands into the cloud group:
+  - `cmd/remarquee/cmds/cloud/root.go`
+
+### Why
+- `ls` and `stat` are the minimal “real” cloud browsing tools needed before implementing `get/put/mv/rm`.
+
+### What worked
+- Structured output works:
+  - `go run ./cmd/remarquee cloud ls / --with-glaze-output --output json`
+  - `go run ./cmd/remarquee cloud stat / --with-glaze-output --output json`
+
+### What didn't work
+- Initial attempt:
+  - `go run ./cmd/remarquee cloud stat / --with-glaze-output --output json`
+  - failed with: `failed to parse modified time: parsing time "" ...`
+  - Fixed by treating empty `ModifiedClient` as “no time”.
+
+### What I learned
+- rmapi’s root node uses empty strings for some metadata; commands should treat those as optional, not fatal.
+
+### What was tricky to build
+- Keeping auth flags consistent across commands while preserving “one file per command”; embedding `AuthSettings` is a good compromise.
+
+### What warrants a second pair of eyes
+- Validate `ls` path semantics and output fields (especially path computation via parent chain) match user expectations.
+
+### What should be done in the future
+- Consider centralizing common flag definitions for cloud commands (auth flags + standard formatting flags) once the command surface grows.
+
+### Code review instructions
+- Start at:
+  - `cmd/remarquee/cmds/cloud/ls.go`
+  - `cmd/remarquee/cmds/cloud/stat.go`
+  - `cmd/remarquee/cmds/cloud/rmapi.go`
+  - `cmd/remarquee/cmds/cloud/root.go`
+- Validate with:
+  - `go run ./cmd/remarquee cloud ls /`
+  - `go run ./cmd/remarquee cloud ls / --with-glaze-output --output json`
+  - `go run ./cmd/remarquee cloud stat / --with-glaze-output --output json`
+
+### Technical details
+- `stat /` emits:
+  - `modified_client: ""`
+  - `modified_time: null`
 
 ### What I'd do differently next time
 - N/A

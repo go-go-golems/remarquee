@@ -61,3 +61,15 @@ Step 3: wired Glazed help system at the remarquee root and added an embedded tut
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/tutorials/01-adding-a-glazed-command-to-remarquee.md — New tutorial/playbook page (commit daad862...)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 3
 
+
+## 2025-12-14
+
+Step 4: implemented rmapi-backed  and  with Glazed structured output; refactored shared rmapi bootstrap helper. (commit df3d3b2d34c84b86f6dac8f5151693c3bc162add)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/ls.go — Cloud ls (commit df3d3b2...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/rmapi.go — Shared bootstrap (commit df3d3b2...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/stat.go — Cloud stat (commit df3d3b2...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 4
+
