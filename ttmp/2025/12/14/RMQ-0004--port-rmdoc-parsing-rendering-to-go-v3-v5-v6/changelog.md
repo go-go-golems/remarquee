@@ -16,3 +16,12 @@ Seeded RMQ-0004 from RMQ-0001 research: created design doc for Go rmdoc data mod
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/reference/01-diary.md — Started diary for porting work
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/tasks.md — Initial task breakdown
 
+
+## 2025-12-14
+
+Diary Step 1: recorded seed commit hash (0850623) in RMQ-0004 diary (commit 329318c).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/reference/01-diary.md — Updated Step 1 commit hash
+
