@@ -55,3 +55,18 @@ Outcome: added `remarquee upload bundle` to collate multiple markdown inputs int
 - Add a smoke test script for `upload bundle` (real upload + `cloud ls` verification).
 - Decide/implement default ToC depth behavior and documentation.
 
+## Step 2: Implement `upload md --preserve-dirs` (mirror local subfolders remotely)
+
+Outcome: extended `remarquee upload md` with `--preserve-dirs` so when uploading directories, the tool recreates the local relative directory structure under the chosen remote base directory.
+
+**Commit (code):** 6d883d6c1f12c5b76d78a5153aa4c2fcfeae2b42 — "remarquee: upload md --preserve-dirs"
+
+### What I did
+- Added `--preserve-dirs` flag to `upload md`.
+- Changed internal file collection to keep each file’s relative path (so we can compute per-file remote subdirectories).
+- In preserve-dirs mode:
+  - PDFs are generated into subfolders under the temp dir to avoid basename collisions.
+  - Remote directories are created on-demand via `rmcloud.MkdirAll` (cached per remote directory).
+  - Collision detection is done on the computed remote location (`remoteDir/<relDir>/<docName>`), not just basename.
+- Added a unit test for remote directory joining (`joinRemoteDir`).
+

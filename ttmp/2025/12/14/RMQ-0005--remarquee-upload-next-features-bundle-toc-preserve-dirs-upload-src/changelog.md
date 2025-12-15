@@ -25,3 +25,12 @@ Phase 1 (bundle): added `remarquee upload bundle` to collate multiple markdown i
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/mdpdf/bundle.go — Wrapper markdown generation for stable ToC entries
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/mdpdf/pandoc.go — Added ToC/highlight options plumbing
 
+
+## 2025-12-15
+
+Phase 2 (mirror dirs): extended `remarquee upload md` with `--preserve-dirs` to recreate local relative subfolders under the chosen remote base (commit 6d883d6c...).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/upload/md.go — Added preserve-dirs mode and per-file remote dir creation
+

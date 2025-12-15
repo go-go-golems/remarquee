@@ -5,7 +5,7 @@
 - [x] Add tasks here
 
 - [x] Implement upload bundle: collate multiple markdown inputs into one PDF with ToC (pandoc wrapper approach)
-- [ ] Extend upload md with --preserve-dirs to mirror local directory structure remotely
+- [x] Extend upload md with --preserve-dirs to mirror local directory structure remotely
 - [ ] Add upload src: render source files as syntax-highlighted PDFs (code -> markdown -> pandoc)
 - [x] Extend pkg/mdpdf pandoc runner with ToC options (toc, toc-depth)
 - [ ] Extend pkg/mdpdf pandoc runner with highlight options (highlight style, listings)
