@@ -11,7 +11,9 @@ Intent: long-term
 Owners: []
 RelatedFiles:
     - Path: ../../../../../../../rmapi/annotations/pdf.go
-      Note: Legacy PDF renderer reference for coordinate inversion and content stream composition
+      Note: |-
+        Legacy PDF renderer reference for coordinate inversion and content stream composition
+        Legacy baseline approach: append drawing ops to existing page content
     - Path: ../../../../../../../rmc/src/rmc/exporters/svg.py
       Note: Reference for SCALE/X_SHIFT mapping from screen units to PDF points
     - Path: ../../../../../../../rmscene/src/rmscene/crdt_sequence.py
@@ -36,10 +38,16 @@ RelatedFiles:
         RMQ-0004 Step 14 (commit e0fc0f4) - anchor-aware bbox traversal
     - Path: pkg/rmdoc/bbox_test.go
       Note: Tests for stroke bbox + fixture smoke (commit cb097e1)
+    - Path: pkg/rmdoc/render/v6_merge_background.go
+      Note: RMQ-0004 Step 15 (commit 8b64ce5) - merge V6 strokes onto UI-ordered background PDF
+    - Path: pkg/rmdoc/render/v6_merge_background_test.go
+      Note: Fixture smoke test for merged output page count + overlay marker
     - Path: pkg/rmdoc/render/v6_strokes_pdf.go
       Note: RMQ-0004 Step 12 (commit fee29bd) - render decoded V6 strokes to single-page PDF
     - Path: pkg/rmdoc/render/v6_strokes_pdf_test.go
       Note: Fixture-based PDF smoke test (%PDF header) (commit fee29bd)
+    - Path: pkg/rmdoc/rm_archive_rmfiles.go
+      Note: Read .rm files by pageID from .rmdoc archive
     - Path: pkg/rmdoc/rmv6_anchor_pos.go
       Note: RMQ-0004 Step 14 (commit e0fc0f4) - build anchor_pos mapping (rmc-style)
     - Path: pkg/rmdoc/rmv6_crdt_sequence.go
@@ -60,6 +68,8 @@ RelatedFiles:
       Note: RMQ-0004 Step 10 (commit 3ce401d) - build minimal V6 scene tree (groups + lines)
     - Path: pkg/rmdoc/rmv6_scene_tree_test.go
       Note: Fixture-based test for V6 scene tree construction (commit 3ce401d)
+    - Path: pkg/rmdoc/rmv6_strokes_extract.go
+      Note: Anchor-aware stroke extraction from scene tree
     - Path: pkg/rmdoc/rmv6_tagged_block_reader.go
       Note: RMQ-0004 Step 7 (commit 1cbf052) - Go port of rmscene tagged-block reader primitives (header + block + subblock boundaries)
     - Path: pkg/rmdoc/rmv6_tagged_block_reader_test.go
@@ -72,6 +82,8 @@ RelatedFiles:
       Note: RMQ-0004 Step 11 (commit b9a1ee9) - normalized Stroke primitives
     - Path: ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md
       Note: Prior research diary that this ticket builds on
+    - Path: ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/analyze_remarks_merge.py
+      Note: Reference description of merge math (w_svg vs w_bg etc)
     - Path: ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/design-doc/01-design-go-rmdoc-data-model-and-apis.md
       Note: Design decisions and API proposal for this ticket
 ExternalSources: []
@@ -80,6 +92,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -852,3 +865,61 @@ This step completes RMQ-0004 task 43 by making bounding box computation **anchor
   - `remarquee/pkg/rmdoc/rmv6_scene_tree.go`
 - Run:
   - `cd remarquee && go test ./pkg/rmdoc -count=1`
+
+## Step 15: Merge V6 strokes onto background PDF pages (task 44, strokes-only)
+
+This step implements the core “PDF merge” milestone: take the **UI-ordered background PDF** (assembled from `.content`/cPages) and overlay **V6 strokes** on top, per page. The merge logic follows the structure of the `remarks`/PyMuPDF approach: compute the annotation bbox, compute a canvas size that fits both background and annotation extents, shift background and overlay to align, then emit a merged page.
+
+This is still **strokes-only** (no smart highlights, no glyph rectangles, no typed text rendering), but it establishes the page-alignment plumbing needed for the remaining merge tasks.
+
+**Commit (code):** 8b64ce5 — "RMQ-0004: merge V6 strokes onto background PDF"
+
+### What I did
+- Added a merge entry point:
+  - `pkg/rmdoc/render/v6_merge_background.go`
+  - `MergeRMDocV6OntoBackgroundPDF(ctx, rmdocPath, opts)`:
+    - opens `.rmdoc`
+    - builds UI-ordered background PDF via `BuildBackgroundPDF`
+    - loads V6 `.rm` by pageID
+    - parses scene tree, extracts strokes (anchor-aware), computes bbox
+    - applies `remarks`-style merge math (w_svg vs w_bg / h_svg vs h_bg) to compute:
+      - canvas size (max of dimensions)
+      - `x_bg/y_bg` translation for background
+      - `x_svg/y_svg` translation for overlay
+    - writes a merged PDF with the same page count as the UI plan
+- Added V6 stroke extraction in global coordinates:
+  - `pkg/rmdoc/rmv6_strokes_extract.go` (`ExtractRMV6StrokesWithAnchors`)
+- Added `.rm` lookup by pageID inside an archive:
+  - `pkg/rmdoc/rm_archive_rmfiles.go` (`ReadRMFileFromArchive`)
+- Added fixture-based smoke test:
+  - `pkg/rmdoc/render/v6_merge_background_test.go` ensures:
+    - output page count equals `len(doc.Pages)`
+    - at least one page contains an `rmv6-overlay` marker
+
+### Why
+- For PDF-backed documents, “draw strokes onto the background page” is not enough: we need consistent page sizing/positioning to match the existing `remarks` behavior (task 45).
+- This step provides the backbone for smart highlights and later typed-text extraction.
+
+### What worked
+- `gofmt` + `go test ./... -count=1` passed.
+- Merged output PDF is produced from the real `cpage-pdf.rmdoc` fixture with overlays present.
+
+### What didn't work / what’s incomplete
+- Rotation handling is still intentionally minimal; we capture background page rotation but do not yet fully normalize the transform matrix (task 46).
+- Stroke styling is currently fixed (1pt black) as part of the milestone renderer.
+
+### What warrants a second pair of eyes
+- Confirm the merge math against the Python `remarks` implementation on a wider set of PDF-backed documents.
+- Confirm how we want to detect “background has content” reliably for inserted/blank pages.
+
+### What should be done in the future
+- **Task 45**: match `remarks` positioning logic precisely, including `highlights_x_translation` so smart highlights can be placed correctly.
+- **Task 46**: handle rotated pages with the same semantics as PyMuPDF’s `show_pdf_page(... rotate=-page_rotation)`.
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/render/v6_merge_background.go`
+  - `remarquee/pkg/rmdoc/render/v6_merge_background_test.go`
+  - `remarquee/pkg/rmdoc/rmv6_strokes_extract.go`
+- Run:
+  - `cd remarquee && go test ./pkg/rmdoc/render -count=1`

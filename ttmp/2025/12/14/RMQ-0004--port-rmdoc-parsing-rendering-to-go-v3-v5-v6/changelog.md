@@ -202,3 +202,12 @@ Step 14: anchor-aware bboxes (RootTextBlock + TreeNode anchors) (commit e0fc0f4)
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/bbox.go — Anchor-aware bbox implementation
 
+
+## 2025-12-24
+
+Step 15: merge V6 strokes onto background PDF (task 44) (commit 8b64ce5)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Merged background+overlay implementation
+

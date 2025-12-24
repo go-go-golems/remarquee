@@ -65,7 +65,7 @@
 - [x] Apply coordinate transforms (SCALE, X_SHIFT, etc.)
 - [x] Compute bounding boxes (including anchor offsets for text-linked groups)
 
-- [ ] Implement PDF merge algorithm (background + annotation overlay):
+- [x] Implement PDF merge algorithm (background + annotation overlay):
   - [ ] Match the `remarks` positioning logic (w_svg vs w_bg cases + `highlights_x_translation`)
   - [ ] Handle page rotation edge cases
 
