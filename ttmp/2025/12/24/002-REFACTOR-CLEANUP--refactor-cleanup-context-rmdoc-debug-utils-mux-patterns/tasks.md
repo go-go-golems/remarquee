@@ -11,11 +11,11 @@
 - [x] Replace `context.Background()` with `r.Context()` in `remarquee/cmd/remarquee-ui/api/internal_structure.go` (`HandleInternalStructure`)
 - [x] Replace `context.Background()` with `r.Context()` in `remarquee/cmd/remarquee-ui/api/render.go` (`HandleRenderBackground`)
 - [x] Replace `context.Background()` with `r.Context()` in `remarquee/cmd/remarquee-ui/api/render.go` (`HandleRenderLegacy`)
-- [ ] Make `remarquee/pkg/rmdoc/open.go` honor `ctx` in `OpenReaderAt` (add `ctx.Err()` checks)
-- [ ] Make `remarquee/pkg/rmdoc/open.go` honor `ctx` during zip entry reads (replace `io.ReadAll` with context-aware read loop in `readZipFile`)
-- [ ] Make `remarquee/pkg/rmdoc/render/background.go` honor `ctx` in `BuildBackgroundPDF` (check `ctx.Err()` between pages)
-- [ ] Add tests covering cancellation (at least one for `OpenReaderAt` and one for `BuildBackgroundPDF`)
-- [ ] Decide/document cancellation semantics for rmapi legacy generator (cannot truly interrupt; only stop waiting)
+- [x] Make `remarquee/pkg/rmdoc/open.go` honor `ctx` in `OpenReaderAt` (add `ctx.Err()` checks)
+- [x] Make `remarquee/pkg/rmdoc/open.go` honor `ctx` during zip entry reads (replace `io.ReadAll` with context-aware read loop in `readZipFile`)
+- [x] Make `remarquee/pkg/rmdoc/render/background.go` honor `ctx` in `BuildBackgroundPDF` (check `ctx.Err()` between pages)
+- [x] Add tests covering cancellation (at least one for `OpenReaderAt` and one for `BuildBackgroundPDF`)
+- [x] Decide/document cancellation semantics for rmapi legacy generator (cannot truly interrupt; only stop waiting)
 
 - **Extract UI rmdoc introspection into `pkg/rmdoc/debug`**
 - [ ] Create new package `remarquee/pkg/rmdoc/debug` (new directory + doc.go)

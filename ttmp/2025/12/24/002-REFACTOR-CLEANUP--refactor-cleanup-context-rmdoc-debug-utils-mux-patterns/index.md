@@ -19,6 +19,10 @@ RelatedFiles:
       Note: Use cobra-derived context for OpenFile/BuildBackgroundPDF (commit 4b73281)
     - Path: remarquee/cmd/remarquee/cmds/rmdoc/inspect.go
       Note: Use cobra-derived context for OpenFile (commit 4b73281)
+    - Path: remarquee/pkg/rmdoc/open.go
+      Note: Honor ctx in OpenReaderAt/readZipFile (commit 48d822e)
+    - Path: remarquee/pkg/rmdoc/render/background.go
+      Note: Honor ctx between pages in BuildBackgroundPDF (commit 48d822e)
     - Path: remarquee/ttmp/2025/12/24/002-REFACTOR-CLEANUP--refactor-cleanup-context-rmdoc-debug-utils-mux-patterns/reference/01-diary.md
       Note: Implementation diary for this ticket
 ExternalSources: []
@@ -27,6 +31,7 @@ LastUpdated: 2025-12-24T08:57:13.942052994-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Refactor cleanup: context, rmdoc debug utils, mux patterns
