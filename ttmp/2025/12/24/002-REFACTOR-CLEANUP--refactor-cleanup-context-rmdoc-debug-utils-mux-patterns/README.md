@@ -19,3 +19,9 @@ Use docmgr commands to manage this workspace:
 - Add documents: `docmgr add design-doc "My Design"`
 - Import sources: `docmgr import file path/to/doc.md`
 - Update metadata: `docmgr meta update --field Status --value review`
+
+## Scripts
+
+Ticket-local utility scripts live in `scripts/` so they can be reused later.
+
+- `scripts/inspect-archive.sh`: Dump zip entry names/sizes and print `.rm` 43-byte headers for quick version/debugging.

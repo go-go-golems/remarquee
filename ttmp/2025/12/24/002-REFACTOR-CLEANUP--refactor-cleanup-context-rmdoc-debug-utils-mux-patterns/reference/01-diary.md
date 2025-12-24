@@ -209,6 +209,44 @@ This step clarifies a key limitation: the rmapi legacy PDF generator API does no
 ### What I'd do differently next time
 - N/A
 
+## Step 5: Add ticket-local reusable script for inspecting archives and `.rm` headers
+
+This step adds a small script to the ticket’s `scripts/` folder so we can quickly inspect `.rmdoc`/`.zip` archives and confirm `.rm` header formats while extracting the new `pkg/rmdoc/debug` helpers. This keeps debugging tooling close to the ticket and avoids one-off “lost” commands in the shell history.
+
+### What I did
+- Added `scripts/inspect-archive.sh` under the ticket workspace.
+- Documented the script in the ticket `README.md`.
+
+### Why
+- We’re about to refactor `.rm` header sniffing out of the UI handler; having a reusable inspector makes it easier to validate assumptions against real test archives.
+
+### What worked
+- N/A (script added for reuse; not executed as part of the build).
+
+### What didn't work
+- N/A
+
+### What I learned
+- N/A
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- If we end up needing richer inspection (e.g. parsing `.rm` beyond headers), add additional scripts here rather than ad-hoc terminal snippets.
+
+### Code review instructions
+- Review `ttmp/.../scripts/inspect-archive.sh` and `ttmp/.../README.md` for the usage note.
+
+### Technical details
+- The script prints zip entries (name + size), and for `*.rm` prints the first 43 bytes as a string (matching the header size we currently sniff in the UI).
+
+### What I'd do differently next time
+- N/A
+
 ## Related
 
 <!-- Link to related documents or resources -->

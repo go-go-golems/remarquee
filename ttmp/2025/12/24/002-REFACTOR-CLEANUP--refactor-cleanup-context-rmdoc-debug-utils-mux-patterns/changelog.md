@@ -33,3 +33,12 @@ Step 4: Document legacy rmapi cancellation semantics + precheck ctx (commit 20d6
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/api/render.go — Cannot interrupt rmapi generator; avoid starting if ctx canceled
 
+
+## 2025-12-24
+
+Add ticket-local scripts/inspect-archive.sh for inspecting archives and .rm headers
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/002-REFACTOR-CLEANUP--refactor-cleanup-context-rmdoc-debug-utils-mux-patterns/scripts/inspect-archive.sh — Debug helper for upcoming pkg/rmdoc/debug extraction
+
