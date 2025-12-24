@@ -248,3 +248,13 @@ Step 19: add real V6 notebook fixture from device (Test.rmdoc) (task 52)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/Test.rmdoc — Device fixture downloaded via cloud get /Test (commit 69f8d4e)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/test-documents.json — Registered device fixture in UI manifest
 
+
+## 2025-12-24
+
+Step 20: add legacy PDF-backed fixture (rmapi) for V3/V5 rendering (task 51) (commit e74f958)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/legacy-pdf-a4.zip — Legacy PDF fixture sourced from rmapi tests
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/test-documents.json — Registered legacy-pdf-a4
+

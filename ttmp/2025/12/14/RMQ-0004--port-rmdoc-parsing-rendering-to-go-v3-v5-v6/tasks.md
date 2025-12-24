@@ -78,7 +78,7 @@
 ### 7) Fixtures + golden tests (REAL DOCUMENTS)
 
 - [ ] Add fixtures and golden tests:
-  - [ ] At least one **legacy PDF** `.rmdoc` from the device (V3/V5)
+- [x] At least one **legacy PDF** `.rmdoc` from the device (V3/V5)
 - [x] At least one **notebook** `.rmdoc` from the device (V6)
   - [ ] Add a reproducible test runner that renders to PDF and compares outputs (visual diff or raster diff)
 

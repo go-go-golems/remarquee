@@ -14,6 +14,8 @@ RelatedFiles:
       Note: |-
         Legacy PDF renderer reference for coordinate inversion and content stream composition
         Legacy baseline approach: append drawing ops to existing page content
+    - Path: ../../../../../../../rmapi/annotations/testfiles/a4.zip
+      Note: Upstream source of legacy fixture
     - Path: ../../../../../../../rmc/src/rmc/exporters/svg.py
       Note: |-
         Reference for SCALE/X_SHIFT mapping from screen units to PDF points
@@ -35,8 +37,12 @@ RelatedFiles:
       Note: Python reference for expand_text_items and TextDocument.from_scene_item
     - Path: cmd/remarquee-ui/testdata/Test.rmdoc
       Note: Step 19 - real device fixture (downloaded from cloud /Test)
+    - Path: cmd/remarquee-ui/testdata/legacy-pdf-a4.zip
+      Note: Step 20 - legacy PDF-backed fixture
     - Path: cmd/remarquee-ui/testdata/test-documents.json
-      Note: Step 19 - added device-test entry
+      Note: |-
+        Step 19 - added device-test entry
+        Registered legacy-pdf-a4
     - Path: cmd/remarquee/cmds/rmdoc/render_v6.go
       Note: Step 18 (commit f974bb7) - user-facing render-v6 command
     - Path: cmd/remarquee/cmds/rmdoc/render_v6_test.go
@@ -118,6 +124,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -1094,4 +1101,23 @@ This step adds a **real** V6 notebook fixture exported from the device/cloud (�
 
 ### Why
 - Tasks 50–53 require at least one real V6 notebook fixture from a device to validate anchors/highlights/merge behavior beyond the synthetic fixtures.
+
+## Step 20: Add a legacy PDF-backed fixture for V3/V5 rendering (task 51)
+
+You suspected you might not have any legacy PDF-backed `.rmdoc` exports from your device. Instead of scraping random internet artifacts, we can use a compact, redistributable fixture that already ships with rmapi’s test suite.
+
+**Commit (fixture):** e74f958 — "Add legacy PDF-backed fixture (rmapi)"
+
+### What I did
+- Promoted rmapi’s fixture `rmapi/annotations/testfiles/a4.zip` into the repo as:
+  - `cmd/remarquee-ui/testdata/legacy-pdf-a4.zip`
+- Verified it is:
+  - legacy `.content` schema (`pageCount`, `pages`, `fileType: pdf`)
+  - `.rm` header `version=5`
+- Registered it in `cmd/remarquee-ui/testdata/test-documents.json` as `legacy-pdf-a4`
+- Smoke-rendered with rmapi-backed pipeline:
+  - `remarquee rmdoc render-legacy cmd/remarquee-ui/testdata/legacy-pdf-a4.zip --out /tmp/legacy-a4.pdf --force`
+
+### Why
+- This satisfies the “real legacy PDF-backed fixture” requirement for golden testing without needing a device export that may not exist anymore.
 
