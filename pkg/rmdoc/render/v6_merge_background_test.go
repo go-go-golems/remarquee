@@ -53,3 +53,24 @@ func TestMergeRMDocV6OntoBackgroundPDF_Smoke(t *testing.T) {
 		t.Fatalf("expected at least one page to contain overlay marker")
 	}
 }
+
+func TestMergeRMDocV6OntoBackgroundPDFWithInfo_HighlightsXTranslation_Smoke(t *testing.T) {
+	ctx := context.Background()
+	path := "/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/cpage-pdf.rmdoc"
+
+	doc, err := rmdoc.OpenFile(ctx, path)
+	if err != nil {
+		t.Fatalf("OpenFile: %v", err)
+	}
+
+	res, err := MergeRMDocV6OntoBackgroundPDFWithInfo(ctx, path, V6MergeOptions{})
+	if err != nil {
+		t.Fatalf("MergeRMDocV6OntoBackgroundPDFWithInfo: %v", err)
+	}
+	if len(res.PDF) < 8 || !bytes.HasPrefix(res.PDF, []byte("%PDF-")) {
+		t.Fatalf("expected PDF header")
+	}
+	if len(res.HighlightsXTranslation) != len(doc.Pages) {
+		t.Fatalf("HighlightsXTranslation=%d want=%d", len(res.HighlightsXTranslation), len(doc.Pages))
+	}
+}
