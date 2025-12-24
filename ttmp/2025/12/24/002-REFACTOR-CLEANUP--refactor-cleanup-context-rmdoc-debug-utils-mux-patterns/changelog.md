@@ -62,3 +62,8 @@ Step 7: Cleanup remarquee-ui routing + path parsing using stdlib ServeMux path v
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/main.go — No suffix dispatch; use /api/document/{id}/...
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/main_test.go — Locks down 200/404/405/400 outcomes
 
+
+## 2025-12-24
+
+All tasks completed; ready for review
+
