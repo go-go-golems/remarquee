@@ -66,8 +66,8 @@
 - [x] Compute bounding boxes (including anchor offsets for text-linked groups)
 
 - [x] Implement PDF merge algorithm (background + annotation overlay):
-  - [ ] Match the `remarks` positioning logic (w_svg vs w_bg cases + `highlights_x_translation`)
-  - [ ] Handle page rotation edge cases
+- [x] Match the `remarks` positioning logic (w_svg vs w_bg cases + `highlights_x_translation`)
+- [x] Handle page rotation edge cases
 
 ### 6) Smart highlights
 

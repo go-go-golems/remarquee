@@ -211,3 +211,12 @@ Step 15: merge V6 strokes onto background PDF (task 44) (commit 8b64ce5)
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Merged background+overlay implementation
 
+
+## 2025-12-24
+
+Step 16: match remarks merge semantics (highlights_x_translation + rotation) (tasks 45,46) (commit df07e2c)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Rotation-aware background placement
+

@@ -39,9 +39,13 @@ RelatedFiles:
     - Path: pkg/rmdoc/bbox_test.go
       Note: Tests for stroke bbox + fixture smoke (commit cb097e1)
     - Path: pkg/rmdoc/render/v6_merge_background.go
-      Note: RMQ-0004 Step 15 (commit 8b64ce5) - merge V6 strokes onto UI-ordered background PDF
+      Note: |-
+        RMQ-0004 Step 15 (commit 8b64ce5) - merge V6 strokes onto UI-ordered background PDF
+        RMQ-0004 Step 16 (commit df07e2c) - highlights_x_translation + rotation-aware merge via background Form XObject
     - Path: pkg/rmdoc/render/v6_merge_background_test.go
-      Note: Fixture smoke test for merged output page count + overlay marker
+      Note: |-
+        Fixture smoke test for merged output page count + overlay marker
+        Step 16 tests for merge result info
     - Path: pkg/rmdoc/render/v6_strokes_pdf.go
       Note: RMQ-0004 Step 12 (commit fee29bd) - render decoded V6 strokes to single-page PDF
     - Path: pkg/rmdoc/render/v6_strokes_pdf_test.go
@@ -83,7 +87,9 @@ RelatedFiles:
     - Path: ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md
       Note: Prior research diary that this ticket builds on
     - Path: ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts/analyze_remarks_merge.py
-      Note: Reference description of merge math (w_svg vs w_bg etc)
+      Note: |-
+        Reference description of merge math (w_svg vs w_bg etc)
+        Reference for highlights_x_translation + rotate=-page_rotation semantics
     - Path: ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/design-doc/01-design-go-rmdoc-data-model-and-apis.md
       Note: Design decisions and API proposal for this ticket
 ExternalSources: []
@@ -92,6 +98,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -921,5 +928,48 @@ This is still **strokes-only** (no smart highlights, no glyph rectangles, no typ
   - `remarquee/pkg/rmdoc/render/v6_merge_background.go`
   - `remarquee/pkg/rmdoc/render/v6_merge_background_test.go`
   - `remarquee/pkg/rmdoc/rmv6_strokes_extract.go`
+- Run:
+  - `cd remarquee && go test ./pkg/rmdoc/render -count=1`
+
+## Step 16: Match `remarks` merge semantics (highlights_x_translation + rotation handling) (tasks 45, 46)
+
+This step refines the merge implementation so it matches the `remarks` behavior more closely:
+
+- **Task 45**: compute `highlights_x_translation` exactly like `remarks` (needed later for smart highlight placement).
+- **Task 46**: handle rotated background pages by drawing the background page content as a **Form XObject** with `rotate=-page_rotation` semantics (mirroring PyMuPDF `show_pdf_page(... rotate=-page_rotation)`), instead of trying to “fix up” the background by string-wrapping transforms around the existing page’s content streams.
+
+**Commit (code):** df07e2c — "RMQ-0004: match remarks merge positioning + rotation"
+
+### What I did
+- Updated `pkg/rmdoc/render/v6_merge_background.go`:
+  - Added `V6MergeResult` and `MergeRMDocV6OntoBackgroundPDFWithInfo(...)` returning:
+    - merged PDF bytes
+    - per-page `HighlightsXTranslation` values
+  - Implemented `highlights_x_translation` per the `remarks` formula:
+    - if `w_svg > w_bg`: `highlights_x_translation = x_bg + w_bg/2`
+    - else (including `w_svg <= w_bg`): `highlights_x_translation = w_bg/2`
+  - Implemented rotation-aware background placement:
+    - create a Form XObject (`/Bg`) from the background page content + resources
+    - draw it with a CTM computed by `backgroundTransform(...)` (handles 0/90/180/270)
+    - this mirrors PyMuPDF’s “draw background with rotate=-page_rotation” behavior
+  - Normalized background coordinate origin by translating by `-llx/-lly` when the page box isn’t at `(0,0)`.
+- Extended tests in `pkg/rmdoc/render/v6_merge_background_test.go`:
+  - smoke test that `HighlightsXTranslation` has length == UI page count.
+
+### Why
+- Smart highlight rectangles are positioned relative to `highlights_x_translation`, so we need to compute it now to avoid reworking the merge API later.
+- Rotation is hard to handle by mutating raw page content streams; using a background Form XObject gives a clean, explicit transform and matches how “show PDF page into another PDF page” works conceptually.
+
+### What worked
+- `gofmt` + `go test ./... -count=1` passed.
+
+### What warrants a second pair of eyes
+- Verify rotation transforms on a real rotated PDF-backed document fixture (once we have one in testdata).
+- Verify `highlights_x_translation` against the Python `remarks` output for a few representative docs (w_svg < w_bg, w_svg > w_bg, equal widths).
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/render/v6_merge_background.go`
+  - `remarquee/pkg/rmdoc/render/v6_merge_background_test.go`
 - Run:
   - `cd remarquee && go test ./pkg/rmdoc/render -count=1`
