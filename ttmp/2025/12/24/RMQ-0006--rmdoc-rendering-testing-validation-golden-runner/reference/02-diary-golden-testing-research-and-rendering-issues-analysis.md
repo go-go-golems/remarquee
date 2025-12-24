@@ -152,3 +152,12 @@ Added a second V6 golden test for the PDF-backed cPages fixture:
 - **Test**: `TestRenderV6Golden_RemarksReference_CpagePdf`
 - **Fixture**: `cmd/remarquee-ui/testdata/cpage-pdf.rmdoc`
 - **Location**: `remarquee/pkg/rmdoc/render/golden_remarks_test.go`
+
+### Evening: Legacy golden smoke test (rmapi-backed)
+
+Added a legacy (V3/V5) golden-style smoke test for the legacy PDF-backed fixture:
+
+- **Test**: `TestRenderLegacyGolden_Rmapi_Backend_LegacyPdfA4`
+- **Fixture**: `cmd/remarquee-ui/testdata/legacy-pdf-a4.zip`
+- **Location**: `remarquee/pkg/rmdoc/render/golden_legacy_rmapi_test.go`
+- **Notes**: This does not use `remarks` (which is V6-oriented). Instead it validates the rmapi-backed legacy renderer end-to-end and asserts output PDF page count matches our parsed UI page plan.

@@ -66,7 +66,7 @@
 - [ ] Create golden test cases:
   - [x] `TestRenderV6Golden_TestRmdoc` (device V6 notebook fixture)
   - [x] `TestRenderV6Golden_CpagePdf` (PDF-backed cPages fixture)
-  - [ ] `TestRenderV6Golden_LegacyPdfA4` (legacy PDF-backed fixture)
+  - [x] `TestRenderLegacyGolden_Rmapi_Backend_LegacyPdfA4` (legacy PDF-backed fixture; rmapi-backed)
   - [ ] Each test should:
     - Render with remarquee
     - Generate/load golden from remarks

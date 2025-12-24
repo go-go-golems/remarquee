@@ -70,3 +70,13 @@ Added second V6 golden test (cpage-pdf.rmdoc) comparing remarquee output against
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_test.go — Added CpagePdf golden test
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — Checked off CpagePdf golden test
 
+
+## 2025-12-24
+
+Added legacy golden-style smoke test for legacy-pdf-a4.zip using rmapi PdfGenerator backend. Test validates end-to-end legacy rendering and asserts output PDF page count matches parsed UI page plan.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_legacy_rmapi_test.go — Legacy rmapi-backed golden smoke test
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — Checked off legacy test
+
