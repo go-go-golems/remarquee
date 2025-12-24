@@ -111,3 +111,14 @@ Added decision analysis doc on how to run remarks locally/CI (Nix flake vs Poetr
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/analysis/02-running-remarks-locally-in-ci-nix-vs-poetry-vs-pyenv-decision-doc.md — Decision doc
 
+
+## 2025-12-24
+
+Created bug report for UniDoc rasterizer failure ('type check error') in vlm-validate and switched vlm-validate to Poppler/pdftoppm rasterization. Re-ran VLM A-vs-B successfully; initial VLM feedback highlights missing stroke colors and missing typed text in remarquee vs remarks.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/bug-report-vlm-validate-unidoc-render-type-check-error.md — Bug report
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/vlm_validate.go — Poppler rasterization pipeline
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/02-diary-golden-testing-research-and-rendering-issues-analysis.md — Recorded first real VLM run findings
+

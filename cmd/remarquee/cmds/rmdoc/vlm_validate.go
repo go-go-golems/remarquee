@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"image/png"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,8 +17,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	pdf "github.com/unidoc/unipdf/v3/model"
-	"github.com/unidoc/unipdf/v3/render"
 )
 
 type VLMValidateCommand struct {
@@ -33,6 +30,10 @@ type VLMValidateSettings struct {
 	Pages string `glazed.parameter:"pages"`
 
 	OutDir string `glazed.parameter:"out-dir"`
+
+	Rasterizer string `glazed.parameter:"rasterizer"`
+	DPI        int    `glazed.parameter:"dpi"`
+	PDFToPPM   string `glazed.parameter:"pdftoppm"`
 
 	Pinocchio string `glazed.parameter:"pinocchio"`
 	Prompt    string `glazed.parameter:"prompt"`
@@ -62,6 +63,7 @@ Typical use:
 
 Notes:
 - This is intended as an optional validation helper (manual/interactive workflow).
+- PNG rasterization defaults to Poppler (pdftoppm) because UniDoc's renderer can fail with "type check error" on some PDFs.
 `),
 		glazecmds.WithFlags(
 			parameters.NewParameterDefinition(
@@ -88,6 +90,24 @@ Notes:
 				parameters.ParameterTypeString,
 				parameters.WithDefault(""),
 				parameters.WithHelp("Directory to write PNGs to (default: temp dir)"),
+			),
+			parameters.NewParameterDefinition(
+				"rasterizer",
+				parameters.ParameterTypeString,
+				parameters.WithDefault("poppler"),
+				parameters.WithHelp("PDF->image rasterizer: poppler (pdftoppm) or unidoc (unidoc currently disabled due to type check errors)"),
+			),
+			parameters.NewParameterDefinition(
+				"dpi",
+				parameters.ParameterTypeInteger,
+				parameters.WithDefault(200),
+				parameters.WithHelp("Rasterization DPI (poppler only)"),
+			),
+			parameters.NewParameterDefinition(
+				"pdftoppm",
+				parameters.ParameterTypeString,
+				parameters.WithDefault("pdftoppm"),
+				parameters.WithHelp("pdftoppm executable (poppler rasterizer)"),
 			),
 			parameters.NewParameterDefinition(
 				"pinocchio",
@@ -130,13 +150,13 @@ func (c *VLMValidateCommand) Run(ctx context.Context, parsedLayers *layers.Parse
 		return errors.Wrap(err, "ensure out dir")
 	}
 
-	imgsA, err := renderPDFPagesToPNGs(ctx, s.PDFA, outDir, "A", pages)
+	imgsA, err := renderPDFPagesToPNGs(ctx, s, s.PDFA, outDir, "A", pages)
 	if err != nil {
 		return err
 	}
 	var imgsB []string
 	if strings.TrimSpace(s.PDFB) != "" {
-		imgsB, err = renderPDFPagesToPNGs(ctx, s.PDFB, outDir, "B", pages)
+		imgsB, err = renderPDFPagesToPNGs(ctx, s, s.PDFB, outDir, "B", pages)
 		if err != nil {
 			return err
 		}
@@ -201,45 +221,61 @@ func parsePages1Based(s string) ([]int, error) {
 	return out, nil
 }
 
-func renderPDFPagesToPNGs(ctx context.Context, pdfPath, outDir, prefix string, pages []int) ([]string, error) {
+func renderPDFPagesToPNGs(ctx context.Context, s *VLMValidateSettings, pdfPath, outDir, prefix string, pages []int) ([]string, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	b, err := os.ReadFile(pdfPath)
-	if err != nil {
-		return nil, errors.Wrap(err, "read pdf")
+
+	switch strings.ToLower(strings.TrimSpace(s.Rasterizer)) {
+	case "", "poppler", "pdftoppm":
+		return renderPDFPagesToPNGsWithPoppler(ctx, s.PDFToPPM, s.DPI, pdfPath, outDir, prefix, pages)
+	case "unidoc":
+		return nil, errors.New("unidoc rasterizer is temporarily disabled due to 'type check error' failures; use --rasterizer poppler")
+	default:
+		return nil, errors.Errorf("unknown rasterizer: %q", s.Rasterizer)
 	}
-	r, err := pdf.NewPdfReader(bytes.NewReader(b))
-	if err != nil {
-		return nil, errors.Wrap(err, "open pdf reader")
+}
+
+func renderPDFPagesToPNGsWithPoppler(ctx context.Context, pdftoppm string, dpi int, pdfPath, outDir, prefix string, pages []int) ([]string, error) {
+	if dpi <= 0 {
+		dpi = 200
 	}
-	device := render.NewImageDevice()
+	if _, err := exec.LookPath(pdftoppm); err != nil {
+		return nil, errors.Wrap(err, "pdftoppm not found on PATH")
+	}
 
 	var out []string
 	for _, pageNum := range pages {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		p, err := r.GetPage(pageNum)
-		if err != nil {
-			return nil, errors.Wrapf(err, "get page %d", pageNum)
-		}
-		img, err := device.Render(p)
-		if err != nil {
-			return nil, errors.Wrapf(err, "render page %d", pageNum)
+
+		// pdftoppm -singlefile writes "<outBase>.png" (no "-1" suffix).
+		outBase := filepath.Join(outDir, fmt.Sprintf("%s-page-%03d", prefix, pageNum))
+		outFile := outBase + ".png"
+
+		cmd := exec.CommandContext(ctx,
+			pdftoppm,
+			"-png",
+			"-r", strconv.Itoa(dpi),
+			"-f", strconv.Itoa(pageNum),
+			"-l", strconv.Itoa(pageNum),
+			"-singlefile",
+			pdfPath,
+			outBase,
+		)
+
+		// Keep stderr visible to help diagnose Poppler failures.
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			return nil, errors.Wrapf(err, "pdftoppm page %d failed: %s", pageNum, strings.TrimSpace(stderr.String()))
 		}
 
-		fn := filepath.Join(outDir, fmt.Sprintf("%s-page-%03d.png", prefix, pageNum))
-		f, err := os.Create(fn)
-		if err != nil {
-			return nil, errors.Wrap(err, "create png")
+		if _, err := os.Stat(outFile); err != nil {
+			return nil, errors.Wrapf(err, "pdftoppm did not produce expected output: %s", outFile)
 		}
-		if err := png.Encode(f, img); err != nil {
-			_ = f.Close()
-			return nil, errors.Wrap(err, "encode png")
-		}
-		_ = f.Close()
-		out = append(out, fn)
+		out = append(out, outFile)
 	}
 	return out, nil
 }

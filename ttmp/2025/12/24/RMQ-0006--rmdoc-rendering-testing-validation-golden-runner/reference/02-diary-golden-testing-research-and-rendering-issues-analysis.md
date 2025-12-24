@@ -178,8 +178,23 @@ Wired an optional helper CLI to run a VLM check on rendered PDFs without writing
 - **Command**: `remarquee rmdoc vlm-validate`
 - **Location**: `cmd/remarquee/cmds/rmdoc/vlm_validate.go` (registered in `cmd/remarquee/cmds/rmdoc/root.go`)
 - **Behavior**:
-  - renders selected pages from PDF A (and optional PDF B) to PNGs using UniDoc renderer
+  - renders selected pages from PDF A (and optional PDF B) to PNGs using Poppler `pdftoppm` (default)
   - invokes `pinocchio code professional --images <pngA>,<pngB>,... <prompt>`
   - prints the temp output dir so you can open the PNGs locally
 
-Important: we have NOT run this command “for real” yet in this session (will do only when you say to continue).
+### Night: First real VLM run (A vs B) + UniDoc renderer failure
+
+We attempted to run `vlm-validate` using UniDoc’s renderer and hit:
+
+- `render page 1: type check error`
+
+Created bug report:
+- `bug-report-vlm-validate-unidoc-render-type-check-error.md`
+
+Then switched `vlm-validate` to Poppler (`pdftoppm`) rasterization and re-ran successfully with:
+- A = `remarquee rmdoc render-v6` output (Go pipeline)
+- B = `remarks` output (Python reference)
+
+High-signal VLM findings from the first run (pages 1–2):
+- **Color strokes**: reference output includes colored strokes; remarquee output appears black-only (matches our “stroke color missing” investigation).
+- **Typed text**: reference output shows typed text (e.g. “Test”); remarquee output is missing it (matches “typed text not rendered” investigation).

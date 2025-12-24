@@ -707,7 +707,7 @@ pinocchio code professional \
 ### Helper CLI in remarquee
 
 For a tighter loop, remarquee includes a helper command that:
-- renders selected PDF pages to PNGs (UniDoc renderer)
+- renders selected PDF pages to PNGs (Poppler `pdftoppm`, by default)
 - calls `pinocchio code professional --images ... <prompt>`
 
 Example:
@@ -716,6 +716,7 @@ Example:
 go run ./cmd/remarquee rmdoc vlm-validate \
   --pdf-b /tmp/reference.pdf \
   --pages 1,2 \
+  --rasterizer poppler \
   --prompt "Compare A vs B. List any differences in strokes/highlights/text/page size/template." \
   /tmp/remarquee.pdf
 ```

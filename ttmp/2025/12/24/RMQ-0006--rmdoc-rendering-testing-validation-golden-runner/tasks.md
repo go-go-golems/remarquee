@@ -128,4 +128,5 @@
 ### VLM validation helper
 
 - [x] Add `remarquee rmdoc vlm-validate` helper to render PDF pages to PNGs and invoke pinocchio VLM for semantic validation/comparison
+- [x] Switch `vlm-validate` PNG rasterization to Poppler (`pdftoppm`) to avoid UniDoc "type check error" failures (see bug report)
 
