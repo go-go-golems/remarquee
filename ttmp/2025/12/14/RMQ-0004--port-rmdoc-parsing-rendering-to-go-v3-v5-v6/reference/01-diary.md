@@ -33,6 +33,12 @@ RelatedFiles:
       Note: Python reference implementation we’re porting (TaggedBlockReader.read_block/read_subblock)
     - Path: ../../../../../../../rmscene/src/rmscene/text.py
       Note: Python reference for expand_text_items and TextDocument.from_scene_item
+    - Path: cmd/remarquee/cmds/rmdoc/render_v6.go
+      Note: Step 18 (commit f974bb7) - user-facing render-v6 command
+    - Path: cmd/remarquee/cmds/rmdoc/render_v6_test.go
+      Note: Step 18 - smoke test for render-v6 command
+    - Path: cmd/remarquee/cmds/rmdoc/root.go
+      Note: Register render-v6 subcommand
     - Path: go.mod
       Note: Added unipdf v3.6.1 dependency for V6 PDF rendering
     - Path: pkg/rmdoc/bbox.go
@@ -108,6 +114,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -1037,3 +1044,30 @@ This step adds the first “real” text-aligned V6 feature: **smart highlights*
   - `remarquee/pkg/rmdoc/pen_color.go`
   - `remarquee/pkg/rmdoc/rmv6_glyph_decode.go`
   - `remarquee/pkg/rmdoc/render/v6_merge_background.go`
+
+## Step 18: User-facing CLI command to render V6 `.rmdoc` to PDF (tasks 54–57)
+
+This step wires the V6 merge pipeline into a simple CLI so we can render real `.rmdoc` files without the UI:
+
+- `remarquee rmdoc render-v6 <file.rmdoc> --out out.pdf`
+
+It runs the Go V6 parser + merge + smart highlights path and writes an annotated PDF to disk, with schema/type guardrails (refuses legacy and EPUB).
+
+**Commit (code):** f974bb7 — "RMQ-0004: add rmdoc render-v6 command"
+
+### What I did
+- Added `cmd/remarquee/cmds/rmdoc/render_v6.go`:
+  - validates schema == `cPages`
+  - calls `MergeRMDocV6OntoBackgroundPDFWithInfo`
+  - writes `<input>-v6.pdf` by default
+- Registered the subcommand in `cmd/remarquee/cmds/rmdoc/root.go`
+- Added a smoke test `cmd/remarquee/cmds/rmdoc/render_v6_test.go` using the `cpage-pdf.rmdoc` fixture.
+
+### Why
+- This is the quickest way to validate the entire Go V6 pipeline on arbitrary local fixtures (and later device exports) without needing to run the UI.
+
+### What worked
+- `go test ./... -count=1` passed.
+
+### Code review instructions
+- Start with `cmd/remarquee/cmds/rmdoc/render_v6.go`

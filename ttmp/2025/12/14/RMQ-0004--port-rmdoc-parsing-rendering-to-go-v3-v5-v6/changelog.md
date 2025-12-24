@@ -229,3 +229,12 @@ Step 17: smart highlights for V6 (GlyphRanges->PDF Highlight annotations) (tasks
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Apply PdfAnnotationHighlight
 
+
+## 2025-12-24
+
+Step 18: add user-facing CLI command 'remarquee rmdoc render-v6' (tasks 54-57) (commit f974bb7)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/render_v6.go — New CLI command to render V6 (cPages) rmdoc
+

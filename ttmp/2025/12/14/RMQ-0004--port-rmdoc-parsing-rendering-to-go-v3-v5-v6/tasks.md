@@ -55,7 +55,7 @@
 - [x] Build scene tree (groups + lines)
 - [x] Expose strokes as normalized primitives for rendering
   - [ ] Expand incrementally:
-    - [ ] Highlights (GlyphRange rectangles + PenColor)
+- [x] Highlights (GlyphRange rectangles + PenColor)
     - [ ] Typed text (RootTextBlock)
 
 ### 5) V6 rendering + merge algorithm
@@ -84,10 +84,10 @@
 
 ### 8) Wire into remarquee CLI
 
-- [ ] Add a user-facing command (name TBD) that:
-  - [ ] Takes a local `.rmdoc` (or downloads via `remarquee cloud get`)
-  - [ ] Emits an annotated PDF (and later PNGs)
-  - [ ] Prints clear diagnostics for unsupported formats/features
+- [x] Add a user-facing command (name TBD) that:
+- [x] Takes a local `.rmdoc` (or downloads via `remarquee cloud get`)
+- [x] Emits an annotated PDF (and later PNGs)
+- [x] Prints clear diagnostics for unsupported formats/features
 
 ### 9) Interactive validation UI (human feedback loop)
 
