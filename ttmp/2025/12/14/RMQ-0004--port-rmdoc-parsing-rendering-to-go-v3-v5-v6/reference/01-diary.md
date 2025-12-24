@@ -27,6 +27,10 @@ RelatedFiles:
       Note: Python reference implementation we’re porting (TaggedBlockReader.read_block/read_subblock)
     - Path: go.mod
       Note: Added unipdf v3.6.1 dependency for V6 PDF rendering
+    - Path: pkg/rmdoc/bbox.go
+      Note: RMQ-0004 Step 13 (commit cb097e1) - bbox primitives and stroke/tree bbox helpers
+    - Path: pkg/rmdoc/bbox_test.go
+      Note: Tests for stroke bbox + fixture smoke (commit cb097e1)
     - Path: pkg/rmdoc/render/v6_strokes_pdf.go
       Note: RMQ-0004 Step 12 (commit fee29bd) - render decoded V6 strokes to single-page PDF
     - Path: pkg/rmdoc/render/v6_strokes_pdf_test.go
@@ -67,6 +71,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -733,3 +738,53 @@ This is not the final V6 renderer (it doesn’t implement merge math, brush fide
   - `SCALE = 72 / 226`
   - `PAGE_WIDTH_PT = 1404 * SCALE`
   - `PAGE_HEIGHT_PT = 1872 * SCALE`
+
+## Step 13: Compute bounding boxes for decoded strokes (partial task 43, no anchors yet)
+
+This step adds basic bounding box computation on top of our normalized `Stroke` primitives. The immediate goal is to support downstream rendering/merge logic that needs “what area does this content occupy?” without yet decoding text anchors or group anchor offsets.
+
+This is intentionally a **partial** implementation of task 43: we can compute bboxes for strokes and for a decoded scene tree by unioning decoded line strokes. Anchor offsets for text-linked groups require RootText/TreeNode anchor decoding and will be implemented in a follow-up step.
+
+**Commit (code):** cb097e1 — "RMQ-0004: add stroke bounding boxes"
+
+### What I did
+- Added `BBox` primitives (`MinX/MinY/MaxX/MaxY`) with helpers:
+  - `Union`, `Expand`, `IsEmpty`, `Width`, `Height`
+- Implemented:
+  - `BBoxForStroke(stroke, pad)`
+  - `BBoxForStrokes(strokes, pad)`
+  - `BBoxForRMV6SceneTree(tree, pad)` (decodes line strokes and unions their bboxes)
+- Added unit tests for:
+  - padding behavior
+  - empty stroke behavior
+  - fixture-based smoke test over a decoded V6 scene tree producing a non-empty bbox
+
+### Why
+- Merge logic and viewport calculations need bounding boxes; adding them now keeps later steps focused on PDF math rather than recomputing geometry ad-hoc.
+- Keeping this “strokes-only bbox” isolated avoids coupling bbox computation to text/anchors until we’re ready.
+
+### What worked
+- `gofmt` + `go test ./... -count=1` passed.
+- The fixture-based test yields a non-empty bbox from real V6 data.
+
+### What was tricky to build
+- Avoiding a premature commitment to brush-width semantics. We accept a `pad` parameter instead of guessing how to expand bounds based on brush dynamics.
+
+### What warrants a second pair of eyes
+- Decide how we should expand bbox for real rendering fidelity:
+  - based on stroke `Width`/pressure, or
+  - based on brush type/thickness_scale, or
+  - a conservative fixed pad.
+
+### What should be done in the future
+- Implement anchor offsets:
+  - decode TreeNodeBlock anchor metadata,
+  - decode RootTextBlock and compute anchor positions,
+  - apply anchor transforms when computing group/item bboxes.
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/bbox.go`
+  - `remarquee/pkg/rmdoc/bbox_test.go`
+- Run:
+  - `cd remarquee && go test ./pkg/rmdoc -count=1`
