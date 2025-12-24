@@ -91,3 +91,14 @@ Added basic golden file management: created cmd/remarquee-ui/testdata/golden/ wi
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_test.go — Update-golden flag + golden reference selection
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — Checked off golden management tasks
 
+
+## 2025-12-24
+
+Added rmdoc vlm-validate helper CLI: renders selected PDF pages to PNGs and invokes pinocchio (VLM) for semantic validation/comparison. This is an optional manual tool to complement pixel/structural diffs.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/root.go — Registers vlm-validate
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/vlm_validate.go — New VLM validation CLI
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — VLM helper task
+

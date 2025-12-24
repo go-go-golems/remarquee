@@ -704,6 +704,22 @@ pinocchio code professional \
    - Missing template backgrounds"
 ```
 
+### Helper CLI in remarquee
+
+For a tighter loop, remarquee includes a helper command that:
+- renders selected PDF pages to PNGs (UniDoc renderer)
+- calls `pinocchio code professional --images ... <prompt>`
+
+Example:
+
+```bash
+go run ./cmd/remarquee rmdoc vlm-validate \
+  --pdf-b /tmp/reference.pdf \
+  --pages 1,2 \
+  --prompt "Compare A vs B. List any differences in strokes/highlights/text/page size/template." \
+  /tmp/remarquee.pdf
+```
+
 ### Integration in golden tests
 
 ```go

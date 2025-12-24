@@ -125,3 +125,7 @@
   - [ ] Document template rendering requirements and implementation plan
 
 
+### VLM validation helper
+
+- [x] Add `remarquee rmdoc vlm-validate` helper to render PDF pages to PNGs and invoke pinocchio VLM for semantic validation/comparison
+

@@ -59,5 +59,18 @@ func NewRmdocCommand() *cobra.Command {
 	} else {
 		cmd.AddCommand(renderV6Cmd)
 	}
+
+	vlmCmd, err := NewVLMValidateCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "vlm-validate",
+			Short: "Render PDF pages to PNG and ask pinocchio (VLM) to validate/compare (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(vlmCmd)
+	}
 	return cmd
 }

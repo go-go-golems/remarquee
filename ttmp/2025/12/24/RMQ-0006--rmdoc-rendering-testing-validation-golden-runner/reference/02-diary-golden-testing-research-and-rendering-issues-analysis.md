@@ -170,3 +170,16 @@ Added basic golden file management so the remarks-based golden tests can use a c
 - **Go test flag**: `-update-golden`
   - updates `*.remarks.pdf` reference files under the golden dir (opt-in)
   - tests use the committed golden when present; otherwise they fall back to running `remarks` (and skip if neither is available)
+
+### Night: VLM helper CLI (pinocchio)
+
+Wired an optional helper CLI to run a VLM check on rendered PDFs without writing a bunch of custom scripts:
+
+- **Command**: `remarquee rmdoc vlm-validate`
+- **Location**: `cmd/remarquee/cmds/rmdoc/vlm_validate.go` (registered in `cmd/remarquee/cmds/rmdoc/root.go`)
+- **Behavior**:
+  - renders selected pages from PDF A (and optional PDF B) to PNGs using UniDoc renderer
+  - invokes `pinocchio code professional --images <pngA>,<pngB>,... <prompt>`
+  - prints the temp output dir so you can open the PNGs locally
+
+Important: we have NOT run this command “for real” yet in this session (will do only when you say to continue).
