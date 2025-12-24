@@ -127,3 +127,13 @@ Step 6: implemented `cPages`-aware background PDF assembly (UI-ordered) based on
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/render_legacy.go — Converted to Glazed dual-mode (`--with-glaze-output`)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/root.go — Updated wiring to use Glazed cobra builders
 
+
+## 2025-12-24
+
+Step 7: scaffold RM v6 tagged-block reader (header + block + subblock boundaries) (commit 1cbf052)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_tagged_block_reader.go — New V6 boundary reader foundation
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_tagged_block_reader_test.go — Fixture-based coverage
+

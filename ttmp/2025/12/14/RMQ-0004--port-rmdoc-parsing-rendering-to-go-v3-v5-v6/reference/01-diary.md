@@ -10,14 +10,25 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md
+    - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_common.py
+      Note: Python reference for V6 header
+    - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_reader.py
+      Note: Python reference implementation we’re porting (TaggedBlockReader.read_block/read_subblock)
+    - Path: pkg/rmdoc/rmv6_tagged_block_reader.go
+      Note: RMQ-0004 Step 7 (commit 1cbf052) - Go port of rmscene tagged-block reader primitives (header + block + subblock boundaries)
+    - Path: pkg/rmdoc/rmv6_tagged_block_reader_test.go
+      Note: Fixture-based test exercising V6 header/block/subblock parsing (commit 1cbf052)
+    - Path: ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md
       Note: Prior research diary that this ticket builds on
-    - Path: remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/design-doc/01-design-go-rmdoc-data-model-and-apis.md
+    - Path: ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/design-doc/01-design-go-rmdoc-data-model-and-apis.md
       Note: Design decisions and API proposal for this ticket
 ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-14T20:59:20.929388092-05:00
+WhatFor: ""
+WhenToUse: ""
 ---
+
 
 
 # Diary
@@ -317,3 +328,63 @@ This step builds the missing foundation for the V6 pipeline: constructing a back
   - `remarquee/cmd/remarquee/cmds/rmdoc/build_background.go`
 - Run:
   - `cd remarquee && go test ./... -count=1`
+
+## Step 7: Port the RM v6 tagged-block reader scaffolding (header + block + subblock boundaries)
+
+This step starts the real V6 `.rm` parsing work by porting the *lowest-level* binary reader primitives from `rmscene` into Go. The goal is **not** to decode the scene tree yet, but to establish a solid and testable foundation: validate the V6 header, iterate top-level blocks, and correctly parse Length4 subblock boundaries without overrunning or losing track of offsets.
+
+This unlocks the next V6 milestones (CRDT decoding + scene tree + strokes) by giving us a Go-native reader that can be wired into those higher-level decoders incrementally.
+
+**Commit (code):** 1cbf052 — "RMQ-0004: scaffold RM v6 tagged block reader"
+
+### What I did
+- Implemented a minimal RM v6 tagged-block reader in Go:
+  - Validates the fixed V6 header (`reMarkable .lines file, version=6 ...`)
+  - Reads top-level block headers: `block_length`, `min_version`, `current_version`, `block_type`
+  - Tracks block boundaries and captures unread bytes as `ExtraData`
+  - Reads Length4 subblock boundaries and captures unread bytes as `ExtraData`
+- Added a fixture-based test that extracts the first `.rm` file from:
+  - `cmd/remarquee-ui/testdata/cpage-pdf.rmdoc`
+  - and validates that we can read the header + iterate blocks and observe at least one Length4 subblock
+
+### Why
+- V6 rendering depends on decoding V6 `.rm` files; everything above that (scene tree, strokes, highlights, merge) needs a trustworthy binary reader.
+- Starting with boundary correctness (no overreads, correct offset math) prevents subtle corruption bugs later when we add semantic decoding.
+
+### What worked
+- `gofmt` + `go test ./... -count=1` passed in `remarquee/`.
+- The fixture-based test finds at least one Length4 subblock in real V6 data and exercises block/subblock boundary logic.
+
+### What didn't work
+- N/A (no blockers in this step).
+
+### What I learned
+- Not all Length4 subblocks necessarily contain nested tagged fields; some subblocks contain *raw* encodings (e.g. string payloads). So the reader API should focus on **subblock boundaries**, not “blind recursive tag parsing”.
+
+### What was tricky to build
+- Getting “peek tag” semantics correct without consuming bytes: we use `io.ReadSeeker` so we can read a varuint and seek back.
+- Avoiding accidental assumptions about subblock internal structure: we intentionally discard unread bytes as `ExtraData` at boundaries rather than guessing content layouts.
+
+### What warrants a second pair of eyes
+- The decision to treat under-read bytes as `ExtraData` and discard them (mirroring rmscene’s behavior) is correctness-critical: confirm this is the right behavior for Go-side iteration and for future decoders.
+- Verify the EOF behavior is correct: in particular, `readBlockHeader` maps truncated block-length reads to `io.EOF`.
+
+### What should be done in the future
+- Move the V6 reader API toward the shape in the RMQ-0004 design doc (`pkg/rmdoc/anno/v6`) once we start decoding scene blocks (avoid leaving it as an unstructured “misc helper” forever).
+- Build the next layer: typed wrappers for “read tag + read ID/uint32/float32” and CRDT sequence decoding.
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/rmv6_tagged_block_reader.go`
+  - `remarquee/pkg/rmdoc/rmv6_tagged_block_reader_test.go`
+- Validate with:
+  - `cd remarquee && go test ./pkg/rmdoc -count=1`
+  - `cd remarquee && go test ./... -count=1`
+
+### Technical details
+- Header constant mirrors `rmscene/src/rmscene/tagged_block_common.py` `HEADER_V6`.
+- Top-level block header mirrors `rmscene/src/rmscene/tagged_block_reader.py` `read_block()`:
+  - `uint32 block_length` (little-endian)
+  - `uint8 unknown` (assert 0)
+  - `uint8 min_version`, `uint8 current_version`
+  - `uint8 block_type`

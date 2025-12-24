@@ -50,7 +50,7 @@
 ### 4) V6 `.rm` parsing (PORT rmscene concepts)
 
 - [ ] Implement V6 parser (scene tree) with a minimal stroke-only milestone:
-  - [ ] Tagged block reader (header + main blocks + subblocks)
+- [x] Tagged block reader (header + main blocks + subblocks)
   - [ ] CRDT sequence decoding needed for scene items
   - [ ] Build scene tree (groups + lines)
   - [ ] Expose strokes as normalized primitives for rendering
