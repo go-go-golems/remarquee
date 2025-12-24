@@ -12,6 +12,7 @@ import (
 	"github.com/unidoc/unipdf/v3/contentstream"
 	"github.com/unidoc/unipdf/v3/contentstream/draw"
 	"github.com/unidoc/unipdf/v3/core"
+	"github.com/unidoc/unipdf/v3/creator"
 	pdf "github.com/unidoc/unipdf/v3/model"
 )
 
@@ -30,6 +31,17 @@ func (o V6MergeOptions) withDefaults() V6MergeOptions {
 func xx(v float64) float64 { return v * rmv6Scale }
 func yy(v float64) float64 { return v * rmv6Scale }
 
+// cairoSVGScale is the implicit "CSS px -> PDF pt" scale factor used by CairoSVG.
+// CairoSVG treats unitless SVG width/height as CSS pixels at 96dpi, and writes PDFs in 72pt/in:
+// 1px = 72/96 pt = 0.75 pt.
+//
+// This matters because remarks/rmc generate notebook pages by converting SVG->PDF via CairoSVG
+// and then inserting the PDF pages directly, resulting in a 0.75 scale factor for notebook page boxes.
+const cairoSVGScale = 72.0 / 96.0
+
+func xxScaled(v, scale float64) float64 { return v * scale }
+func yyScaled(v, scale float64) float64 { return v * scale }
+
 type V6MergeResult struct {
 	PDF []byte
 
@@ -44,7 +56,8 @@ type V6MergeResult struct {
 //
 // Notes:
 // - This currently merges strokes only (no highlights/text).
-// - For pages with no background content, it replaces the blank page with an annotation-only page.
+// - For pages with no background content, we still keep the background page size (no bbox-cropping),
+//   and overlay strokes onto a blank page.
 func MergeRMDocV6OntoBackgroundPDF(ctx context.Context, rmdocPath string, opts V6MergeOptions) ([]byte, error) {
 	res, err := MergeRMDocV6OntoBackgroundPDFWithInfo(ctx, rmdocPath, opts)
 	if err != nil {
@@ -64,7 +77,23 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 		return nil, err
 	}
 
-	bgBytes, err := BuildBackgroundPDF(ctx, doc, BackgroundOptions{})
+	isNotebook := len(doc.PayloadPDF) == 0
+
+	// For notebooks (no payload PDF) remarks/rmc use the reMarkable screen size scaled to PDF points.
+	// Keep our blank background pages aligned with that to avoid mismatched page boxes vs reference PDFs.
+	bgPageScale := rmv6Scale
+	if isNotebook {
+		// For notebook output, remarks ultimately produces pages sized like CairoSVG's PDF output.
+		// That means the effective page size is 0.75x the "rmc SVG" point size.
+		bgPageScale = rmv6Scale * cairoSVGScale
+	}
+
+	bgBytes, err := BuildBackgroundPDF(ctx, doc, BackgroundOptions{
+		DefaultPageSize: creator.PageSize{
+			float64(rmv6ScreenWidth) * bgPageScale,
+			float64(rmv6ScreenHeight) * bgPageScale,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -136,14 +165,6 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 			continue
 		}
 
-		xMin, xMax := stBBox.MinX, stBBox.MaxX
-		yMin, yMax := stBBox.MinY, stBBox.MaxY
-
-		xShift := xx(xMin)
-		yShift := yy(yMin)
-		wSvg := xx((xMax - xMin) + 1)
-		hSvg := yy((yMax - yMin) + 1)
-
 		// Background dims + rotation.
 		w0, h0, rot, err := pageBoxDims(bgPage)
 		if err != nil {
@@ -151,6 +172,44 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 		}
 
 		wBg, hBg := displayDims(w0, h0, rot)
+
+		bgContent, _ := bgPage.GetAllContentStreams()
+		if strings.TrimSpace(bgContent) == "" {
+			// Blank-background behavior (remarks):
+			// When a background page has no content stream, remarks inserts the rmc-produced SVG PDF
+			// directly (no show_pdf_page scaling). That PDF is produced by CairoSVG, which applies the
+			// implicit 0.75 px->pt scale factor (72/96).
+			//
+			// To match remarks across both notebooks and inserted blank pages in PDF-backed docs,
+			// render onto a fixed "rm screen" canvas using the CairoSVG-effective scale.
+			scale := rmv6Scale * cairoSVGScale
+			pageW := float64(rmv6ScreenWidth) * scale
+			pageH := float64(rmv6ScreenHeight) * scale
+
+			mergedPage, err := buildOverlayOnlyPageFullScreen(pageW, pageH, strokes, scale, opts)
+			if err != nil {
+				return nil, err
+			}
+			// remarks keeps highlights_x_translation = 0 in this branch.
+			highlightsXTranslation[i] = 0
+			if err := applySmartHighlightsScaled(mergedPage, glyphRanges, highlightsXTranslation[i], pageH, scale); err != nil {
+				return nil, err
+			}
+			if err := w.AddPage(mergedPage); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		// Background-present behavior (remarks merge math):
+		// Use bbox-based canvas sizing and shifts so annotations align with the payload background.
+		xMin, xMax := stBBox.MinX, stBBox.MaxX
+		yMin, yMax := stBBox.MinY, stBBox.MaxY
+
+		xShift := xx(xMin)
+		yShift := yy(yMin)
+		wSvg := xx((xMax - xMin) + 1)
+		hSvg := yy((yMax - yMin) + 1)
 
 		width := math.Max(wSvg, wBg)
 		height := math.Max(hSvg, hBg)
@@ -171,27 +230,11 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 			ySvg = yShift
 		}
 
-		// If background has no content, mimic remarks: replace page with annotations only.
-		bgContent, _ := bgPage.GetAllContentStreams()
-		if strings.TrimSpace(bgContent) == "" {
-			mergedPage, err := buildAnnotationOnlyPage(wSvg, hSvg, strokes, stBBox, wSvg, hSvg, opts)
-			if err != nil {
-				return nil, err
-			}
-			if err := applySmartHighlights(mergedPage, glyphRanges, highlightsXTranslation[i], hSvg); err != nil {
-				return nil, err
-			}
-			if err := w.AddPage(mergedPage); err != nil {
-				return nil, err
-			}
-			continue
-		}
-
 		mergedPage, err := buildMergedPage(width, height, xBg, yBg, xSvg, ySvg, bgPage, bgContent, rot, w0, h0, strokes, stBBox, wSvg, hSvg, opts)
 		if err != nil {
 			return nil, err
 		}
-		if err := applySmartHighlights(mergedPage, glyphRanges, highlightsXTranslation[i], height); err != nil {
+		if err := applySmartHighlightsScaled(mergedPage, glyphRanges, highlightsXTranslation[i], height, rmv6Scale); err != nil {
 			return nil, err
 		}
 
@@ -243,6 +286,62 @@ func buildAnnotationOnlyPage(width, height float64, strokes []rmdoc.Stroke, bbox
 	overlayOps := buildOverlayOps(strokes, bbox, 0, 0, wSvg, hSvg, opts)
 	page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder())
 	return page, nil
+}
+
+func buildOverlayOnlyPage(width, height float64, strokes []rmdoc.Stroke, bbox rmdoc.BBox, xSvg, ySvg, wSvg, hSvg float64, opts V6MergeOptions) (*pdf.PdfPage, error) {
+	page := pdf.NewPdfPage()
+	page.MediaBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
+	page.CropBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
+	page.Resources = pdf.NewPdfPageResources()
+
+	overlayOps := buildOverlayOps(strokes, bbox, xSvg, ySvg, wSvg, hSvg, opts)
+	page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder())
+	return page, nil
+}
+
+func buildOverlayOnlyPageFullScreen(width, height float64, strokes []rmdoc.Stroke, scale float64, opts V6MergeOptions) (*pdf.PdfPage, error) {
+	page := pdf.NewPdfPage()
+	page.MediaBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
+	page.CropBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
+	page.Resources = pdf.NewPdfPageResources()
+
+	overlayOps := buildOverlayOpsScreen(strokes, width, height, scale, opts)
+	page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder())
+	return page, nil
+}
+
+func buildOverlayOpsScreen(strokes []rmdoc.Stroke, pageWidth, pageHeight, scale float64, opts V6MergeOptions) string {
+	cc := contentstream.NewContentCreator()
+	cc.Add_q()
+	cc.Add_w(opts.StrokeWidthPt)
+	cc.Add_RG(0, 0, 0)
+	lastColor := uint32(0)
+	lastColorSet := false
+
+	xShift := pageWidth / 2.0
+
+	for _, s := range strokes {
+		if len(s.Points) == 0 {
+			continue
+		}
+		if !lastColorSet || s.Color != lastColor {
+			r, g, b := rmdoc.PenColorToRGBForStroke(rmdoc.PenColor(s.Color))
+			cc.Add_RG(r, g, b)
+			lastColor = s.Color
+			lastColorSet = true
+		}
+		path := draw.NewPath()
+		for _, p := range s.Points {
+			x := float64(p.X)*scale + xShift
+			y := pageHeight - (float64(p.Y) * scale)
+			path = path.AppendPoint(draw.NewPoint(x, y))
+		}
+		draw.DrawPathWithCreator(path, cc)
+		cc.Add_S()
+	}
+
+	cc.Add_Q()
+	return "% rmv6-overlay\n" + cc.Operations().String()
 }
 
 func buildOverlayOps(strokes []rmdoc.Stroke, bbox rmdoc.BBox, xSvg, ySvg, wSvg, hSvg float64, opts V6MergeOptions) string {
@@ -368,7 +467,7 @@ func buildMergedPage(width, height, xBg, yBg, xSvg, ySvg float64, bgPage *pdf.Pd
 	return merged, nil
 }
 
-func applySmartHighlights(page *pdf.PdfPage, glyphRanges []rmdoc.RMV6GlyphRange, highlightsXTranslation, pageHeight float64) error {
+func applySmartHighlightsScaled(page *pdf.PdfPage, glyphRanges []rmdoc.RMV6GlyphRange, highlightsXTranslation, pageHeight, scale float64) error {
 	_, _ = page.GetAnnotations() // ensure list exists
 	for _, gr := range glyphRanges {
 		if len(gr.Rectangles) == 0 {
@@ -382,12 +481,12 @@ func applySmartHighlights(page *pdf.PdfPage, glyphRanges []rmdoc.RMV6GlyphRange,
 		any := false
 
 		for _, rect := range gr.Rectangles {
-			x1 := xx(rect.X) + highlightsXTranslation
-			x2 := x1 + xx(rect.W)
+			x1 := xxScaled(rect.X, scale) + highlightsXTranslation
+			x2 := x1 + xxScaled(rect.W, scale)
 
 			// rect.Y is in screen coords (top-origin, y down). Convert to PDF (bottom-origin, y up).
-			yTop := pageHeight - yy(rect.Y)
-			yBottom := pageHeight - yy(rect.Y+rect.H)
+			yTop := pageHeight - yyScaled(rect.Y, scale)
+			yBottom := pageHeight - yyScaled(rect.Y+rect.H, scale)
 
 			quadArr.Append(core.MakeFloat(x1))
 			quadArr.Append(core.MakeFloat(yTop))

@@ -222,3 +222,28 @@ We tackled the “all strokes are black” issue and built a clean loop to verif
 
 Also wrote a dedicated debugging playbook for the next developer:
 - `reference/04-debugging-playbook-v6-stroke-color-rendering.md`
+
+### After midnight: Page size mismatch vs `remarks` (root cause + fix)
+
+We hit a confusing golden failure mode: `maxDiffRatio=1.0` with no useful diffs. That turned out to be a **pure raster dimension mismatch** (A and B were different pixel sizes), not “everything is wrong”.
+
+We made it reproducible with ticket scripts:
+
+- `scripts/04-debug-golden-size-mismatch-test-rmdoc.sh`
+- `scripts/06-debug-golden-size-mismatch-cpage-pdf.sh`
+
+Root cause (high-level):
+
+- `remarks` uses `rmc` to convert `.rm` → SVG → PDF via **CairoSVG**.
+- CairoSVG treats SVG width/height as CSS px at 96dpi, then emits PDF points at 72pt/in → **0.75 scale**.
+- In `remarks`, when a background page has no content stream, it inserts that SVG-PDF directly (no scaling), so notebook/blank pages can end up at the 0.75-sized box.
+
+Fix (current pragmatic behavior for goldens):
+
+- For pages with no background content, render overlays onto a fixed “rm screen” canvas using the CairoSVG-effective scale, to match `remarks` output sizing.
+- Make `pdfcmp` tolerant to +/-1px raster rounding differences (compare overlap area).
+
+Outcome:
+
+- `TestRenderV6Golden_RemarksReference_CpagePdf` now passes reliably (no more size-mismatch-driven failure).
+- `Test.rmdoc` golden now fails with a meaningful diff ratio (~4.2%) and diff PNGs, i.e. we’re back to “real diffs” (typed text, etc.) instead of “dimension mismatch”.

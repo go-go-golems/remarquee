@@ -44,6 +44,14 @@ One-shot “first suspicion” debug script that:
 - dumps PDF boxes (MediaBox/CropBox/rotation)
 - measures raster PNG dimensions for page 1 (via `pdftoppm`)
 
+### `05-generate-a-vs-b-pdfs-cpage-pdf.sh`
+
+Same as `01-...` but for the PDF-backed fixture `cpage-pdf.rmdoc`.
+
+### `06-debug-golden-size-mismatch-cpage-pdf.sh`
+
+Same as `04-...` but for `cpage-pdf.rmdoc`.
+
 ## Prerequisites
 
 - `pdftoppm` (Poppler) must be installed and on PATH.

@@ -56,23 +56,27 @@
     - [x] Render pages to images for visual comparison
     - [x] Compare annotations and text content structurally
   - [x] Generate diff images on mismatch (save to test output directory)
+  - [x] Make visual comparison robust to remarks PDFs:
+    - [x] Fall back to Poppler `pdftoppm` rasterization when UniDoc renderer hits "type check error"
+    - [x] Tolerate tiny (+/-1px) raster dimension differences (rounding) by comparing the overlap area
 
 - [ ] Set up golden file management:
   - [x] Create `testdata/golden/` directory structure
   - [ ] Script to generate golden PDFs from remarks for all fixtures
   - [x] Document golden file naming convention
   - [x] Add `-update-golden` flag to tests for intentional changes
+  - [ ] Store reusable ticket scripts for generating A/B PDFs + diagnostics (avoid brittle one-liners)
 
 - [ ] Create golden test cases:
   - [x] `TestRenderV6Golden_TestRmdoc` (device V6 notebook fixture)
   - [x] `TestRenderV6Golden_CpagePdf` (PDF-backed cPages fixture)
   - [x] `TestRenderLegacyGolden_Rmapi_Backend_LegacyPdfA4` (legacy PDF-backed fixture; rmapi-backed)
   - [ ] Each test should:
-    - Render with remarquee
-    - Generate/load golden from remarks
-    - Compare using chosen strategy (visual/structural/hybrid)
-    - Save diff images on failure
-    - Provide clear failure messages
+    - [x] Render with remarquee
+    - [x] Generate/load golden from remarks
+    - [x] Compare using chosen strategy (visual/structural/hybrid)
+    - [x] Save diff images on failure
+    - [x] Provide clear failure messages
 
 - [ ] CI integration:
   - [ ] Ensure remarks is available in CI environment (or skip golden tests if not)
@@ -116,6 +120,8 @@
   - [ ] Check `buildAnnotationOnlyPage` page size calculation
   - [ ] Compare with remarks page size handling
   - [ ] Document expected vs actual page dimensions
+  - [x] Fix: align notebook/blank-page sizing with remarks (CairoSVG 0.75 px→pt factor) so goldens don't fail with pure size mismatch
+  - [ ] Decide what "correct" notebook/blank page sizing should be long-term (match remarks vs match reMarkable desktop export vs always full-screen)
 
 - [ ] **Template backgrounds not rendered**:
   - [ ] Investigate `PageRef.Template` field usage

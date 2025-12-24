@@ -489,15 +489,35 @@ func sha256Hex(b []byte) string {
 func compareImages(a, b image.Image, tolerance float64, generateDiff bool) PageResult {
 	ra := a.Bounds()
 	rb := b.Bounds()
+	// Poppler / PDF renderers can differ by +/- 1px due to rounding.
+	// Treat tiny size mismatches as non-fatal by comparing only the overlapping area.
+	w, h := ra.Dx(), ra.Dy()
 	if ra.Dx() != rb.Dx() || ra.Dy() != rb.Dy() {
-		return PageResult{
-			SizeMismatch: true,
-			DiffRatio:    1.0,
-			Reason:       "rendered image size mismatch",
+		abs := func(x int) int {
+			if x < 0 {
+				return -x
+			}
+			return x
+		}
+		dx := abs(ra.Dx() - rb.Dx())
+		dy := abs(ra.Dy() - rb.Dy())
+		if dx <= 1 && dy <= 1 {
+			if rb.Dx() < w {
+				w = rb.Dx()
+			}
+			if rb.Dy() < h {
+				h = rb.Dy()
+			}
+			// Continue with overlap comparison. Do not mark SizeMismatch, or callers will auto-fail.
+		} else {
+			return PageResult{
+				SizeMismatch: true,
+				DiffRatio:    1.0,
+				Reason:       "rendered image size mismatch",
+			}
 		}
 	}
 
-	w, h := ra.Dx(), ra.Dy()
 	if w == 0 || h == 0 {
 		return PageResult{
 			DiffRatio: 0,

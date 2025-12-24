@@ -161,3 +161,15 @@ Improved pdfcmp robustness: CompareFilesVisual now falls back to Poppler (pdftop
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/pdfcmp/pdfcmp.go — pdftoppm fallback rasterizer
 
+
+## 2025-12-24
+
+Diagnosed and fixed a major golden brittleness issue: remarks notebook/blank pages are effectively 0.75-scaled due to CairoSVG px→pt behavior; aligned our blank-background V6 rendering to match so goldens don't fail with pure size mismatch. Added debug scripts and made pdfcmp tolerate +/-1px raster rounding. Cpage-pdf golden passes; Test.rmdoc now yields meaningful diffs.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/pdfcmp/pdfcmp.go — +/-1px tolerance and poppler raster use
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Blank-background sizing aligned to remarks/CairoSVG
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/04-debug-golden-size-mismatch-test-rmdoc.sh — Repro script
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/06-debug-golden-size-mismatch-cpage-pdf.sh — Repro script
+

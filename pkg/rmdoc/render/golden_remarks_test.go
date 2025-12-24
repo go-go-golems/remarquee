@@ -137,6 +137,9 @@ func TestRenderV6Golden_RemarksReference_TestRmdoc(t *testing.T) {
 	if !cmp.Match {
 		// Emit diff images for failed pages.
 		for _, pr := range cmp.PageResults {
+			if pr.SizeMismatch {
+				t.Logf("page %d size mismatch: %s", pr.PageIndex0, pr.Reason)
+			}
 			if len(pr.DiffPNG) == 0 {
 				continue
 			}
@@ -177,6 +180,9 @@ func TestRenderV6Golden_RemarksReference_CpagePdf(t *testing.T) {
 
 	if !cmp.Match {
 		for _, pr := range cmp.PageResults {
+			if pr.SizeMismatch {
+				t.Logf("page %d size mismatch: %s", pr.PageIndex0, pr.Reason)
+			}
 			if len(pr.DiffPNG) == 0 {
 				continue
 			}
