@@ -21,20 +21,27 @@ RelatedFiles:
         Python reference for SceneItemBlock.from_stream (tags 1..6)
         Python reference for build_tree + SceneTreeBlock/TreeNodeBlock formats
         Python reference for line_from_stream + point_from_stream
+        Python reference for RootTextBlock and TreeNodeBlock anchor fields
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_common.py
       Note: Python reference for V6 header
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_reader.py
       Note: Python reference implementation we’re porting (TaggedBlockReader.read_block/read_subblock)
+    - Path: ../../../../../../../rmscene/src/rmscene/text.py
+      Note: Python reference for expand_text_items and TextDocument.from_scene_item
     - Path: go.mod
       Note: Added unipdf v3.6.1 dependency for V6 PDF rendering
     - Path: pkg/rmdoc/bbox.go
-      Note: RMQ-0004 Step 13 (commit cb097e1) - bbox primitives and stroke/tree bbox helpers
+      Note: |-
+        RMQ-0004 Step 13 (commit cb097e1) - bbox primitives and stroke/tree bbox helpers
+        RMQ-0004 Step 14 (commit e0fc0f4) - anchor-aware bbox traversal
     - Path: pkg/rmdoc/bbox_test.go
       Note: Tests for stroke bbox + fixture smoke (commit cb097e1)
     - Path: pkg/rmdoc/render/v6_strokes_pdf.go
       Note: RMQ-0004 Step 12 (commit fee29bd) - render decoded V6 strokes to single-page PDF
     - Path: pkg/rmdoc/render/v6_strokes_pdf_test.go
       Note: Fixture-based PDF smoke test (%PDF header) (commit fee29bd)
+    - Path: pkg/rmdoc/rmv6_anchor_pos.go
+      Note: RMQ-0004 Step 14 (commit e0fc0f4) - build anchor_pos mapping (rmc-style)
     - Path: pkg/rmdoc/rmv6_crdt_sequence.go
       Note: RMQ-0004 Step 8 (commit 6adfc05) - CRDT sequence container + deterministic toposort ordering
     - Path: pkg/rmdoc/rmv6_crdt_sequence_test.go
@@ -43,6 +50,8 @@ RelatedFiles:
       Note: RMQ-0004 Step 11 (commit b9a1ee9) - DecodeRMV6Line implementation
     - Path: pkg/rmdoc/rmv6_line_decode_test.go
       Note: Fixture-based test for V6 line decoding (commit b9a1ee9)
+    - Path: pkg/rmdoc/rmv6_root_text.go
+      Note: RMQ-0004 Step 14 (commit e0fc0f4) - RootTextBlock parser (text items + styles + pos)
     - Path: pkg/rmdoc/rmv6_scene_item_block.go
       Note: RMQ-0004 Step 9 (commit f09f78c) - minimal SceneItemBlock header decode (parent_id + CRDT sequence header + raw value subblock)
     - Path: pkg/rmdoc/rmv6_scene_item_block_test.go
@@ -71,6 +80,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -786,5 +796,59 @@ This is intentionally a **partial** implementation of task 43: we can compute bb
 - Start with:
   - `remarquee/pkg/rmdoc/bbox.go`
   - `remarquee/pkg/rmdoc/bbox_test.go`
+- Run:
+  - `cd remarquee && go test ./pkg/rmdoc -count=1`
+
+## Step 14: Anchor-aware bounding boxes (RootTextBlock + TreeNode anchor offsets)
+
+This step completes RMQ-0004 task 43 by making bounding box computation **anchor-aware**. We now decode the `RootTextBlock` to build an `anchor_pos` mapping from text character IDs to Y positions (mirroring `rmc`’s `build_anchor_pos` + `TextDocument.from_scene_item`), and we decode TreeNode anchor metadata (`anchor_id`, `anchor_origin_x`, etc) from `TreeNodeBlock`. With those two pieces, we can apply group-level translations while computing bboxes, which is required for correct merge and viewport computations on real notebook pages.
+
+**Commit (code):** e0fc0f4 — "RMQ-0004: anchor-aware bboxes"
+
+### What I did
+- Implemented LWW value readers and string-with-format support on the tagged-block reader:
+  - `readLwwID/readLwwFloat/readLwwByte/readLwwBool/readLwwString`
+  - `readStringWithFormat`
+- Added a minimal `RootTextBlock` parser (block type `0x07`) that decodes:
+  - CRDT text items
+  - paragraph style formats
+  - `pos_x/pos_y/width`
+- Added `BuildRMV6AnchorPos` which:
+  - orders and expands CRDT text items down to single-character IDs,
+  - assigns per-line Y positions using `rmc`-derived line heights,
+  - includes special anchors used by reMarkable (top/bottom sentinel IDs).
+- Extended `ParseRMV6SceneTree` to:
+  - parse `TreeNodeBlock` anchor fields into typed fields on `RMV6Group`,
+  - capture `RootText` on the tree when present.
+- Added `BBoxForRMV6SceneTreeWithAnchors` and a fixture-based smoke test.
+
+### Why
+- Anchor offsets are required for correct positioning of groups/layers tied to text anchors; ignoring them yields incorrect bboxes and breaks merge alignment.
+
+### What worked
+- `gofmt` + `go test ./... -count=1` passed.
+- Anchor-aware bbox computation works on the real V6 fixture and yields non-empty bboxes.
+
+### What didn't work
+- N/A.
+
+### What was tricky to build
+- RootTextBlock decoding uses nested subblocks plus a mix of tagged and raw fields; porting it required careful attention to which reads are tagged vs raw.
+- The anchor_pos algorithm needs CRDT ordering + expansion from string chunks to per-character IDs to match how anchors reference characters.
+
+### What warrants a second pair of eyes
+- Validate the paragraph/line-height mapping (ported from `rmc`) against real notebooks with lots of text and anchors.
+- Confirm we’re tolerant enough of formatting codes and deleted spans in text items.
+
+### What should be done in the future
+- Use decoded anchor offsets in the actual rendering pipeline (not just bbox computations).
+- Decode and store TreeNode label/visible and other metadata if needed for UI/debugging.
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/rmv6_root_text.go`
+  - `remarquee/pkg/rmdoc/rmv6_anchor_pos.go`
+  - `remarquee/pkg/rmdoc/bbox.go`
+  - `remarquee/pkg/rmdoc/rmv6_scene_tree.go`
 - Run:
   - `cd remarquee && go test ./pkg/rmdoc -count=1`

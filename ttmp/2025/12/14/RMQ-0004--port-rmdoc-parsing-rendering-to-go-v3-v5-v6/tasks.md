@@ -63,7 +63,7 @@
 - [x] Implement V6 stroke rendering to PDF:
 - [x] Convert V6 line points to renderer stroke primitives
 - [x] Apply coordinate transforms (SCALE, X_SHIFT, etc.)
-  - [ ] Compute bounding boxes (including anchor offsets for text-linked groups)
+- [x] Compute bounding boxes (including anchor offsets for text-linked groups)
 
 - [ ] Implement PDF merge algorithm (background + annotation overlay):
   - [ ] Match the `remarks` positioning logic (w_svg vs w_bg cases + `highlights_x_translation`)

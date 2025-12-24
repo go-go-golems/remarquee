@@ -193,3 +193,12 @@ Step 13: add stroke bounding boxes (partial task 43; anchors pending) (commit cb
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/bbox.go — BBox primitives
 
+
+## 2025-12-24
+
+Step 14: anchor-aware bboxes (RootTextBlock + TreeNode anchors) (commit e0fc0f4)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/bbox.go — Anchor-aware bbox implementation
+
