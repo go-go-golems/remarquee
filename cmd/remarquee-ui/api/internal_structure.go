@@ -1,15 +1,13 @@
 package api
 
 import (
-	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/go-go-golems/remarquee/pkg/rmdoc"
+	rmdocdebug "github.com/go-go-golems/remarquee/pkg/rmdoc/debug"
 	"github.com/rs/zerolog/log"
 )
 
@@ -70,77 +68,32 @@ func HandleInternalStructure(testDocsPath string) http.HandlerFunc {
 			return
 		}
 
-		// Open the zip file to inspect all files
-		zipFile, err := os.Open(docPath)
+		allFiles, err := rmdocdebug.ListArchiveFiles(ctx, docPath)
 		if err != nil {
-			log.Printf("Failed to open zip file %s: %v", docPath, err)
+			log.Printf("Failed to list archive files in %s: %v", docPath, err)
 			respondJSON(w, http.StatusInternalServerError, InternalStructureResponse{
-				Error: fmt.Sprintf("Failed to open zip file: %v", err),
-			})
-			return
-		}
-		defer zipFile.Close()
-
-		zipStat, err := zipFile.Stat()
-		if err != nil {
-			log.Printf("Failed to stat zip file: %v", err)
-			respondJSON(w, http.StatusInternalServerError, InternalStructureResponse{
-				Error: fmt.Sprintf("Failed to stat zip file: %v", err),
+				Error: fmt.Sprintf("Failed to list archive files: %v", err),
 			})
 			return
 		}
 
-		zipReader, err := zip.NewReader(zipFile, zipStat.Size())
+		rmFilesDebug, err := rmdocdebug.InspectRMFiles(ctx, docPath)
 		if err != nil {
-			log.Printf("Failed to create zip reader: %v", err)
+			log.Printf("Failed to inspect .rm files in %s: %v", docPath, err)
 			respondJSON(w, http.StatusInternalServerError, InternalStructureResponse{
-				Error: fmt.Sprintf("Failed to read zip: %v", err),
+				Error: fmt.Sprintf("Failed to inspect .rm files: %v", err),
 			})
 			return
 		}
 
-		// Collect all files and .rm file info
-		var rmFiles []RMFileInfo
-		var allFiles []string
-
-		for _, file := range zipReader.File {
-			allFiles = append(allFiles, file.Name)
-
-			if strings.HasSuffix(file.Name, ".rm") {
-				pageID := strings.TrimSuffix(filepath.Base(file.Name), ".rm")
-
-				// Try to read first 43 bytes to get version
-				// Format: "reMarkable .lines file, version=X      " (43 bytes total)
-				version := "unknown"
-				if rc, err := file.Open(); err == nil {
-					header := make([]byte, 43)
-					if n, err := rc.Read(header); err == nil && n == 43 {
-						headerStr := string(header)
-						log.Debug().Str("header", headerStr).Str("pageID", pageID).Msg("RM file header")
-						if strings.Contains(headerStr, "version=3") {
-							version = "V3"
-						} else if strings.Contains(headerStr, "version=5") {
-							version = "V5"
-						} else if strings.Contains(headerStr, "version=6") {
-							version = "V6"
-						} else {
-							log.Warn().Str("header", headerStr).Str("pageID", pageID).Msg("Unknown .rm version format")
-						}
-					} else {
-						log.Warn().Int("bytesRead", n).Str("pageID", pageID).Msg("Failed to read full .rm header")
-					}
-					rc.Close()
-				} else {
-					log.Warn().Err(err).Str("pageID", pageID).Msg("Failed to open .rm file for version detection")
-				}
-
-				rmFiles = append(rmFiles, RMFileInfo{
-					PageID:   pageID,
-					Filename: file.Name,
-					Size:     int64(file.UncompressedSize64),
-					Version:  version,
-				})
-			}
+		rmFiles := make([]RMFileInfo, 0, len(rmFilesDebug))
+		for _, f := range rmFilesDebug {
+			rmFiles = append(rmFiles, RMFileInfo{
+				PageID:   f.PageID,
+				Filename: f.Filename,
+				Size:     f.Size,
+				Version:  f.Version,
+			})
 		}
 
 		// Pretty-print JSONs
