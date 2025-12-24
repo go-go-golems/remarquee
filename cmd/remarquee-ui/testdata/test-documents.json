@@ -10,6 +10,56 @@
     "annotationVersion": "V6"
   },
   {
+    "id": "fake-cpages-pdf-no-annotations",
+    "name": "Fake cPages PDF-backed (no annotations)",
+    "path": "testdata/generated/fake-cpages-pdf-no-annotations.rmdoc",
+    "description": "Generated cPages PDF-backed document (4 UI pages: duplicated + inserted) with no .rm files. Exercises page plan ordering and background-only rendering paths.",
+    "schema": "cPages",
+    "docType": "PDF",
+    "expectedPages": 4,
+    "annotationVersion": "None"
+  },
+  {
+    "id": "fake-cpages-pdf-v6-empty-rm",
+    "name": "Fake cPages PDF-backed (V6 header-only .rm)",
+    "path": "testdata/generated/fake-cpages-pdf-v6-empty-rm.rmdoc",
+    "description": "Generated cPages PDF-backed document with a V6 header-only .rm file (parses but contains no blocks). Exercises \"has rm file but no strokes\" paths.",
+    "schema": "cPages",
+    "docType": "PDF",
+    "expectedPages": 2,
+    "annotationVersion": "V6"
+  },
+  {
+    "id": "fake-cpages-pdf-v6-sample-rm",
+    "name": "Fake cPages PDF-backed (sample V6 annotations)",
+    "path": "testdata/generated/fake-cpages-pdf-v6-sample-rm.rmdoc",
+    "description": "Generated cPages PDF-backed document embedding a real V6 .rm extracted from cpage-pdf.rmdoc. Exercises stroke merge + (if present) glyph-range highlight annotation paths.",
+    "schema": "cPages",
+    "docType": "PDF",
+    "expectedPages": 2,
+    "annotationVersion": "V6"
+  },
+  {
+    "id": "fake-cpages-notebook-v6-empty",
+    "name": "Fake cPages Notebook (V6 header-only .rm)",
+    "path": "testdata/generated/fake-cpages-notebook-v6-empty.rmdoc",
+    "description": "Generated cPages notebook-style document (no payload PDF) with V6 header-only .rm files. Exercises blank-page rendering paths.",
+    "schema": "cPages",
+    "docType": "Notebook",
+    "expectedPages": 2,
+    "annotationVersion": "V6"
+  },
+  {
+    "id": "fake-cpages-pdf-deleted-pages",
+    "name": "Fake cPages PDF-backed (deleted pages in .content)",
+    "path": "testdata/generated/fake-cpages-pdf-deleted-pages.rmdoc",
+    "description": "Generated cPages PDF-backed document where one cPages entry is marked deleted. Parser should filter it out (expectedPages excludes deleted).",
+    "schema": "cPages",
+    "docType": "PDF",
+    "expectedPages": 2,
+    "annotationVersion": "None"
+  },
+  {
     "id": "legacy-notebook",
     "name": "Legacy V3/V5 Notebook",
     "path": "testdata/legacy-notebook.zip",
