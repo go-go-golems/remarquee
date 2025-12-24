@@ -53,7 +53,7 @@
 - [x] Tagged block reader (header + main blocks + subblocks)
 - [x] CRDT sequence decoding needed for scene items
 - [x] Build scene tree (groups + lines)
-  - [ ] Expose strokes as normalized primitives for rendering
+- [x] Expose strokes as normalized primitives for rendering
   - [ ] Expand incrementally:
     - [ ] Highlights (GlyphRange rectangles + PenColor)
     - [ ] Typed text (RootTextBlock)

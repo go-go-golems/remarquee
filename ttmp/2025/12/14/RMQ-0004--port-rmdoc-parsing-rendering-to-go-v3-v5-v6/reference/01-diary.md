@@ -16,6 +16,7 @@ RelatedFiles:
       Note: |-
         Python reference for SceneItemBlock.from_stream (tags 1..6)
         Python reference for build_tree + SceneTreeBlock/TreeNodeBlock formats
+        Python reference for line_from_stream + point_from_stream
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_common.py
       Note: Python reference for V6 header
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_reader.py
@@ -24,6 +25,10 @@ RelatedFiles:
       Note: RMQ-0004 Step 8 (commit 6adfc05) - CRDT sequence container + deterministic toposort ordering
     - Path: pkg/rmdoc/rmv6_crdt_sequence_test.go
       Note: Tests for ordering determinism + cycles (commit 6adfc05)
+    - Path: pkg/rmdoc/rmv6_line_decode.go
+      Note: RMQ-0004 Step 11 (commit b9a1ee9) - DecodeRMV6Line implementation
+    - Path: pkg/rmdoc/rmv6_line_decode_test.go
+      Note: Fixture-based test for V6 line decoding (commit b9a1ee9)
     - Path: pkg/rmdoc/rmv6_scene_item_block.go
       Note: RMQ-0004 Step 9 (commit f09f78c) - minimal SceneItemBlock header decode (parent_id + CRDT sequence header + raw value subblock)
     - Path: pkg/rmdoc/rmv6_scene_item_block_test.go
@@ -38,6 +43,10 @@ RelatedFiles:
       Note: Fixture-based test exercising V6 header/block/subblock parsing (commit 1cbf052)
     - Path: pkg/rmdoc/rmv6_tagged_block_values.go
       Note: RMQ-0004 Step 9 (commit f09f78c) - tagged value readers (read_id/read_uint32/etc)
+    - Path: pkg/rmdoc/rmv6_value_reader.go
+      Note: RMQ-0004 Step 11 (commit b9a1ee9) - bounded tagged value reader for v6 payloads
+    - Path: pkg/rmdoc/strokes.go
+      Note: RMQ-0004 Step 11 (commit b9a1ee9) - normalized Stroke primitives
     - Path: ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md
       Note: Prior research diary that this ticket builds on
     - Path: ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/design-doc/01-design-go-rmdoc-data-model-and-apis.md
@@ -48,6 +57,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -583,3 +593,66 @@ For now we focus on the critical structural pieces for rendering: **groups and l
 - Ported from `rmscene/src/rmscene/scene_stream.py` `build_tree()` and the relevant block formats:
   - `SceneTreeBlock` (BLOCK_TYPE 0x01)
   - `TreeNodeBlock` (BLOCK_TYPE 0x02)
+
+## Step 11: Decode V6 line items into normalized stroke primitives
+
+This step completes the “strokes-only” half of the V6 parser milestone by decoding `SceneLineItemBlock` payloads into a normalized `Stroke` primitive (tool, color, thickness scale, and point list). Rather than jumping straight into PDF rendering, we keep this stage as a pure data transformation with a fixture-based unit test, so later rendering work can focus on geometry/merge math instead of binary parsing.
+
+The decoder is a direct port of `rmscene.scene_stream.line_from_stream`, including the mixed format inside the points subblock (tagged outer structure + raw-packed point records).
+
+**Commit (code):** b9a1ee9 — "RMQ-0004: decode V6 line strokes"
+
+### What I did
+- Added a normalized primitive type:
+  - `Stroke` + `StrokePoint` in `pkg/rmdoc/strokes.go`
+- Implemented a dedicated “tagged values + bounded subblocks” reader:
+  - `rmV6ValueReader` in `pkg/rmdoc/rmv6_value_reader.go`
+  - supports tags (varuint index/type), primitive reads, and nested Length4 subblocks with enforced bounds
+- Implemented `DecodeRMV6Line` in `pkg/rmdoc/rmv6_line_decode.go`:
+  - reads tagged fields: tool (1), color (2), thickness_scale (3), starting_length (4)
+  - reads subblock 5 containing raw-packed points (v1/v2 point formats)
+  - best-effort consumes optional fields (timestamp/move_id) and ignores trailing RGBA marker unless the prefix matches `0x84 0x01`
+- Added `rmv6_line_decode_test.go`:
+  - builds a scene tree from the V6 fixture, finds the first line item, decodes it, and asserts non-empty points
+
+### Why
+- Rendering requires stroke primitives; decoding them now keeps later work focused and testable.
+- This makes the eventual “V6 render to PDF” implementation much simpler: it can take `[]Stroke` and draw them.
+
+### What worked
+- `gofmt` + `go test ./... -count=1` passed.
+- The fixture-based test successfully decodes a real V6 line and yields non-empty points.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- V6 line payloads are “hybrid”: tagged structure for metadata and subblock boundaries, plus raw-packed point arrays inside the points subblock. A bounded reader is essential to avoid overreads.
+
+### What was tricky to build
+- Implementing nested length limits cleanly without relying on top-level block parsing: `rmV6ValueReader` maintains an explicit limit stack.
+- Decoding point format v1 vs v2:
+  - v2 uses compact `(float32 x,y) + (uint16 speed,width) + (uint8 direction,pressure)`
+  - v1 uses float encodings that require post-processing (speed*4, etc) to match rmscene behavior.
+
+### What warrants a second pair of eyes
+- Confirm the decision to *not* enforce “read to end” (we allow extra bytes for forward compatibility) matches our goals.
+- Validate the interpretation of `direction/pressure/width/speed` fields in both point versions; later rendering may depend on unit assumptions.
+
+### What should be done in the future
+- Add decoding for glyph ranges and highlights once we have confidence in the stroke pipeline.
+- Plumb decoded strokes into the V6 renderer layer (task 40+), using the same coordinate transform constants as `rmscene`.
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/rmv6_line_decode.go`
+  - `remarquee/pkg/rmdoc/rmv6_value_reader.go`
+  - `remarquee/pkg/rmdoc/strokes.go`
+- Run:
+  - `cd remarquee && go test ./pkg/rmdoc -count=1`
+
+### Technical details
+- Ported from `rmscene/src/rmscene/scene_stream.py`:
+  - `line_from_stream`
+  - `point_from_stream`
+  - `point_serialized_size`

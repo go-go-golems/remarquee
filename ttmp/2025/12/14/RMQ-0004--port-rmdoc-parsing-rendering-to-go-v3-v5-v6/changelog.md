@@ -165,3 +165,13 @@ Step 10: build minimal V6 scene tree (groups + lines) (commit 3ce401d)
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_scene_tree.go — New scene tree builder
 
+
+## 2025-12-24
+
+Step 11: decode V6 line items into normalized strokes (commit b9a1ee9)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_line_decode.go — V6 line->Stroke decoding
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/strokes.go — Normalized primitives
+
