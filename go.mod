@@ -5,6 +5,7 @@ go 1.24.3
 require (
 	github.com/go-go-golems/glazed v0.7.3
 	github.com/spf13/cobra v1.10.1
+	github.com/unidoc/unipdf/v3 v3.6.1
 )
 
 require (

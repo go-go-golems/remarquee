@@ -80,6 +80,14 @@ func (t *RMV6SceneTree) Node(id RMV6CrdtID) (*RMV6Group, bool) {
 	return n, ok
 }
 
+func (t *RMV6SceneTree) Groups() []*RMV6Group {
+	out := make([]*RMV6Group, 0, len(t.nodes))
+	for _, g := range t.nodes {
+		out = append(out, g)
+	}
+	return out
+}
+
 func (t *RMV6SceneTree) AddNode(nodeID RMV6CrdtID, parentID RMV6CrdtID) error {
 	_ = parentID // parent linkage happens via SceneGroupItemBlock
 	if t.nodes == nil {
