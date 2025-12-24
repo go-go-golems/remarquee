@@ -156,3 +156,12 @@ Step 9: decode V6 scene-item headers (CRDT sequence item fields) (commit f09f78c
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_scene_item_block.go — New scene header decode
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_tagged_block_values.go — Tagged value read helpers
 
+
+## 2025-12-24
+
+Step 10: build minimal V6 scene tree (groups + lines) (commit 3ce401d)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_scene_tree.go — New scene tree builder
+

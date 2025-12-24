@@ -13,7 +13,9 @@ RelatedFiles:
     - Path: ../../../../../../../rmscene/src/rmscene/crdt_sequence.py
       Note: Python reference algorithm toposort_items ported to Go
     - Path: ../../../../../../../rmscene/src/rmscene/scene_stream.py
-      Note: Python reference for SceneItemBlock.from_stream (tags 1..6)
+      Note: |-
+        Python reference for SceneItemBlock.from_stream (tags 1..6)
+        Python reference for build_tree + SceneTreeBlock/TreeNodeBlock formats
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_common.py
       Note: Python reference for V6 header
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_reader.py
@@ -26,6 +28,10 @@ RelatedFiles:
       Note: RMQ-0004 Step 9 (commit f09f78c) - minimal SceneItemBlock header decode (parent_id + CRDT sequence header + raw value subblock)
     - Path: pkg/rmdoc/rmv6_scene_item_block_test.go
       Note: Fixture-based test for SceneItemBlock decoding (commit f09f78c)
+    - Path: pkg/rmdoc/rmv6_scene_tree.go
+      Note: RMQ-0004 Step 10 (commit 3ce401d) - build minimal V6 scene tree (groups + lines)
+    - Path: pkg/rmdoc/rmv6_scene_tree_test.go
+      Note: Fixture-based test for V6 scene tree construction (commit 3ce401d)
     - Path: pkg/rmdoc/rmv6_tagged_block_reader.go
       Note: RMQ-0004 Step 7 (commit 1cbf052) - Go port of rmscene tagged-block reader primitives (header + block + subblock boundaries)
     - Path: pkg/rmdoc/rmv6_tagged_block_reader_test.go
@@ -42,6 +48,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -517,3 +524,62 @@ This is the minimum viable piece of task 34: CRDT sequence decoding as required 
 ### Technical details
 - Based on `rmscene/src/rmscene/scene_stream.py` `SceneItemBlock.from_stream`:
   - tags: 1 (parent), 2 (item_id), 3 (left_id), 4 (right_id), 5 (deleted_length), 6 (value subblock)
+
+## Step 10: Build a minimal V6 scene tree (groups + lines)
+
+This step takes the V6 parsing work from “we can decode individual blocks” to “we can reconstruct the document’s logical structure”. We now build a **scene tree** that mirrors the `rmscene` algorithm: group nodes are created from `SceneTreeBlock` entries, enriched by `TreeNodeBlock` metadata (currently stored as raw extra bytes), and populated with ordered children via CRDT sequence items from scene item blocks.
+
+For now we focus on the critical structural pieces for rendering: **groups and lines**. Line item “value” bytes are carried through as raw payload for the next milestone (task 36: expose strokes as normalized primitives).
+
+**Commit (code):** 3ce401d — "RMQ-0004: build V6 scene tree (groups + lines)"
+
+### What I did
+- Implemented `ParseRMV6SceneTree` that reads a V6 `.rm` file and builds:
+  - `SceneTreeBlock` (block type `0x01`): creates group nodes (`tree_id`) with `parent_id`.
+  - `TreeNodeBlock` (block type `0x02`): attaches raw extra metadata to an existing node (label/visible/etc are not decoded yet).
+  - Scene item blocks (0x03 glyph, 0x04 group, 0x05 line, 0x06 text, 0x08 tombstone):
+    - group items resolve their referenced node id and attach `*RMV6Group` to the item.
+    - line items store `Raw` value bytes plus the block version for future stroke decoding.
+    - all items are stored as `RMV6CrdtSequenceItem[RMV6SceneItem]` under their parent group.
+- Added a fixture-based test that asserts:
+  - the root node exists (`CrdtId(0,1)`),
+  - at least one additional group node exists,
+  - at least one line item exists somewhere in the tree.
+
+### Why
+- Rendering depends on the correct parent/child hierarchy and deterministic ordering of items. Without a tree, “render strokes to PDF” becomes guesswork.
+- This matches the proven Python behavior (build_tree) closely enough to validate structure before implementing stroke decoding.
+
+### What worked
+- `gofmt` + `go test ./... -count=1` passed.
+- The fixture-based test succeeds on real V6 `.rm` data from `cpage-pdf.rmdoc`.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- `SceneTreeBlock` uses `tree_id` as the identity for the group node (this is what `rmscene` adds to the tree), while `node_id` exists but isn’t used for node identity in build_tree.
+
+### What was tricky to build
+- Ensuring we don’t “link groups to parents twice”: `AddNode` is idempotent and parent linkage happens via SceneGroupItemBlock, mirroring the Python algorithm.
+- Correctly preserving deterministic child order: children are stored as CRDT sequence items and ordered via our `RMV6CrdtSequence` toposort logic when enumerated.
+
+### What warrants a second pair of eyes
+- Verify that treating a missing TreeNodeBlock’s node as a hard error is desirable (Python throws). If real files can violate this ordering, we may need to tolerate it.
+- Confirm we’re interpreting “group item” value correctly (`read_id(2)` inside value subblock), and that it always points to a node created by SceneTreeBlock.
+
+### What should be done in the future
+- Decode TreeNodeBlock fields into typed metadata (label/visible/anchors) once needed for layout/rendering.
+- Implement line value decoding (tool/color/points) and expose normalized stroke primitives (task 36).
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/rmv6_scene_tree.go`
+  - `remarquee/pkg/rmdoc/rmv6_scene_tree_test.go`
+- Run:
+  - `cd remarquee && go test ./pkg/rmdoc -count=1`
+
+### Technical details
+- Ported from `rmscene/src/rmscene/scene_stream.py` `build_tree()` and the relevant block formats:
+  - `SceneTreeBlock` (BLOCK_TYPE 0x01)
+  - `TreeNodeBlock` (BLOCK_TYPE 0x02)
