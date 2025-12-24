@@ -12,11 +12,21 @@ Intent: long-term
 Owners: []
 RelatedFiles:
     - Path: remarquee/cmd/remarquee-ui/api/inspect.go
-      Note: Use request context for OpenFile (commit 4b73281)
+      Note: |-
+        Use request context for OpenFile (commit 4b73281)
+        Extract id via r.PathValue (commit baeef41)
     - Path: remarquee/cmd/remarquee-ui/api/internal_structure.go
-      Note: UI now uses pkg/rmdoc/debug instead of duplicating zip/header logic (commit 401d54b)
+      Note: |-
+        UI now uses pkg/rmdoc/debug instead of duplicating zip/header logic (commit 401d54b)
+        Extract id via r.PathValue (commit baeef41)
+    - Path: remarquee/cmd/remarquee-ui/api/outputs.go
+      Note: Extract filename via r.PathValue (commit baeef41)
     - Path: remarquee/cmd/remarquee-ui/api/render.go
       Note: Use request context for OpenFile+render (commit 4b73281)
+    - Path: remarquee/cmd/remarquee-ui/main.go
+      Note: Use explicit ServeMux patterns (no suffix checks) and path variables (commit baeef41)
+    - Path: remarquee/cmd/remarquee-ui/main_test.go
+      Note: Routing regression tests (400/404/405/200) (commit baeef41)
     - Path: remarquee/cmd/remarquee/cmds/rmdoc/build_background.go
       Note: Use cobra-derived context for OpenFile/BuildBackgroundPDF (commit 4b73281)
     - Path: remarquee/cmd/remarquee/cmds/rmdoc/inspect.go
@@ -35,6 +45,7 @@ LastUpdated: 2025-12-24T08:57:13.942052994-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

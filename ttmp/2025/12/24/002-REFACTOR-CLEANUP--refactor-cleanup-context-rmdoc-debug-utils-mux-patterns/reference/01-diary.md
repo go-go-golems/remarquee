@@ -299,6 +299,63 @@ This step removed duplicated zip/header-sniff logic from the UI and replaced it 
 ### What I'd do differently next time
 - N/A
 
+## Step 7: Cleanup `remarquee-ui` routing + path parsing (ServeMux path variables) and add routing tests
+
+This step replaced suffix-based dispatching (and manual `strings.Split` path parsing in handlers) with explicit `net/http` ServeMux patterns using path variables. The impact is simpler routing, less handler boilerplate, and fewer “weird paths accidentally reach the handler” cases. It also added routing regression tests to lock down status-code behavior.
+
+**Commit (code):** baeef41 — "ui: use ServeMux path vars for api routing"
+
+### What I did
+- Updated `cmd/remarquee-ui/main.go` to register explicit patterns:
+  - `/api/document/{id}/inspect`
+  - `/api/document/{id}/structure`
+  - `/api/outputs/{filename}`
+- Updated handlers to extract variables via `r.PathValue("id")` / `r.PathValue("filename")`:
+  - `api/inspect.go`
+  - `api/internal_structure.go`
+  - `api/outputs.go`
+- Added `cmd/remarquee-ui/main_test.go` to validate key routing semantics:
+  - 200 OK for valid inspect
+  - 404 for unknown doc / extra path segment
+  - 405 for wrong method
+  - 400 for invalid output filename patterns
+
+### Why
+- Reduce brittle suffix checks and eliminate duplicated path parsing logic.
+- Make behavior deterministic by letting the mux decide what is and isn’t a match.
+
+### What worked
+- `cd remarquee && go test ./... -count=1` passed after the refactor.
+
+### What didn't work
+- A literal `..` path segment is normalized/redirected by the stdlib mux, so we adjusted the traversal test to use a filename that still reaches the handler (`..evil.pdf`).
+
+### What I learned
+- The stdlib mux may normalize certain paths (e.g. `..`), which can affect “path traversal” test cases; tests should use inputs that reach the handler if they’re meant to validate handler-level checks.
+
+### What was tricky to build
+- Keeping status code semantics reasonable while shifting responsibility from handler parsing to routing rules.
+
+### What warrants a second pair of eyes
+- Confirm the new behavior for previously “almost-matching” paths (which used to yield 400 in handler parsing) is acceptable as 404 (route no longer matches).
+
+### What should be done in the future
+- If new endpoints are added, follow the same pattern: ServeMux path variables + `r.PathValue` extraction, and add a routing test for the key status-code expectations.
+
+### Code review instructions
+- Start with:
+  - `cmd/remarquee-ui/main.go` (route registrations)
+  - `cmd/remarquee-ui/api/inspect.go`, `internal_structure.go`, `outputs.go` (PathValue extraction)
+  - `cmd/remarquee-ui/main_test.go` (routing semantics)
+- Validate with:
+  - `cd remarquee && go test ./... -count=1`
+
+### Technical details
+- We intentionally did not use method-specific ServeMux patterns so handlers can continue returning 405 “Method not allowed” consistently.
+
+### What I'd do differently next time
+- N/A
+
 ## Related
 
 <!-- Link to related documents or resources -->

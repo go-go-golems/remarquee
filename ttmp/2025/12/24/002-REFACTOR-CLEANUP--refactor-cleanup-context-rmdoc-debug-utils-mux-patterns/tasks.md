@@ -26,8 +26,8 @@
 - [x] Add unit tests for `pkg/rmdoc/debug` using existing UI `testdata` archives (`cmd/remarquee-ui/testdata/*`)
 
 - **Cleanup `remarquee-ui` mux + path parsing**
-- [ ] Refactor `remarquee/cmd/remarquee-ui/main.go` routing to avoid suffix checks and to use a consistent pattern per endpoint
-- [ ] Refactor `remarquee/cmd/remarquee-ui/api/inspect.go` to avoid manual `strings.Split` path parsing (extract id via mux variables or shared helper)
-- [ ] Refactor `remarquee/cmd/remarquee-ui/api/internal_structure.go` to avoid manual `strings.Split` path parsing (extract id via mux variables or shared helper)
-- [ ] Refactor `remarquee/cmd/remarquee-ui/api/outputs.go` to avoid manual `strings.Split` path parsing (extract filename via mux variables or shared helper)
-- [ ] Add/adjust handler tests to ensure no behavior regression (400 vs 404 vs 200) for routing/path parsing changes
+- [x] Refactor `remarquee/cmd/remarquee-ui/main.go` routing to avoid suffix checks and to use a consistent pattern per endpoint
+- [x] Refactor `remarquee/cmd/remarquee-ui/api/inspect.go` to avoid manual `strings.Split` path parsing (extract id via mux variables or shared helper)
+- [x] Refactor `remarquee/cmd/remarquee-ui/api/internal_structure.go` to avoid manual `strings.Split` path parsing (extract id via mux variables or shared helper)
+- [x] Refactor `remarquee/cmd/remarquee-ui/api/outputs.go` to avoid manual `strings.Split` path parsing (extract filename via mux variables or shared helper)
+- [x] Add/adjust handler tests to ensure no behavior regression (400 vs 404 vs 200) for routing/path parsing changes

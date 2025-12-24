@@ -52,3 +52,13 @@ Step 6: Extract rmdoc archive introspection into pkg/rmdoc/debug + refactor UI i
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/api/internal_structure.go — Remove duplicated zip/header code
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/debug/archive.go — Archive listing + .rm version sniff
 
+
+## 2025-12-24
+
+Step 7: Cleanup remarquee-ui routing + path parsing using stdlib ServeMux path variables + add routing tests (commit baeef41)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/main.go — No suffix dispatch; use /api/document/{id}/...
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/main_test.go — Locks down 200/404/405/400 outcomes
+
