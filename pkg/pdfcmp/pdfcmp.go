@@ -5,11 +5,15 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -23,6 +27,10 @@ type Options struct {
 	// Tolerance is the fraction of pixels that are allowed to differ (0.01 = 1%).
 	Tolerance float64
 
+	// RasterDPI controls PDF->image rasterization DPI when using external rasterizers (pdftoppm fallback).
+	// If <= 0, defaults to 200.
+	RasterDPI int
+
 	// GenerateDiff enables producing per-page diff images (PNG) for failing pages.
 	// If nil, defaults to true (golden-test ergonomics).
 	GenerateDiff *bool
@@ -34,6 +42,9 @@ type Options struct {
 func (o Options) withDefaults() Options {
 	if o.Tolerance < 0 {
 		o.Tolerance = 0
+	}
+	if o.RasterDPI <= 0 {
+		o.RasterDPI = 200
 	}
 	if o.GenerateDiff == nil {
 		v := true
@@ -124,7 +135,135 @@ func CompareFilesVisual(ctx context.Context, pathA, pathB string, opts Options) 
 		return nil, errors.Wrap(err, "read pdf B")
 	}
 
-	return CompareBytesVisual(ctx, a, b, opts)
+	// Primary path: pure-Go UniDoc renderer.
+	res, err := CompareBytesVisual(ctx, a, b, opts)
+	if err == nil {
+		return res, nil
+	}
+
+	// Fallback: UniDoc rendering can fail with strict "type check error" on some PDFs
+	// (notably certain remarks outputs). If Poppler is available, use pdftoppm to rasterize.
+	if !strings.Contains(err.Error(), "type check error") {
+		return nil, err
+	}
+	if _, lookErr := exec.LookPath("pdftoppm"); lookErr != nil {
+		return nil, err
+	}
+
+	return compareFilesVisualWithPDFToPPM(ctx, pathA, pathB, a, b, opts)
+}
+
+func compareFilesVisualWithPDFToPPM(ctx context.Context, pathA, pathB string, pdfA, pdfB []byte, opts Options) (*Result, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	opts = opts.withDefaults()
+
+	rA, err := pdf.NewPdfReader(bytes.NewReader(pdfA))
+	if err != nil {
+		return nil, errors.Wrap(err, "open pdf A reader")
+	}
+	rB, err := pdf.NewPdfReader(bytes.NewReader(pdfB))
+	if err != nil {
+		return nil, errors.Wrap(err, "open pdf B reader")
+	}
+
+	nA, err := rA.GetNumPages()
+	if err != nil {
+		return nil, errors.Wrap(err, "get pdf A num pages")
+	}
+	nB, err := rB.GetNumPages()
+	if err != nil {
+		return nil, errors.Wrap(err, "get pdf B num pages")
+	}
+
+	res := &Result{
+		Match:      true,
+		PageCountA: nA,
+		PageCountB: nB,
+		SHA256A:    sha256Hex(pdfA),
+		SHA256B:    sha256Hex(pdfB),
+	}
+
+	if nA != nB {
+		res.Match = false
+		return res, nil
+	}
+
+	maxPages := nA
+	if opts.MaxPages > 0 && opts.MaxPages < maxPages {
+		maxPages = opts.MaxPages
+	}
+
+	tmpDir, err := os.MkdirTemp("", "pdfcmp-pdftoppm-*")
+	if err != nil {
+		return nil, errors.Wrap(err, "create temp dir for pdftoppm")
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	for i := 1; i <= maxPages; i++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		imgA, err := renderPDFPageWithPDFToPPM(ctx, tmpDir, "A", pathA, i, opts.RasterDPI)
+		if err != nil {
+			return nil, errors.Wrapf(err, "pdftoppm render pdf A page %d", i)
+		}
+		imgB, err := renderPDFPageWithPDFToPPM(ctx, tmpDir, "B", pathB, i, opts.RasterDPI)
+		if err != nil {
+			return nil, errors.Wrapf(err, "pdftoppm render pdf B page %d", i)
+		}
+
+		pr := compareImages(imgA, imgB, opts.Tolerance, *opts.GenerateDiff)
+		pr.PageIndex0 = i - 1
+		pr.Reason = "pdftoppm rasterizer (fallback after UniDoc type check error)"
+		res.PageResults = append(res.PageResults, pr)
+
+		if pr.SizeMismatch || pr.DiffRatio > opts.Tolerance {
+			res.Match = false
+		}
+		if pr.DiffRatio > res.MaxDiffRatio {
+			res.MaxDiffRatio = pr.DiffRatio
+		}
+	}
+
+	return res, nil
+}
+
+func renderPDFPageWithPDFToPPM(ctx context.Context, tmpDir, prefix, pdfPath string, pageNum, dpi int) (image.Image, error) {
+	if dpi <= 0 {
+		dpi = 200
+	}
+
+	outBase := filepath.Join(tmpDir, fmt.Sprintf("%s-page-%03d", prefix, pageNum))
+	outFile := outBase + ".png"
+
+	cmd := exec.CommandContext(ctx,
+		"pdftoppm",
+		"-png",
+		"-r", strconv.Itoa(dpi),
+		"-f", strconv.Itoa(pageNum),
+		"-l", strconv.Itoa(pageNum),
+		"-singlefile",
+		pdfPath,
+		outBase,
+	)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return nil, errors.Wrapf(err, "pdftoppm failed: %s", strings.TrimSpace(stderr.String()))
+	}
+
+	b, err := os.ReadFile(outFile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "read pdftoppm output %s", outFile)
+	}
+	img, _, err := image.Decode(bytes.NewReader(b))
+	if err != nil {
+		return nil, errors.Wrap(err, "decode pdftoppm png")
+	}
+	return img, nil
 }
 
 func CompareBytesVisual(ctx context.Context, pdfA, pdfB []byte, opts Options) (*Result, error) {

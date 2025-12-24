@@ -50,10 +50,18 @@ func RenderRMV6StrokesToPDF(ctx context.Context, strokes []rmdoc.Stroke, out io.
 	// Fixed stroke style for now (black, 1pt).
 	cc.Add_w(1.0)
 	cc.Add_RG(0, 0, 0)
+	lastColor := uint32(0)
+	lastColorSet := false
 
 	for _, s := range strokes {
 		if len(s.Points) == 0 {
 			continue
+		}
+		if !lastColorSet || s.Color != lastColor {
+			r, g, b := rmdoc.PenColorToRGBForStroke(rmdoc.PenColor(s.Color))
+			cc.Add_RG(r, g, b)
+			lastColor = s.Color
+			lastColorSet = true
 		}
 		path := draw.NewPath()
 		for _, p := range s.Points {

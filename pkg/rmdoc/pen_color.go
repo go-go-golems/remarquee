@@ -66,6 +66,46 @@ var HardcodedColorMap = map[RGBA]PenColor{
 // Returns values in range [0.0, 1.0].
 func PenColorToRGB(color PenColor) (r, g, b float64) {
 	switch color {
+	case PenColorBlack:
+		return 0.0, 0.0, 0.0
+	case PenColorGray:
+		// rmc: (144,144,144)
+		return 144.0 / 255.0, 144.0 / 255.0, 144.0 / 255.0
+	case PenColorWhite:
+		return 1.0, 1.0, 1.0
+	case PenColorYellow:
+		// rmc: (251,247,25)
+		return 251.0 / 255.0, 247.0 / 255.0, 25.0 / 255.0
+	case PenColorGreen:
+		// rmc: (0,255,0)
+		return 0.0, 1.0, 0.0
+	case PenColorPink:
+		// rmc: (255,192,203)
+		return 1.0, 192.0 / 255.0, 203.0 / 255.0
+	case PenColorBlue:
+		// rmc: (78,105,201)
+		return 78.0 / 255.0, 105.0 / 255.0, 201.0 / 255.0
+	case PenColorRed:
+		// rmc: (179,62,57)
+		return 179.0 / 255.0, 62.0 / 255.0, 57.0 / 255.0
+	case PenColorGrayOverlap:
+		// rmc: (125,125,125)
+		return 125.0 / 255.0, 125.0 / 255.0, 125.0 / 255.0
+	case PenColorHighlight:
+		// rmc: (247,232,81)
+		return 247.0 / 255.0, 232.0 / 255.0, 81.0 / 255.0
+	case PenColorGreen2:
+		// rmc: (161,216,125)
+		return 161.0 / 255.0, 216.0 / 255.0, 125.0 / 255.0
+	case PenColorCyan:
+		// rmc: (139,208,229)
+		return 139.0 / 255.0, 208.0 / 255.0, 229.0 / 255.0
+	case PenColorMagenta:
+		// rmc: (183,130,205)
+		return 183.0 / 255.0, 130.0 / 255.0, 205.0 / 255.0
+	case PenColorYellow2:
+		// rmc: (247,232,81)
+		return 247.0 / 255.0, 232.0 / 255.0, 81.0 / 255.0
 	case PenColorHighlightYellow:
 		return 1.0, 0.929412, 0.458824
 	case PenColorHighlightBlue:
@@ -97,5 +137,46 @@ func PenColorToRGB(color PenColor) (r, g, b float64) {
 	default:
 		// Default to yellow highlight.
 		return 1.0, 0.93, 0.46
+	}
+}
+
+// PenColorToRGBForStroke converts PenColor to normalized RGB for stroke rendering.
+//
+// This differs from PenColorToRGB in one important way: if the color is unknown,
+// strokes should default to black (not highlight yellow), because "unknown pen color"
+// should not paint the document yellow.
+func PenColorToRGBForStroke(color PenColor) (r, g, b float64) {
+	switch color {
+	case PenColorBlack,
+		PenColorGray,
+		PenColorWhite,
+		PenColorYellow,
+		PenColorGreen,
+		PenColorPink,
+		PenColorBlue,
+		PenColorRed,
+		PenColorGrayOverlap,
+		PenColorHighlight,
+		PenColorGreen2,
+		PenColorCyan,
+		PenColorMagenta,
+		PenColorYellow2,
+		PenColorHighlightYellow,
+		PenColorHighlightBlue,
+		PenColorHighlightPink,
+		PenColorHighlightOrange,
+		PenColorHighlightGreen,
+		PenColorHighlightGray,
+		PenColorShaderGray,
+		PenColorShaderOrange,
+		PenColorShaderMagenta,
+		PenColorShaderBlue,
+		PenColorShaderRed,
+		PenColorShaderGreen,
+		PenColorShaderYellow,
+		PenColorShaderCyan:
+		return PenColorToRGB(color)
+	default:
+		return 0.0, 0.0, 0.0
 	}
 }

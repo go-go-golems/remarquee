@@ -251,11 +251,23 @@ func buildOverlayOps(strokes []rmdoc.Stroke, bbox rmdoc.BBox, xSvg, ySvg, wSvg, 
 
 	cc.Add_w(opts.StrokeWidthPt)
 	cc.Add_RG(0, 0, 0)
+	lastColor := uint32(0)
+	lastColorSet := false
 
 	for _, s := range strokes {
 		if len(s.Points) == 0 {
 			continue
 		}
+
+		// Apply per-stroke color. V6 line items store a "color_id" which matches rmscene/rmc's PenColor enum.
+		// Historically we rendered everything black; this ensures colored strokes show up correctly.
+		if !lastColorSet || s.Color != lastColor {
+			r, g, b := rmdoc.PenColorToRGBForStroke(rmdoc.PenColor(s.Color))
+			cc.Add_RG(r, g, b)
+			lastColor = s.Color
+			lastColorSet = true
+		}
+
 		path := draw.NewPath()
 		for _, p := range s.Points {
 			x := xSvg + xx(float64(p.X)-bbox.MinX)

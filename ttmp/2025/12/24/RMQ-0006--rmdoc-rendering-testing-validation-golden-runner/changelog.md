@@ -140,3 +140,24 @@ Updated diary with note about the new human-readable golden testing system guide
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/02-diary-golden-testing-research-and-rendering-issues-analysis.md — Diary update
 
+
+## 2025-12-24
+
+Fixed V6 stroke color rendering: apply per-stroke RG in overlay ops and decode trailing RGBA marker into concrete highlight PenColor ids. Added parsing assertion test + stroke color debugging playbook; validated via vlm-validate vs remarks.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Per-stroke color rendering in buildOverlayOps
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_line_decode.go — Decode trailing RGBA marker to preserve highlighter colors
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_stroke_color_test.go — Parsing test for stroke colors
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/04-debugging-playbook-v6-stroke-color-rendering.md — New playbook
+
+
+## 2025-12-24
+
+Improved pdfcmp robustness: CompareFilesVisual now falls back to Poppler (pdftoppm) rasterization when UniDoc renderer fails with 'type check error' (common with remarks-generated PDFs).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/pdfcmp/pdfcmp.go — pdftoppm fallback rasterizer
+

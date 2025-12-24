@@ -204,3 +204,21 @@ High-signal VLM findings from the first run (pages 1–2):
 Added a readable guide describing how to use and debug the golden system (golden tests + pdfcmp + remarks runner + vlm-validate), including the “brittle setup” failure modes and what to check.
 
 - `reference/03-golden-testing-validation-system-how-to-use-how-it-works.md`
+
+### Late night: Fixed V6 stroke color rendering (with a tight feedback loop)
+
+We tackled the “all strokes are black” issue and built a clean loop to verify parsing + rendering:
+
+- **Parsing verification**:
+  - Added `TestParseRMV6SceneTree_StrokeColorsPresent_TestRmdoc` which asserts `Test.rmdoc` contains non-black stroke colors and at least one **concrete highlight color id** (14..19).
+- **Root cause**:
+  - Renderer was setting `RG(0,0,0)` once globally and never applying per-stroke color.
+  - Highlighter strokes in V6 can store real color in an optional trailing RGBA marker; we were consuming it but discarding it, collapsing highlight strokes into a generic color id.
+- **Fixes**:
+  - Apply per-stroke `RG` in `buildOverlayOps` (so colored strokes render).
+  - Decode the trailing `(b,g,r,a)` marker in `DecodeRMV6Line` and map via `HardcodedColorMap` to a concrete highlight PenColor id.
+- **Validation**:
+  - Re-ran `vlm-validate` (A vs B, page 1) and got a “colors match” result vs `remarks`.
+
+Also wrote a dedicated debugging playbook for the next developer:
+- `reference/04-debugging-playbook-v6-stroke-color-rendering.md`

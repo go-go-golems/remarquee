@@ -88,12 +88,12 @@
 
 ### Rendering issue investigations (from visual inspection)
 
-- [ ] **Stroke color rendering**:
-  - [ ] Investigate why strokes render without color (all black)
-  - [ ] Trace `Stroke.Color` field usage through rendering pipeline
-  - [ ] Check if `buildOverlayOps` in `v6_merge_background.go` uses stroke color
-  - [ ] Compare with remarks implementation for color handling
-  - [ ] Document where color information is lost or ignored
+- [x] **Stroke color rendering**:
+  - [x] Investigate why strokes render without color (all black)
+  - [x] Trace `Stroke.Color` field usage through rendering pipeline
+  - [x] Fix: apply per-stroke RGB in `buildOverlayOps` (no more global black RG)
+  - [x] Fix: decode trailing highlight/shader RGBA marker in `DecodeRMV6Line` into concrete highlight PenColor ids
+  - [x] Validate with `vlm-validate` (A vs B on `Test.rmdoc`)
 
 - [ ] **Highlighter stroke misalignment**:
   - [ ] Investigate coordinate system differences between strokes and highlights

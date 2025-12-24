@@ -79,7 +79,14 @@ func DecodeRMV6Line(lineVersion uint8, payload []byte) (*Stroke, error) {
 	if rem >= 6 {
 		b6, err := vr.peekBytes(6)
 		if err == nil && len(b6) == 6 && b6[0] == 0x84 && b6[1] == 0x01 {
-			_, _ = vr.readBytes(6)
+			mb, _ := vr.readBytes(6)
+			if len(mb) == 6 {
+				// Marker stores bytes in (b,g,r,a) order.
+				b, g, r, a := mb[2], mb[3], mb[4], mb[5]
+				if c, ok := HardcodedColorMap[RGBA{R: r, G: g, B: b, A: a}]; ok {
+					color = uint32(c)
+				}
+			}
 		}
 	}
 
