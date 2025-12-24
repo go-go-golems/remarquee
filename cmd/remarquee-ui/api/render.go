@@ -163,6 +163,13 @@ func HandleRenderLegacy(testDocsPath, outputsDir string) http.HandlerFunc {
 			AnnotationsOnly: false,
 		}
 
+		// NOTE: rmapi's generator does not accept a context and cannot be interrupted once started.
+		// We therefore only honor cancellation *before* starting the generation work.
+		if err := ctx.Err(); err != nil {
+			log.Printf("Legacy render canceled before generation started: %v", err)
+			return
+		}
+
 		generator := annotations.CreatePdfGenerator(docPath, outputPath, options)
 		if err := generator.Generate(); err != nil {
 			log.Printf("Failed to generate legacy PDF: %v", err)
