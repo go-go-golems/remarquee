@@ -1,7 +1,7 @@
 ---
 Title: Port .rmdoc parsing + rendering to Go (V3/V5 + V6)
 Ticket: RMQ-0004
-Status: active
+Status: complete
 Topics:
     - backend
     - go
@@ -38,8 +38,11 @@ RelatedFiles:
       Note: Underlying legacy annotations PDF generator (unipdf)
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-14T20:59:12.658149443-05:00
+LastUpdated: 2025-12-24T10:46:29.17127543-05:00
+WhatFor: ""
+WhenToUse: ""
 ---
+
 
 
 

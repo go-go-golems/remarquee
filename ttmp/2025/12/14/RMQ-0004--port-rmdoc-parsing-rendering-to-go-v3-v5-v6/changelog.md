@@ -258,3 +258,8 @@ Step 20: add legacy PDF-backed fixture (rmapi) for V3/V5 rendering (task 51) (co
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/legacy-pdf-a4.zip — Legacy PDF fixture sourced from rmapi tests
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/test-documents.json — Registered legacy-pdf-a4
 
+
+## 2025-12-24
+
+Closed: implementation complete; moved remaining validation/golden-runner work to RMQ-0006
+
