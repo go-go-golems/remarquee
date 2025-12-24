@@ -2,6 +2,7 @@ package rmdoc
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -27,7 +28,9 @@ func OpenFile(ctx context.Context, p string) (*Document, error) {
 }
 
 func OpenReaderAt(ctx context.Context, r io.ReaderAt, size int64) (*Document, error) {
-	_ = ctx // reserved for future cancellation / IO abstraction
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 
 	zr, err := zip.NewReader(r, size)
 	if err != nil {
@@ -42,23 +45,32 @@ func OpenReaderAt(ctx context.Context, r io.ReaderAt, size int64) (*Document, er
 	pagedataFile, _ := findOptionalByExt(zr, ".pagedata")
 	pdfFile, _ := findOptionalByExt(zr, ".pdf")
 
-	contentJSON, err := readZipFile(contentFile)
+	contentJSON, err := readZipFile(ctx, contentFile)
 	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, ctxErr
+		}
 		return nil, errors.Wrap(err, "read .content")
 	}
 
 	var metadataJSON []byte
 	if metadataFile != nil {
-		metadataJSON, err = readZipFile(metadataFile)
+		metadataJSON, err = readZipFile(ctx, metadataFile)
 		if err != nil {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return nil, ctxErr
+			}
 			return nil, errors.Wrap(err, "read .metadata")
 		}
 	}
 
 	var pagedata string
 	if pagedataFile != nil {
-		b, err := readZipFile(pagedataFile)
+		b, err := readZipFile(ctx, pagedataFile)
 		if err != nil {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return nil, ctxErr
+			}
 			return nil, errors.Wrap(err, "read .pagedata")
 		}
 		pagedata = string(b)
@@ -66,13 +78,19 @@ func OpenReaderAt(ctx context.Context, r io.ReaderAt, size int64) (*Document, er
 
 	var payloadPDF []byte
 	if pdfFile != nil {
-		payloadPDF, err = readZipFile(pdfFile)
+		payloadPDF, err = readZipFile(ctx, pdfFile)
 		if err != nil {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return nil, ctxErr
+			}
 			return nil, errors.Wrap(err, "read .pdf payload")
 		}
 	}
 
 	docUUID := strings.TrimSuffix(path.Base(contentFile.Name), ".content")
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	schema, docType, pages, err := ParseContent(contentJSON)
 	if err != nil {
 		return nil, err
@@ -118,17 +136,39 @@ func findOptionalByExt(zr *zip.Reader, ext string) (*zip.File, error) {
 	return out, nil
 }
 
-func readZipFile(f *zip.File) ([]byte, error) {
+func readZipFile(ctx context.Context, f *zip.File) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	r, err := f.Open()
 	if err != nil {
 		return nil, errors.Wrap(err, "open zip entry")
 	}
 	defer func() { _ = r.Close() }()
 
-	b, err := io.ReadAll(r)
-	if err != nil {
-		return nil, errors.Wrap(err, "read zip entry")
+	var buf bytes.Buffer
+	// Avoid unbounded allocations; only pre-grow for reasonably sized entries.
+	if f.UncompressedSize64 > 0 && f.UncompressedSize64 <= 64*1024*1024 {
+		buf.Grow(int(f.UncompressedSize64))
 	}
 
-	return b, nil
+	tmp := make([]byte, 32*1024)
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		n, err := r.Read(tmp)
+		if n > 0 {
+			_, _ = buf.Write(tmp[:n])
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, errors.Wrap(err, "read zip entry")
+		}
+	}
+
+	return buf.Bytes(), nil
 }

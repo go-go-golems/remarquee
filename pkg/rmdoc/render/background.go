@@ -37,7 +37,9 @@ func (o BackgroundOptions) withDefaults() BackgroundOptions {
 // For notebook documents (no payload PDF), it currently creates blank pages for each UI page
 // using opts.DefaultPageSize. Template backgrounds are a later milestone.
 func BuildBackgroundPDF(ctx context.Context, doc *rmdoc.Document, opts BackgroundOptions) ([]byte, error) {
-	_ = ctx // reserved for future cancellation
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 
 	if doc == nil {
 		return nil, errors.New("doc is nil")
@@ -76,6 +78,10 @@ func BuildBackgroundPDF(ctx context.Context, doc *rmdoc.Document, opts Backgroun
 	}
 
 	for i, page := range doc.Pages {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		// Copy the relevant payload page.
 		if payloadReader != nil && page.SourcePDFPage != rmdoc.InsertedPage {
 			pageNum := page.SourcePDFPage + 1 // unipdf is 1-based
@@ -166,5 +172,3 @@ func inferPayloadPageSize(payloadReader *pdf.PdfReader, pages []rmdoc.PageRef, d
 	}
 	return creator.PageSize{w, h}, nil
 }
-
-
