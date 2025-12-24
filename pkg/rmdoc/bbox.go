@@ -53,6 +53,18 @@ func (b BBox) Expand(pad float64) BBox {
 	}
 }
 
+func (b BBox) Translate(dx, dy float64) BBox {
+	if b.IsEmpty() {
+		return b
+	}
+	return BBox{
+		MinX: b.MinX + dx,
+		MinY: b.MinY + dy,
+		MaxX: b.MaxX + dx,
+		MaxY: b.MaxY + dy,
+	}
+}
+
 func (b BBox) Union(o BBox) BBox {
 	if b.IsEmpty() {
 		return o
@@ -146,6 +158,98 @@ func BBoxForRMV6SceneTree(tree *RMV6SceneTree, pad float64) (BBox, error) {
 	}
 
 	b, ok := BBoxForStrokes(strokes, pad)
+	if !ok {
+		return BBox{}, nil
+	}
+	return b, nil
+}
+
+// BBoxForRMV6SceneTreeWithAnchors computes a bbox for the scene in global screen coordinates,
+// applying group anchor offsets (anchor_origin_x + anchor_pos[anchor_id]).
+//
+// This is the anchor-aware implementation needed for RMQ-0004 task 43.
+func BBoxForRMV6SceneTreeWithAnchors(tree *RMV6SceneTree, pad float64) (BBox, error) {
+	if tree == nil {
+		return BBox{}, errors.New("tree is nil")
+	}
+
+	anchorPos, err := BuildRMV6AnchorPos(tree.RootText)
+	if err != nil {
+		return BBox{}, err
+	}
+
+	var walk func(g *RMV6Group, tx, ty float64) (BBox, bool, error)
+	walk = func(g *RMV6Group, tx, ty float64) (BBox, bool, error) {
+		if g == nil {
+			return BBox{}, false, nil
+		}
+
+		ax := 0.0
+		if g.AnchorOriginX != nil {
+			ax = *g.AnchorOriginX
+		}
+		ay := 0.0
+		if g.AnchorID != nil {
+			if v, ok := anchorPos[*g.AnchorID]; ok {
+				ay = v
+			}
+		}
+
+		gx := tx + ax
+		gy := ty + ay
+
+		items, err := g.Children.Items()
+		if err != nil {
+			return BBox{}, false, err
+		}
+
+		out := NewEmptyBBox()
+		any := false
+
+		for _, it := range items {
+			switch it.Value.Kind {
+			case RMV6SceneItemLine:
+				if it.Value.Line == nil {
+					continue
+				}
+				st, err := DecodeRMV6Line(it.Value.Line.BlockVersion, it.Value.Line.Raw)
+				if err != nil {
+					return BBox{}, false, errors.Wrap(err, "decode line stroke")
+				}
+				b, ok := BBoxForStroke(*st, pad)
+				if !ok {
+					continue
+				}
+				out = out.Union(b.Translate(gx, gy))
+				any = true
+
+			case RMV6SceneItemGroup:
+				if it.Value.Group == nil {
+					continue
+				}
+				b, ok, err := walk(it.Value.Group, gx, gy)
+				if err != nil {
+					return BBox{}, false, err
+				}
+				if ok {
+					out = out.Union(b)
+					any = true
+				}
+			default:
+				continue
+			}
+		}
+
+		if !any {
+			return BBox{}, false, nil
+		}
+		return out, true, nil
+	}
+
+	b, ok, err := walk(tree.Root, 0, 0)
+	if err != nil {
+		return BBox{}, err
+	}
 	if !ok {
 		return BBox{}, nil
 	}

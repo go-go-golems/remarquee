@@ -8,6 +8,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+type RMV6LWW[T any] struct {
+	Timestamp RMV6CrdtID
+	Value     T
+}
+
 // checkTag returns true if the next tag matches (expectedIndex, expectedType) without consuming it.
 func (r *rmV6TaggedBlockReader) checkTag(expectedIndex uint32, expectedType rmV6TagType) (bool, error) {
 	idx, tt, ok, err := r.peekTag()
@@ -182,4 +187,134 @@ func (r *rmV6TaggedBlockReader) readString(index uint32) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func (r *rmV6TaggedBlockReader) readStringWithFormat(index uint32) (string, *uint32, error) {
+	sb, err := r.readSubBlock(index)
+	if err != nil {
+		return "", nil, err
+	}
+	defer func() { _ = r.discardSubBlockRemainder(sb) }()
+
+	strLen, err := r.readVarUint()
+	if err != nil {
+		return "", nil, err
+	}
+	isASCII, err := r.readBoolRaw()
+	if err != nil {
+		return "", nil, err
+	}
+	if !isASCII {
+		return "", nil, errors.New("string is_ascii flag is false (unexpected)")
+	}
+
+	b, err := r.readBytes(int(strLen))
+	if err != nil {
+		return "", nil, err
+	}
+	s := string(b)
+
+	ok, err := r.checkTag(2, rmV6TagTypeByte4)
+	if err != nil {
+		return "", nil, err
+	}
+	if ok {
+		v, err := r.readUint32(2)
+		if err != nil {
+			return "", nil, err
+		}
+		return s, &v, nil
+	}
+
+	return s, nil, nil
+}
+
+func (r *rmV6TaggedBlockReader) readLwwBool(index uint32) (*RMV6LWW[bool], error) {
+	sb, err := r.readSubBlock(index)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = r.discardSubBlockRemainder(sb) }()
+
+	ts, err := r.readID(1)
+	if err != nil {
+		return nil, err
+	}
+	v, err := r.readBool(2)
+	if err != nil {
+		return nil, err
+	}
+	return &RMV6LWW[bool]{Timestamp: ts, Value: v}, nil
+}
+
+func (r *rmV6TaggedBlockReader) readLwwByte(index uint32) (*RMV6LWW[uint8], error) {
+	sb, err := r.readSubBlock(index)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = r.discardSubBlockRemainder(sb) }()
+
+	ts, err := r.readID(1)
+	if err != nil {
+		return nil, err
+	}
+	v, err := r.readByte(2)
+	if err != nil {
+		return nil, err
+	}
+	return &RMV6LWW[uint8]{Timestamp: ts, Value: v}, nil
+}
+
+func (r *rmV6TaggedBlockReader) readLwwFloat(index uint32) (*RMV6LWW[float32], error) {
+	sb, err := r.readSubBlock(index)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = r.discardSubBlockRemainder(sb) }()
+
+	ts, err := r.readID(1)
+	if err != nil {
+		return nil, err
+	}
+	v, err := r.readFloat32(2)
+	if err != nil {
+		return nil, err
+	}
+	return &RMV6LWW[float32]{Timestamp: ts, Value: v}, nil
+}
+
+func (r *rmV6TaggedBlockReader) readLwwID(index uint32) (*RMV6LWW[RMV6CrdtID], error) {
+	sb, err := r.readSubBlock(index)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = r.discardSubBlockRemainder(sb) }()
+
+	ts, err := r.readID(1)
+	if err != nil {
+		return nil, err
+	}
+	v, err := r.readID(2)
+	if err != nil {
+		return nil, err
+	}
+	return &RMV6LWW[RMV6CrdtID]{Timestamp: ts, Value: v}, nil
+}
+
+func (r *rmV6TaggedBlockReader) readLwwString(index uint32) (*RMV6LWW[string], error) {
+	sb, err := r.readSubBlock(index)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = r.discardSubBlockRemainder(sb) }()
+
+	ts, err := r.readID(1)
+	if err != nil {
+		return nil, err
+	}
+	s, err := r.readString(2)
+	if err != nil {
+		return nil, err
+	}
+	return &RMV6LWW[string]{Timestamp: ts, Value: s}, nil
 }

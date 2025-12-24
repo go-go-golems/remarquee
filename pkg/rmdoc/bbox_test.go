@@ -48,3 +48,22 @@ func TestBBoxForRMV6SceneTree_Smoke(t *testing.T) {
 		t.Fatalf("expected non-empty bbox")
 	}
 }
+
+func TestBBoxForRMV6SceneTreeWithAnchors_Smoke(t *testing.T) {
+	root := remarqueeRootFromThisFile(t)
+	fixture := root + "/cmd/remarquee-ui/testdata/cpage-pdf.rmdoc"
+
+	rmBytes := readFirstRMFileFromRMDoc(t, fixture)
+	tree, err := ParseRMV6SceneTree(bytes.NewReader(rmBytes))
+	if err != nil {
+		t.Fatalf("ParseRMV6SceneTree: %v", err)
+	}
+
+	b, err := BBoxForRMV6SceneTreeWithAnchors(tree, 0)
+	if err != nil {
+		t.Fatalf("BBoxForRMV6SceneTreeWithAnchors: %v", err)
+	}
+	if b.IsEmpty() {
+		t.Fatalf("expected non-empty bbox")
+	}
+}

@@ -14,6 +14,8 @@ type RMV6SceneTree struct {
 	Root   *RMV6Group
 
 	nodes map[RMV6CrdtID]*RMV6Group
+
+	RootText *RMV6RootText
 }
 
 // RMV6RootGroupID matches rmscene.scene_tree.ROOT_ID = CrdtId(0,1).
@@ -26,6 +28,11 @@ type RMV6Group struct {
 
 	// Extra captures bytes not decoded for this node (from TreeNodeBlock, etc).
 	Extra []byte
+
+	AnchorID        *RMV6CrdtID
+	AnchorOriginX   *float64
+	AnchorType      *uint8
+	AnchorThreshold *float64
 }
 
 type RMV6SceneItemKind uint8
@@ -170,12 +177,56 @@ func ParseRMV6SceneTree(r io.ReadSeeker) (*RMV6SceneTree, error) {
 				_ = tr.endBlock(blk)
 				return nil, errors.Errorf("node does not exist for TreeNodeBlock: %s", nodeID.String())
 			}
-			// Capture remaining bytes as Extra on the node.
+			n, _ := tree.Node(nodeID)
+
+			// Parse the minimal known fields so we can compute anchors.
+			// label (2) and visible (3) are LWW values; we skip storing them for now.
+			_, _ = tr.readLwwString(2)
+			_, _ = tr.readLwwBool(3)
+
+			rem, _ := tr.bytesRemainingInBlock()
+			if rem > 0 {
+				if ok, _ := tr.hasSubBlock(7); ok {
+					if lww, err := tr.readLwwID(7); err == nil {
+						v := lww.Value
+						n.AnchorID = &v
+					}
+				}
+				if ok, _ := tr.hasSubBlock(8); ok {
+					if lww, err := tr.readLwwByte(8); err == nil {
+						v := lww.Value
+						n.AnchorType = &v
+					}
+				}
+				if ok, _ := tr.hasSubBlock(9); ok {
+					if lww, err := tr.readLwwFloat(9); err == nil {
+						v := float64(lww.Value)
+						n.AnchorThreshold = &v
+					}
+				}
+				if ok, _ := tr.hasSubBlock(10); ok {
+					if lww, err := tr.readLwwFloat(10); err == nil {
+						v := float64(lww.Value)
+						n.AnchorOriginX = &v
+					}
+				}
+			}
+
+			// Capture any remaining bytes as Extra on the node (forward compatibility).
 			if err := tr.endBlock(blk); err != nil {
 				return nil, err
 			}
-			if n, ok := tree.Node(nodeID); ok {
-				n.Extra = bytes.Clone(blk.ExtraData)
+			n.Extra = bytes.Clone(blk.ExtraData)
+
+		case 0x07: // RootTextBlock
+			rt, err := ParseRMV6RootTextBlock(tr)
+			if err != nil {
+				_ = tr.endBlock(blk)
+				continue
+			}
+			tree.RootText = rt
+			if err := tr.endBlock(blk); err != nil {
+				return nil, err
 			}
 
 		default:
