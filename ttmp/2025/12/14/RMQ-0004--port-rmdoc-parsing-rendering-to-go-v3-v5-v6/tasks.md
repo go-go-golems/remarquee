@@ -60,9 +60,9 @@
 
 ### 5) V6 rendering + merge algorithm
 
-- [ ] Implement V6 stroke rendering to PDF:
-  - [ ] Convert V6 line points to renderer stroke primitives
-  - [ ] Apply coordinate transforms (SCALE, X_SHIFT, etc.)
+- [x] Implement V6 stroke rendering to PDF:
+- [x] Convert V6 line points to renderer stroke primitives
+- [x] Apply coordinate transforms (SCALE, X_SHIFT, etc.)
   - [ ] Compute bounding boxes (including anchor offsets for text-linked groups)
 
 - [ ] Implement PDF merge algorithm (background + annotation overlay):

@@ -175,3 +175,12 @@ Step 11: decode V6 line items into normalized strokes (commit b9a1ee9)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_line_decode.go — V6 line->Stroke decoding
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/strokes.go — Normalized primitives
 
+
+## 2025-12-24
+
+Step 12: render V6 strokes to PDF (strokes-only) with scale+center transform (commit fee29bd)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_strokes_pdf.go — New V6 strokes-only PDF renderer
+

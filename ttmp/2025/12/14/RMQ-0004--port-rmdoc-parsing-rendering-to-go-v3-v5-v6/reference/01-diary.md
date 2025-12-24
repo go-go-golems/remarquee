@@ -10,6 +10,10 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: ../../../../../../../rmapi/annotations/pdf.go
+      Note: Legacy PDF renderer reference for coordinate inversion and content stream composition
+    - Path: ../../../../../../../rmc/src/rmc/exporters/svg.py
+      Note: Reference for SCALE/X_SHIFT mapping from screen units to PDF points
     - Path: ../../../../../../../rmscene/src/rmscene/crdt_sequence.py
       Note: Python reference algorithm toposort_items ported to Go
     - Path: ../../../../../../../rmscene/src/rmscene/scene_stream.py
@@ -21,6 +25,12 @@ RelatedFiles:
       Note: Python reference for V6 header
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_reader.py
       Note: Python reference implementation we’re porting (TaggedBlockReader.read_block/read_subblock)
+    - Path: go.mod
+      Note: Added unipdf v3.6.1 dependency for V6 PDF rendering
+    - Path: pkg/rmdoc/render/v6_strokes_pdf.go
+      Note: RMQ-0004 Step 12 (commit fee29bd) - render decoded V6 strokes to single-page PDF
+    - Path: pkg/rmdoc/render/v6_strokes_pdf_test.go
+      Note: Fixture-based PDF smoke test (%PDF header) (commit fee29bd)
     - Path: pkg/rmdoc/rmv6_crdt_sequence.go
       Note: RMQ-0004 Step 8 (commit 6adfc05) - CRDT sequence container + deterministic toposort ordering
     - Path: pkg/rmdoc/rmv6_crdt_sequence_test.go
@@ -57,6 +67,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -656,3 +667,69 @@ The decoder is a direct port of `rmscene.scene_stream.line_from_stream`, includi
   - `line_from_stream`
   - `point_from_stream`
   - `point_serialized_size`
+
+## Step 12: Render V6 strokes to a PDF page (strokes-only, scaled + centered)
+
+This step connects the V6 “data plane” (decoded strokes) to an actual PDF output. The goal is a minimal, reliable rendering path: given decoded `[]Stroke`, produce a single-page PDF that visibly contains the strokes, using the same baseline coordinate transform as `rmc` (scale from screen units to PDF points and center X).
+
+This is not the final V6 renderer (it doesn’t implement merge math, brush fidelity, or anchors), but it establishes a concrete output artifact that we can iteratively improve while keeping the parsing/stroke pipeline stable.
+
+**Commit (code):** fee29bd — "RMQ-0004: render V6 strokes to PDF"
+
+### What I did
+- Added a minimal strokes-only PDF renderer using UniPDF:
+  - `pkg/rmdoc/render/v6_strokes_pdf.go`
+  - `RenderRMV6StrokesToPDF(ctx, strokes, out)` draws polyline strokes on a single PDF page.
+  - `RenderRMV6RMToPDF(ctx, rm, out)` convenience wrapper: parse scene tree → decode line strokes → render.
+- Implemented coordinate transform aligned with `rmc`:
+  - scale \(72 / 226\) from screen units to PDF points,
+  - `xShift = pageWidth/2` to center the coordinate system,
+  - `y = pageHeight - scaledY` to map to PDF coordinate origin.
+- Added a fixture-based test `v6_strokes_pdf_test.go` that:
+  - extracts a real V6 `.rm` from `cmd/remarquee-ui/testdata/cpage-pdf.rmdoc`,
+  - renders it to bytes,
+  - asserts output starts with `%PDF-`.
+- Updated `remarquee/go.mod` to require `github.com/unidoc/unipdf/v3 v3.6.1` (matching rmapi).
+
+### Why
+- Having a PDF output loop early makes validation and iteration dramatically faster than waiting until merge/highlights are implemented.
+- Keeping this renderer “strokes-only” lets us validate parsing + coordinate mapping independently of background merge behavior.
+
+### What worked
+- `go test ./... -count=1` passed.
+- PDF bytes are produced for real V6 data with a stable header.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- rmapi’s legacy renderer and rmc’s SVG exporter use compatible baseline screen-unit conventions:
+  - `DeviceWidth=1404`, `DeviceHeight=1872`
+  - DPI=226 → `scale=72/226`
+  - x-centering via half-page shift.
+
+### What was tricky to build
+- Avoiding double-add of pages in UniPDF’s creator API (some APIs add implicitly when creating a new page).
+- Keeping rendering logic minimal while still applying the “right” initial coordinate transform.
+
+### What warrants a second pair of eyes
+- Confirm the coordinate mapping is correct for real notebooks (especially if anchors are present but not decoded yet).
+- Confirm choosing a fixed stroke width (1pt) is acceptable for this milestone, and decide how we want to incorporate thickness/brush width next.
+
+### What should be done in the future
+- Decode group anchor metadata (TreeNodeBlock) and apply anchor transforms in rendering.
+- Use stroke thickness/pressure and brush types to render closer to device fidelity.
+- Implement background merge and page alignment math (tasks 44+).
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/render/v6_strokes_pdf.go`
+  - `remarquee/pkg/rmdoc/render/v6_strokes_pdf_test.go`
+- Run:
+  - `cd remarquee && go test ./pkg/rmdoc/render -count=1`
+
+### Technical details
+- Transform constants mirror `rmc/src/rmc/exporters/svg.py`:
+  - `SCALE = 72 / 226`
+  - `PAGE_WIDTH_PT = 1404 * SCALE`
+  - `PAGE_HEIGHT_PT = 1872 * SCALE`
