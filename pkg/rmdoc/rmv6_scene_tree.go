@@ -57,6 +57,7 @@ type RMV6Line struct {
 type RMV6SceneItem struct {
 	Kind RMV6SceneItemKind
 
+	Glyph *RMV6GlyphRange
 	Group *RMV6Group
 	Line  *RMV6Line
 
@@ -297,6 +298,21 @@ func ParseRMV6SceneTree(r io.ReadSeeker) (*RMV6SceneTree, error) {
 				}
 
 				switch sceneItem.Kind {
+				case RMV6SceneItemGlyph:
+					pos, _ := tr.tell()
+					end := sb.Offset + int64(sb.Size)
+					remaining := end - pos
+					raw := []byte(nil)
+					if remaining > 0 {
+						raw, _ = tr.readBytes(int(remaining))
+					}
+					g, err := DecodeRMV6GlyphRange(raw)
+					if err == nil {
+						sceneItem.Glyph = g
+					} else {
+						sceneItem.Raw = raw
+					}
+
 				case RMV6SceneItemGroup:
 					// SceneGroupItemBlock.value_from_stream reads id(2) within the value subblock.
 					nodeID, err := tr.readID(2)

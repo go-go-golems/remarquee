@@ -232,6 +232,31 @@ func (r *rmV6ValueReader) readFloat64(index uint32) (float64, error) {
 	return r.readFloat64LE()
 }
 
+func (r *rmV6ValueReader) readString(index uint32) (string, error) {
+	sb, err := r.readSubBlock(index)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = r.endSubBlock(sb) }()
+
+	strLen, err := r.readVarUint()
+	if err != nil {
+		return "", err
+	}
+	isASCII, err := r.readUint8()
+	if err != nil {
+		return "", err
+	}
+	if isASCII == 0 {
+		return "", errors.New("string is_ascii flag is false (unexpected)")
+	}
+	b, err := r.readBytes(int(strLen))
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 type rmV6ValueSubBlock struct {
 	Offset int64
 	Size   uint32

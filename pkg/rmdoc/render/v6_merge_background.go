@@ -122,6 +122,11 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 			return nil, errors.Wrapf(err, "extract v6 strokes (page=%d pageID=%s)", i, rm.PageID)
 		}
 
+		glyphRanges, err := rmdoc.ExtractRMV6GlyphRangesWithAnchors(tree)
+		if err != nil {
+			return nil, errors.Wrapf(err, "extract v6 glyph ranges (page=%d pageID=%s)", i, rm.PageID)
+		}
+
 		stBBox, ok := rmdoc.BBoxForStrokes(strokes, 0)
 		if !ok || stBBox.IsEmpty() {
 			// Empty annotations.
@@ -173,6 +178,9 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 			if err != nil {
 				return nil, err
 			}
+			if err := applySmartHighlights(mergedPage, glyphRanges, highlightsXTranslation[i], hSvg); err != nil {
+				return nil, err
+			}
 			if err := w.AddPage(mergedPage); err != nil {
 				return nil, err
 			}
@@ -181,6 +189,9 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 
 		mergedPage, err := buildMergedPage(width, height, xBg, yBg, xSvg, ySvg, bgPage, bgContent, rot, w0, h0, strokes, stBBox, wSvg, hSvg, opts)
 		if err != nil {
+			return nil, err
+		}
+		if err := applySmartHighlights(mergedPage, glyphRanges, highlightsXTranslation[i], height); err != nil {
 			return nil, err
 		}
 
@@ -343,4 +354,53 @@ func buildMergedPage(width, height, xBg, yBg, xSvg, ySvg float64, bgPage *pdf.Pd
 
 	merged.SetContentStreams([]string{content}, core.NewFlateEncoder())
 	return merged, nil
+}
+
+func applySmartHighlights(page *pdf.PdfPage, glyphRanges []rmdoc.RMV6GlyphRange, highlightsXTranslation, pageHeight float64) error {
+	_, _ = page.GetAnnotations() // ensure list exists
+	for _, gr := range glyphRanges {
+		if len(gr.Rectangles) == 0 {
+			continue
+		}
+
+		r, g, b := rmdoc.PenColorToRGB(gr.Color)
+
+		quadArr := core.MakeArray()
+		union := rmdoc.NewEmptyBBox()
+		any := false
+
+		for _, rect := range gr.Rectangles {
+			x1 := xx(rect.X) + highlightsXTranslation
+			x2 := x1 + xx(rect.W)
+
+			// rect.Y is in screen coords (top-origin, y down). Convert to PDF (bottom-origin, y up).
+			yTop := pageHeight - yy(rect.Y)
+			yBottom := pageHeight - yy(rect.Y+rect.H)
+
+			quadArr.Append(core.MakeFloat(x1))
+			quadArr.Append(core.MakeFloat(yTop))
+			quadArr.Append(core.MakeFloat(x2))
+			quadArr.Append(core.MakeFloat(yTop))
+			quadArr.Append(core.MakeFloat(x1))
+			quadArr.Append(core.MakeFloat(yBottom))
+			quadArr.Append(core.MakeFloat(x2))
+			quadArr.Append(core.MakeFloat(yBottom))
+
+			union = union.Union(rmdoc.BBox{MinX: x1, MinY: yBottom, MaxX: x2, MaxY: yTop})
+			any = true
+		}
+
+		if !any || union.IsEmpty() {
+			continue
+		}
+
+		hl := pdf.NewPdfAnnotationHighlight()
+		hl.C = core.MakeArrayFromFloats([]float64{r, g, b})
+		hl.CA = core.MakeFloat(0.3)
+		hl.Rect = core.MakeArrayFromFloats([]float64{union.MinX, union.MinY, union.MaxX, union.MaxY})
+		hl.QuadPoints = quadArr
+
+		page.AddAnnotation(hl.PdfAnnotation)
+	}
+	return nil
 }
