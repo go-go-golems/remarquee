@@ -60,3 +60,13 @@ Added first golden test comparing remarquee V6 render against remarks reference 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_test.go — Golden test using remarks reference
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — Checked off first golden test
 
+
+## 2025-12-24
+
+Added second V6 golden test (cpage-pdf.rmdoc) comparing remarquee output against remarks reference, using pdfcmp visual comparison with tolerance and diff PNGs on mismatch. Test skips when remarks is not on PATH.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_test.go — Added CpagePdf golden test
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — Checked off CpagePdf golden test
+

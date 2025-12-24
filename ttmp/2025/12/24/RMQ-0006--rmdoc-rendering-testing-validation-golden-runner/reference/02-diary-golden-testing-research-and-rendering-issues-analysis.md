@@ -144,3 +144,11 @@ Added the first end-to-end golden test for the device V6 notebook fixture:
   - compares PDFs via `pkg/pdfcmp.CompareFilesVisual` with a tolerance (currently 1%)
   - writes diff PNGs to the test temp dir on mismatch
   - skips if `remarks` is not available on PATH
+
+### Evening: Second golden test wired up (cpage-pdf.rmdoc)
+
+Added a second V6 golden test for the PDF-backed cPages fixture:
+
+- **Test**: `TestRenderV6Golden_RemarksReference_CpagePdf`
+- **Fixture**: `cmd/remarquee-ui/testdata/cpage-pdf.rmdoc`
+- **Location**: `remarquee/pkg/rmdoc/render/golden_remarks_test.go`
