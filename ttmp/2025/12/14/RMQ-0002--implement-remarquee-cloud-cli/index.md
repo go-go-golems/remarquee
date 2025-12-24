@@ -1,7 +1,7 @@
 ---
 Title: Implement remarquee cloud CLI
 Ticket: RMQ-0002
-Status: active
+Status: complete
 Topics:
     - backend
 DocType: index
@@ -20,8 +20,11 @@ RelatedFiles:
       Note: Implementation diary for RMQ-0002
 ExternalSources: []
 Summary: Implement remarquee cloud-only CLI (rmapi-backed) using Glazed+Cobra, one file per command; REPL deferred.
-LastUpdated: 2025-12-14T19:22:56.210287111-05:00
+LastUpdated: 2025-12-24T08:16:37.029591532-05:00
+WhatFor: ""
+WhenToUse: ""
 ---
+
 
 
 # Implement remarquee cloud CLI

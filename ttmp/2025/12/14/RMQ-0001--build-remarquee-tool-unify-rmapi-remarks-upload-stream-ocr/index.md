@@ -1,7 +1,7 @@
 ---
 Title: Build remarquee tool (unify rmapi/remarks/upload/stream/OCR)
 Ticket: RMQ-0001
-Status: active
+Status: complete
 Topics:
     - backend
 DocType: index
@@ -10,8 +10,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: 'Analysis phase for building unified remarquee toolkit: comprehensive documentation of rmapi (cloud sync), remarks (annotation extraction), remarkable_upload.py (markdown→PDF pipeline), and goMarkableStream (real-time streaming). Includes architecture, protocols, APIs, workflows, and integration strategy.'
-LastUpdated: 2025-12-14T17:45:10.394570665-05:00
+LastUpdated: 2025-12-24T08:16:38.586655145-05:00
+WhatFor: ""
+WhenToUse: ""
 ---
+
 
 # Build remarquee tool (unify rmapi/remarks/upload/stream/OCR)
 

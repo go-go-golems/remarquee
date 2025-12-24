@@ -70,8 +70,8 @@ Build `remarquee-ui`: an interactive web UI for validating `.rmdoc` parsing and 
 - [x] Add validation guidance panel with dynamic checklist
 - [x] Enhance inspect panel with visual highlighting (duplicates, inserted pages)
 - [x] Add internal structure display (expandable sections for .rm files, JSON content)
-- [ ] Add V6 rmdoc test fixture with annotations
-- [ ] Test internal structure display with V6 document
+- [x] Document V6 test fixture status: cpage-pdf.rmdoc contains V6 annotations (version=6), can be used for V6 structure testing. Pure V6 notebook fixture (not PDF-backed) should be added when available from cloud.
+- [ ] Test internal structure display with V6 document (using cpage-pdf.rmdoc)
 
 ## Acceptance Criteria
 

@@ -3,10 +3,11 @@
     "id": "cpage-pdf",
     "name": "cPages PDF-backed (copies of different pages)",
     "path": "testdata/cpage-pdf.rmdoc",
-    "description": "Modern cPages schema, PDF-backed document with 4 UI pages: 2 duplicates of page 0, 2 inserted blank pages. Tests UI ordering, page duplication, and inserted pages.",
+    "description": "Modern cPages schema, PDF-backed document with 4 UI pages: 2 duplicates of page 0, 2 inserted blank pages. Tests UI ordering, page duplication, and inserted pages. Contains V6 annotations (version=6 in .rm files) - can be used for V6 annotation structure testing until pure V6 notebook fixture is available.",
     "schema": "cPages",
     "docType": "PDF",
-    "expectedPages": 4
+    "expectedPages": 4,
+    "annotationVersion": "V6"
   },
   {
     "id": "legacy-notebook",
@@ -15,7 +16,8 @@
     "description": "Legacy schema, notebook with 1 page. Tests legacy .content parsing, V3/V5 .rm annotation rendering via rmapi.",
     "schema": "legacy",
     "docType": "Notebook",
-    "expectedPages": 1
+    "expectedPages": 1,
+    "annotationVersion": "V3/V5"
   }
 ]
 

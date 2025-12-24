@@ -124,3 +124,8 @@ Step 8: expanded prose in cloud docs (getting started, reference, usage examples
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/cloud/03-remarquee-cloud-usage-examples.md — Prose expansion (commit cf805cc...)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/reference/01-diary.md — Diary Step 8
 
+
+## 2025-12-24
+
+All cloud CLI commands implemented and documented. Remaining task (tests) is optional and can be added later.
+

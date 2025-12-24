@@ -213,3 +213,8 @@ Added one-shot OCR via LLM vision using Geppetto Turns/Blocks: new `remarquee oc
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/main.go — Wire new ocr command into remarquee root command
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/analysis/02-ocr-via-llm-vision-using-geppetto-turns-blocks.md — Analysis of OCR flow + how images are encoded/mapped
 
+
+## 2025-12-24
+
+Analysis phase complete. Comprehensive documentation created for rmapi, remarks, remarkable_upload.py, and goMarkableStream. Foundation established for integration work in follow-up tickets.
+
