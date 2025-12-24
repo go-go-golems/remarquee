@@ -78,6 +78,16 @@
     "docType": "Notebook",
     "expectedPages": 1,
     "annotationVersion": "V3/V5"
+  },
+  {
+    "id": "legacy-pdf-a4",
+    "name": "Legacy PDF-backed (rmapi fixture, A4)",
+    "path": "testdata/legacy-pdf-a4.zip",
+    "description": "Legacy schema, PDF-backed doc with 1 page and V5 .rm annotations. Sourced from rmapi's test fixtures; used as a compact reproducible legacy PDF merge/annotation test (RMQ-0004 task 51).",
+    "schema": "legacy",
+    "docType": "PDF",
+    "expectedPages": 1,
+    "annotationVersion": "V5"
   }
 ]
 
