@@ -10,10 +10,16 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: ../../../../../../../rmscene/src/rmscene/crdt_sequence.py
+      Note: Python reference algorithm toposort_items ported to Go
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_common.py
       Note: Python reference for V6 header
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_reader.py
       Note: Python reference implementation we’re porting (TaggedBlockReader.read_block/read_subblock)
+    - Path: pkg/rmdoc/rmv6_crdt_sequence.go
+      Note: RMQ-0004 Step 8 (commit 6adfc05) - CRDT sequence container + deterministic toposort ordering
+    - Path: pkg/rmdoc/rmv6_crdt_sequence_test.go
+      Note: Tests for ordering determinism + cycles (commit 6adfc05)
     - Path: pkg/rmdoc/rmv6_tagged_block_reader.go
       Note: RMQ-0004 Step 7 (commit 1cbf052) - Go port of rmscene tagged-block reader primitives (header + block + subblock boundaries)
     - Path: pkg/rmdoc/rmv6_tagged_block_reader_test.go
@@ -28,6 +34,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -388,3 +395,56 @@ This unlocks the next V6 milestones (CRDT decoding + scene tree + strokes) by gi
   - `uint8 unknown` (assert 0)
   - `uint8 min_version`, `uint8 current_version`
   - `uint8 block_type`
+
+## Step 8: Add CRDT sequence container + deterministic ordering (toposort)
+
+This step ports `rmscene`’s CRDT sequence ordering logic into Go. It doesn’t decode any V6 scene items yet, but it gives us a critical building block: **given a set of CRDT sequence items with left/right neighbor references, produce a deterministic UI/stable order**. That ordering is required for layers, groups, and other scene tree sequences when we start decoding them in task 34.
+
+The implementation intentionally mirrors the Python algorithm (dependency graph + repeated extraction of “no-deps” nodes), including the behavior around unknown neighbor IDs (treated as start/end markers). Tests focus on determinism, simple chains, unknown references, and cycle detection.
+
+**Commit (code):** 6adfc05 — "RMQ-0004: add RM v6 CRDT sequence ordering"
+
+### What I did
+- Added `RMV6CrdtID`, `RMV6CrdtSequenceItem`, and `RMV6CrdtSequence` types.
+- Implemented deterministic topo ordering (`Keys/Values/Items`) based on `left_id` / `right_id` constraints.
+- Added unit tests for:
+  - deterministic ordering of independent items
+  - linear chains via `left_id`
+  - unknown `left_id` treated as start
+  - cycle detection
+
+### Why
+- V6 scene decoding stores many collections as CRDT sequences; without a deterministic ordering primitive, higher-level decoders can’t build stable scene trees.
+- Getting this “pure ordering logic” correct and well-tested is cheaper than debugging ordering bugs inside stroke/highlight rendering later.
+
+### What worked
+- `gofmt` + `go test ./... -count=1` passed.
+- Ordering is deterministic even when multiple items become “available” simultaneously (ties broken by `(part1, part2)` ID order).
+
+### What didn't work
+- N/A.
+
+### What I learned
+- The `right_id` edges matter: the Python algorithm models “right comes after item” explicitly (graph edge from right_id node to item_id). Porting that faithfully preserves behavior.
+
+### What was tricky to build
+- Representing Python’s `"__start"`/`"__end"` sentinels without using string keys: we modelled a small comparable `rmv6TopoKey` with Kind (start/item/end) plus optional ID.
+- Ensuring determinism: we sort the frontier (“no deps”) set before yielding any item IDs.
+
+### What warrants a second pair of eyes
+- Confirm the edge model matches `rmscene` exactly (especially treatment of unknown neighbor IDs as start/end).
+- Verify the decision to return an explicit error when the topo walk yields fewer items than expected (helps surface malformed/cyclic inputs early).
+
+### What should be done in the future
+- Once we start decoding scene blocks, integrate this sequence container so decoded `SceneTree` groups/layers preserve stable order.
+- If we discover real-world documents with additional CRDT invariants (e.g., deleted spans), extend tests to cover those cases.
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/rmv6_crdt_sequence.go`
+  - `remarquee/pkg/rmdoc/rmv6_crdt_sequence_test.go`
+- Run:
+  - `cd remarquee && go test ./pkg/rmdoc -count=1`
+
+### Technical details
+- This is a direct port of `rmscene/src/rmscene/crdt_sequence.py` (`toposort_items`) adapted to Go’s data structures.

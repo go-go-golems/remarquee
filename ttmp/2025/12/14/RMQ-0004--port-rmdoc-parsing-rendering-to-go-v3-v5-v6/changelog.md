@@ -137,3 +137,12 @@ Step 7: scaffold RM v6 tagged-block reader (header + block + subblock boundaries
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_tagged_block_reader.go — New V6 boundary reader foundation
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_tagged_block_reader_test.go — Fixture-based coverage
 
+
+## 2025-12-24
+
+Step 8: add CRDT sequence container + deterministic ordering (commit 6adfc05)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_crdt_sequence.go — New CRDT ordering foundation
+
