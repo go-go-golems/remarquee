@@ -11,16 +11,13 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles:
-    - Path: pkg/pdfcmp/pdfcmp.go
-      Note: Implemented Option B PDF comparison utilities
+RelatedFiles: []
 ExternalSources: []
 Summary: Diary of research into using remarks for golden testing and analysis of rendering issues discovered through visual inspection.
 LastUpdated: 2025-12-24T15:00:00Z
 WhatFor: ""
 WhenToUse: ""
 ---
-
 
 # Diary - Golden testing research and rendering issues analysis
 
@@ -123,3 +120,14 @@ Implemented a pure-Go PDF comparison helper package for golden testing:
 Added self-contained unit tests in `remarquee/pkg/pdfcmp/pdfcmp_test.go` that generate small PDFs and validate:
 - identical PDFs match
 - slightly different PDFs fail and produce a diff image
+
+### Evening: Added a Go wrapper to invoke `remarks` (reference implementation runner)
+
+Added a small helper package to run the Python `remarks` CLI and locate the resulting reference PDF(s):
+
+- **Package**: `remarquee/pkg/refimpl/remarks`
+- **Runner**: `Runner.Run(ctx, inputPath, outputDir)` shells out to `remarks <input> <outputDir> [--log_level ...]`
+- **Missing tool handling**: returns sentinel `ErrNotFound` when `remarks` is not available on `PATH`
+- **Output discovery**: `FindRemarksPDFs(outputDir)` and `FindSingleRemarksPDF(outputDir)` search recursively for `* _remarks.pdf`
+
+This gives us a deterministic way to generate a reference PDF for later golden tests (paired with the pure-Go comparator from commit `a93a0856a49559893dd97d661fd4ca3c71646f0f`).

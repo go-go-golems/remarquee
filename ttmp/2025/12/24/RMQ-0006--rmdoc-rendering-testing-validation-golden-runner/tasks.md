@@ -40,10 +40,10 @@
 ### Golden testing with remarks (from analysis research)
 
 - [ ] Implement remarks invocation wrapper:
-  - [ ] Create Go function to invoke remarks CLI (subprocess approach)
-  - [ ] Handle output path resolution (`{doc_name} _remarks.pdf` naming convention)
-  - [ ] Add error handling for missing remarks installation
-  - [ ] Add logging/verbose mode for debugging
+  - [x] Create Go function to invoke remarks CLI (subprocess approach)
+  - [x] Handle output path resolution (`{doc_name} _remarks.pdf` naming convention)
+  - [x] Add error handling for missing remarks installation
+  - [x] Add logging/verbose mode for debugging
 
 - [ ] Implement PDF comparison utilities:
   - [ ] Option A: Python script wrapper (`scripts/compare_with_remarks.py`)

@@ -29,3 +29,24 @@ Implemented Option B PDF comparison utilities (pure Go): UniDoc-based visual com
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/pdfcmp/pdfcmp_test.go — pdfcmp tests
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — Checked off Option B comparison tasks
 
+
+## 2025-12-24
+
+Implemented remarks reference runner (Go wrapper around the  CLI): run remarks with context, capture stdout/stderr, handle missing binary via ErrNotFound, and locate generated  outputs (including nested UI-path dirs).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/refimpl/remarks/runner.go — remarks CLI runner
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/refimpl/remarks/runner_test.go — remarks runner tests
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — Checked off remarks wrapper tasks
+
+
+## 2025-12-24
+
+(Follow-up) Implemented remarks reference runner (Go wrapper around the remarks CLI): run remarks with context, capture stdout/stderr, handle missing binary via ErrNotFound, and locate generated '* _remarks.pdf' outputs (including nested UI-path dirs).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/refimpl/remarks/runner.go — remarks CLI runner
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/refimpl/remarks/runner_test.go — remarks runner tests
+

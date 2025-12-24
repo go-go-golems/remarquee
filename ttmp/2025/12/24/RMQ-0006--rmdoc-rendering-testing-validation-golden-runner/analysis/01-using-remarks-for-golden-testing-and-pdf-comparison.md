@@ -26,6 +26,8 @@ RelatedFiles:
       Note: Pure-Go PDF visual+structural comparator (UniDoc render+extractor)
     - Path: pkg/pdfcmp/pdfcmp_test.go
       Note: Unit tests generating small PDFs and exercising comparator
+    - Path: pkg/refimpl/remarks/runner.go
+      Note: Go wrapper to invoke remarks and discover produced reference PDFs
     - Path: pkg/rmdoc/render/v6_merge_background_test.go
       Note: Existing remarquee render tests - pattern for golden test structure
 ExternalSources: []
@@ -34,6 +36,7 @@ LastUpdated: 2025-12-24T14:11:32.971845927-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
