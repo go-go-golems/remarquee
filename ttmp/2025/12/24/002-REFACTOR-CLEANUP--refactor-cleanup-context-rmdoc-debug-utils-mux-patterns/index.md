@@ -13,12 +13,16 @@ Owners: []
 RelatedFiles:
     - Path: remarquee/cmd/remarquee-ui/api/inspect.go
       Note: Use request context for OpenFile (commit 4b73281)
+    - Path: remarquee/cmd/remarquee-ui/api/internal_structure.go
+      Note: UI now uses pkg/rmdoc/debug instead of duplicating zip/header logic (commit 401d54b)
     - Path: remarquee/cmd/remarquee-ui/api/render.go
       Note: Use request context for OpenFile+render (commit 4b73281)
     - Path: remarquee/cmd/remarquee/cmds/rmdoc/build_background.go
       Note: Use cobra-derived context for OpenFile/BuildBackgroundPDF (commit 4b73281)
     - Path: remarquee/cmd/remarquee/cmds/rmdoc/inspect.go
       Note: Use cobra-derived context for OpenFile (commit 4b73281)
+    - Path: remarquee/pkg/rmdoc/debug/archive.go
+      Note: New debug helpers for listing archive files and inspecting .rm headers (commit 401d54b)
     - Path: remarquee/pkg/rmdoc/open.go
       Note: Honor ctx in OpenReaderAt/readZipFile (commit 48d822e)
     - Path: remarquee/pkg/rmdoc/render/background.go
@@ -31,6 +35,7 @@ LastUpdated: 2025-12-24T08:57:13.942052994-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

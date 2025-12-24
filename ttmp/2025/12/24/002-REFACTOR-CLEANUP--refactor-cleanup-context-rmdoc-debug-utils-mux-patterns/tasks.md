@@ -18,12 +18,12 @@
 - [x] Decide/document cancellation semantics for rmapi legacy generator (cannot truly interrupt; only stop waiting)
 
 - **Extract UI rmdoc introspection into `pkg/rmdoc/debug`**
-- [ ] Create new package `remarquee/pkg/rmdoc/debug` (new directory + doc.go)
-- [ ] Add `DetectRMVersionFromHeader([]byte) (string, bool)` to `pkg/rmdoc/debug` (move logic from UI)
-- [ ] Add helper to list archive entries (e.g. `ListArchiveFiles(...)`) to `pkg/rmdoc/debug`
-- [ ] Add helper to inspect `.rm` files inside archive (e.g. `InspectRMFiles(...)`) to `pkg/rmdoc/debug`
-- [ ] Refactor `remarquee/cmd/remarquee-ui/api/internal_structure.go` to use `pkg/rmdoc/debug` instead of duplicating zip + header sniff logic
-- [ ] Add unit tests for `pkg/rmdoc/debug` using existing UI `testdata` archives (`cmd/remarquee-ui/testdata/*`)
+- [x] Create new package `remarquee/pkg/rmdoc/debug` (new directory + doc.go)
+- [x] Add `DetectRMVersionFromHeader([]byte) (string, bool)` to `pkg/rmdoc/debug` (move logic from UI)
+- [x] Add helper to list archive entries (e.g. `ListArchiveFiles(...)`) to `pkg/rmdoc/debug`
+- [x] Add helper to inspect `.rm` files inside archive (e.g. `InspectRMFiles(...)`) to `pkg/rmdoc/debug`
+- [x] Refactor `remarquee/cmd/remarquee-ui/api/internal_structure.go` to use `pkg/rmdoc/debug` instead of duplicating zip + header sniff logic
+- [x] Add unit tests for `pkg/rmdoc/debug` using existing UI `testdata` archives (`cmd/remarquee-ui/testdata/*`)
 
 - **Cleanup `remarquee-ui` mux + path parsing**
 - [ ] Refactor `remarquee/cmd/remarquee-ui/main.go` routing to avoid suffix checks and to use a consistent pattern per endpoint

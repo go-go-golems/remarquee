@@ -247,6 +247,58 @@ This step adds a small script to the ticket’s `scripts/` folder so we can quic
 ### What I'd do differently next time
 - N/A
 
+## Step 6: Extract archive introspection into `pkg/rmdoc/debug` and refactor UI to use it
+
+This step removed duplicated zip/header-sniff logic from the UI and replaced it with a reusable package (`pkg/rmdoc/debug`). The practical impact is a single implementation for listing archive entries and detecting `.rm` versions, plus unit tests that lock behavior down against the UI’s existing `testdata` archives.
+
+**Commit (code):** 401d54b — "rmdoc: add debug archive helpers"
+
+### What I did
+- Added new package `pkg/rmdoc/debug` with:
+  - `DetectRMVersionFromHeader([]byte) (string, bool)`
+  - `ListArchiveFiles(ctx, archivePath)`
+  - `InspectRMFiles(ctx, archivePath)`
+- Refactored `cmd/remarquee-ui/api/internal_structure.go` to call those helpers instead of duplicating zip handling and header parsing.
+- Added unit tests in `pkg/rmdoc/debug/archive_test.go` using:
+  - `cmd/remarquee-ui/testdata/cpage-pdf.rmdoc`
+  - `cmd/remarquee-ui/testdata/legacy-notebook.zip`
+
+### Why
+- We want introspection/debug logic to be reusable by CLI tools, tests, and the UI without copy/paste drift.
+
+### What worked
+- `cd remarquee && go test ./... -count=1` passed.
+- The tests use path resolution via `runtime.Caller`, so they don’t depend on the current working directory.
+
+### What didn't work
+- N/A
+
+### What I learned
+- For zip entries, using `path.Base` (not `filepath.Base`) is the correct way to parse page IDs because zip paths are slash-separated.
+
+### What was tricky to build
+- Keeping the debug package independent of higher-level UI types while still enabling direct reuse (we used a simple `debug.RMFileInfo` and map it into the UI JSON struct).
+
+### What warrants a second pair of eyes
+- Whether `InspectRMFiles` should treat “cannot read 43 bytes” as an error vs returning `Version="unknown"`; right now it’s tolerant, matching existing UI behavior.
+
+### What should be done in the future
+- If we later need richer information (e.g. `.rm` byte counts, stroke stats), extend `pkg/rmdoc/debug` rather than reintroducing handler-local inspection code.
+
+### Code review instructions
+- Start with:
+  - `pkg/rmdoc/debug/archive.go`
+  - `cmd/remarquee-ui/api/internal_structure.go`
+  - `pkg/rmdoc/debug/archive_test.go`
+- Validate with:
+  - `cd remarquee && go test ./... -count=1`
+
+### Technical details
+- `.rm` version detection is string-based (`strings.Contains("version=3|5|6")`), mirroring the pre-refactor UI logic.
+
+### What I'd do differently next time
+- N/A
+
 ## Related
 
 <!-- Link to related documents or resources -->

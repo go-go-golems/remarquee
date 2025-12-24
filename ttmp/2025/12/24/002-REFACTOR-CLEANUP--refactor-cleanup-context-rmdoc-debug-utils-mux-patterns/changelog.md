@@ -42,3 +42,13 @@ Add ticket-local scripts/inspect-archive.sh for inspecting archives and .rm head
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/002-REFACTOR-CLEANUP--refactor-cleanup-context-rmdoc-debug-utils-mux-patterns/scripts/inspect-archive.sh — Debug helper for upcoming pkg/rmdoc/debug extraction
 
+
+## 2025-12-24
+
+Step 6: Extract rmdoc archive introspection into pkg/rmdoc/debug + refactor UI internal_structure (commit 401d54b)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/api/internal_structure.go — Remove duplicated zip/header code
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/debug/archive.go — Archive listing + .rm version sniff
+
