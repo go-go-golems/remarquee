@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/go-go-golems/remarquee/cmd/remarquee-ui/api"
 	"github.com/rs/zerolog"
@@ -49,18 +48,11 @@ func main() {
 	// API routes
 	mux.HandleFunc("/api/health", handleHealth)
 	mux.HandleFunc("/api/test-documents", handleTestDocuments)
-	mux.Handle("/api/document/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/inspect") {
-			api.HandleInspect(testDocsPath)(w, r)
-		} else if strings.HasSuffix(r.URL.Path, "/structure") {
-			api.HandleInternalStructure(testDocsPath)(w, r)
-		} else {
-			http.NotFound(w, r)
-		}
-	}))
+	mux.HandleFunc("/api/document/{id}/inspect", api.HandleInspect(testDocsPath))
+	mux.HandleFunc("/api/document/{id}/structure", api.HandleInternalStructure(testDocsPath))
 	mux.HandleFunc("/api/render/background", api.HandleRenderBackground(testDocsPath, outputsDir))
 	mux.HandleFunc("/api/render/legacy", api.HandleRenderLegacy(testDocsPath, outputsDir))
-	mux.HandleFunc("/api/outputs/", api.HandleOutputs(outputsDir))
+	mux.HandleFunc("/api/outputs/{filename}", api.HandleOutputs(outputsDir))
 	mux.HandleFunc("/api/validation", api.HandleValidation(ticketDir))
 
 	// Static assets
@@ -106,4 +98,3 @@ func handleTestDocuments(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
-

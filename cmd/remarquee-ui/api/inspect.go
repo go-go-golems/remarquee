@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	"strings"
 
 	"github.com/go-go-golems/remarquee/pkg/rmdoc"
 )
@@ -38,14 +37,11 @@ func HandleInspect(testDocsPath string) http.HandlerFunc {
 			return
 		}
 
-		// Extract document ID from URL path
-		// Expected: /api/document/{id}/inspect
-		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-		if len(pathParts) != 4 || pathParts[0] != "api" || pathParts[1] != "document" || pathParts[3] != "inspect" {
-			http.Error(w, "Invalid path format, expected /api/document/{id}/inspect", http.StatusBadRequest)
+		docID := r.PathValue("id")
+		if docID == "" {
+			http.Error(w, "Missing document id in path", http.StatusBadRequest)
 			return
 		}
-		docID := pathParts[2]
 
 		// Load test documents manifest to find the document path
 		docPath, err := findDocumentPath(testDocsPath, docID)

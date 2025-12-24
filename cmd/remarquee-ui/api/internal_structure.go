@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/go-go-golems/remarquee/pkg/rmdoc"
 	rmdocdebug "github.com/go-go-golems/remarquee/pkg/rmdoc/debug"
@@ -36,15 +35,12 @@ func HandleInternalStructure(testDocsPath string) http.HandlerFunc {
 			return
 		}
 
-		// Extract document ID from URL path
-		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-		log.Info().Strs("pathParts", pathParts).Msg("Parsing URL path")
-		if len(pathParts) != 4 || pathParts[0] != "api" || pathParts[1] != "document" || pathParts[3] != "structure" {
-			log.Warn().Strs("pathParts", pathParts).Msg("Invalid path format")
-			http.Error(w, "Invalid path format, expected /api/document/{id}/structure", http.StatusBadRequest)
+		docID := r.PathValue("id")
+		if docID == "" {
+			log.Warn().Msg("Missing document id in path")
+			http.Error(w, "Missing document id in path", http.StatusBadRequest)
 			return
 		}
-		docID := pathParts[2]
 		log.Info().Str("docID", docID).Msg("Processing internal structure request")
 
 		// Load test documents manifest to find the document path

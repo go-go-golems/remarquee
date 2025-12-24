@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// HandleOutputs handles GET /api/outputs/:filename
+// HandleOutputs handles GET /api/outputs/{filename}
 func HandleOutputs(outputsDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
@@ -15,14 +15,11 @@ func HandleOutputs(outputsDir string) http.HandlerFunc {
 			return
 		}
 
-		// Extract filename from URL path
-		// Expected: /api/outputs/{filename}
-		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-		if len(pathParts) != 3 || pathParts[0] != "api" || pathParts[1] != "outputs" {
-			http.Error(w, "Invalid path format, expected /api/outputs/{filename}", http.StatusBadRequest)
+		filename := r.PathValue("filename")
+		if filename == "" {
+			http.Error(w, "Missing filename in path", http.StatusBadRequest)
 			return
 		}
-		filename := pathParts[2]
 
 		// Security: prevent path traversal
 		if strings.Contains(filename, "..") || strings.Contains(filename, "/") {
@@ -42,4 +39,3 @@ func HandleOutputs(outputsDir string) http.HandlerFunc {
 		http.ServeFile(w, r, filePath)
 	}
 }
-
