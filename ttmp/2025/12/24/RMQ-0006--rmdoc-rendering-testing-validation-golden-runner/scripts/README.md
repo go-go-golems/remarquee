@@ -32,6 +32,18 @@ Given two PDF paths (A and B), prints:
 
 This is useful when golden tests show `maxDiffRatio=1.0`, which often means the rasterized images differ in dimensions.
 
+### `03-pdf-box-dump.go`
+
+`go run` helper to dump MediaBox/CropBox sizes and rotation for each page (UniDoc-based, no external deps).
+
+### `04-debug-golden-size-mismatch-test-rmdoc.sh`
+
+One-shot “first suspicion” debug script that:
+
+- generates A/B PDFs for `Test.rmdoc`
+- dumps PDF boxes (MediaBox/CropBox/rotation)
+- measures raster PNG dimensions for page 1 (via `pdftoppm`)
+
 ## Prerequisites
 
 - `pdftoppm` (Poppler) must be installed and on PATH.
