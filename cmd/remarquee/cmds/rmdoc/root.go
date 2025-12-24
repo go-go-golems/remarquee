@@ -46,5 +46,18 @@ func NewRmdocCommand() *cobra.Command {
 	} else {
 		cmd.AddCommand(renderLegacyCmd)
 	}
+
+	renderV6Cmd, err := NewRenderV6CobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "render-v6",
+			Short: "Render a V6 (cPages) .rmdoc to PDF (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(renderV6Cmd)
+	}
 	return cmd
 }

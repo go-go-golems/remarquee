@@ -1,0 +1,204 @@
+package rmdoc
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/go-go-golems/glazed/pkg/cli"
+	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
+	pkg_rmdoc "github.com/go-go-golems/remarquee/pkg/rmdoc"
+	rmdocrender "github.com/go-go-golems/remarquee/pkg/rmdoc/render"
+)
+
+type RenderV6Command struct {
+	*glazecmds.CommandDescription
+}
+
+type RenderV6Settings struct {
+	File string `glazed.parameter:"file"`
+	Out  string `glazed.parameter:"out"`
+
+	Force bool `glazed.parameter:"force"`
+}
+
+var _ glazecmds.BareCommand = &RenderV6Command{}
+var _ glazecmds.GlazeCommand = &RenderV6Command{}
+
+func NewRenderV6Command() (*RenderV6Command, error) {
+	glazedLayer, err := settings.NewGlazedParameterLayers()
+	if err != nil {
+		return nil, err
+	}
+	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	if err != nil {
+		return nil, err
+	}
+
+	cmdDesc := glazecmds.NewCommandDescription(
+		"render-v6",
+		glazecmds.WithShort("Render a V6 (cPages) .rmdoc to an annotated PDF (strokes + smart highlights)"),
+		glazecmds.WithLong(`
+Render a V6 (cPages) .rmdoc to an annotated PDF using the Go V6 parser + merge pipeline:
+- background PDF is assembled in UI page order from .content (cPages)
+- V6 strokes are merged on top using remarks-style positioning math
+- V6 GlyphRange rectangles are emitted as PDF Highlight annotations ("smart highlights")
+
+Notes:
+- Only supports PDF-backed/notebook cPages archives (not EPUB).
+- This is still a milestone renderer (brush fidelity, typed text output, and PNGs are future work).
+`),
+		glazecmds.WithFlags(
+			parameters.NewParameterDefinition(
+				"out",
+				parameters.ParameterTypeString,
+				parameters.WithDefault(""),
+				parameters.WithHelp("Output PDF path (default: <input>-v6.pdf in current dir)"),
+			),
+			parameters.NewParameterDefinition(
+				"force",
+				parameters.ParameterTypeBool,
+				parameters.WithDefault(false),
+				parameters.WithHelp("Overwrite output file if it exists"),
+			),
+			parameters.NewParameterDefinition(
+				"file",
+				parameters.ParameterTypeString,
+				parameters.WithIsArgument(true),
+				parameters.WithRequired(true),
+				parameters.WithHelp("Path to the V6 .rmdoc file"),
+			),
+		),
+		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+	)
+
+	return &RenderV6Command{CommandDescription: cmdDesc}, nil
+}
+
+func (c *RenderV6Command) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+	s := &RenderV6Settings{}
+	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+		return err
+	}
+
+	doc, err := pkg_rmdoc.OpenFile(ctx, s.File)
+	if err != nil {
+		return err
+	}
+	if doc.Schema != pkg_rmdoc.SchemaCPages {
+		return errors.Errorf("render-v6 only supports cPages/V6 archives; detected schema=%s", schemaString(doc.Schema))
+	}
+	if doc.Type == pkg_rmdoc.DocTypeEPUB {
+		return errors.New("render-v6: epub not supported")
+	}
+
+	out := s.Out
+	if out == "" {
+		base := filepath.Base(s.File)
+		ext := filepath.Ext(base)
+		base = base[:len(base)-len(ext)]
+		out = base + "-v6.pdf"
+	}
+
+	if !s.Force {
+		if _, err := os.Stat(out); err == nil {
+			return errors.Errorf("output file exists: %s (use --force to overwrite)", out)
+		}
+	}
+
+	res, err := rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfo(ctx, s.File, rmdocrender.V6MergeOptions{})
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(out, res.PDF, 0o644); err != nil {
+		return errors.Wrap(err, "write output pdf")
+	}
+
+	fmt.Printf("ok: wrote %s\n", out)
+	return nil
+}
+
+func (c *RenderV6Command) RunIntoGlazeProcessor(
+	ctx context.Context,
+	parsedLayers *layers.ParsedLayers,
+	gp middlewares.Processor,
+) error {
+	s := &RenderV6Settings{}
+	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+		return err
+	}
+
+	doc, err := pkg_rmdoc.OpenFile(ctx, s.File)
+	if err != nil {
+		return err
+	}
+	if doc.Schema != pkg_rmdoc.SchemaCPages {
+		return errors.Errorf("render-v6 only supports cPages/V6 archives; detected schema=%s", schemaString(doc.Schema))
+	}
+	if doc.Type == pkg_rmdoc.DocTypeEPUB {
+		return errors.New("render-v6: epub not supported")
+	}
+
+	out := s.Out
+	if out == "" {
+		base := filepath.Base(s.File)
+		ext := filepath.Ext(base)
+		base = base[:len(base)-len(ext)]
+		out = base + "-v6.pdf"
+	}
+
+	if !s.Force {
+		if _, err := os.Stat(out); err == nil {
+			return errors.Errorf("output file exists: %s (use --force to overwrite)", out)
+		}
+	}
+
+	res, err := rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfo(ctx, s.File, rmdocrender.V6MergeOptions{})
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(out, res.PDF, 0o644); err != nil {
+		return errors.Wrap(err, "write output pdf")
+	}
+
+	row := types.NewRow(
+		types.MRP("input", s.File),
+		types.MRP("output", out),
+		types.MRP("schema", schemaString(doc.Schema)),
+		types.MRP("type", docTypeString(doc.Type)),
+		types.MRP("pages", len(doc.Pages)),
+	)
+	return gp.AddRow(ctx, row)
+}
+
+func NewRenderV6CobraCommand() (*cobra.Command, error) {
+	cmd, err := NewRenderV6Command()
+	if err != nil {
+		return nil, err
+	}
+
+	cobraCmd, err := cli.BuildCobraCommand(cmd,
+		cli.WithDualMode(true),
+		cli.WithGlazeToggleFlag("with-glaze-output"),
+		cli.WithParserConfig(cli.CobraParserConfig{
+			ShortHelpLayers: []string{layers.DefaultSlug},
+			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return cobraCmd, nil
+}
