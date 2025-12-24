@@ -238,3 +238,13 @@ Step 18: add user-facing CLI command 'remarquee rmdoc render-v6' (tasks 54-57) (
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/render_v6.go — New CLI command to render V6 (cPages) rmdoc
 
+
+## 2025-12-24
+
+Step 19: add real V6 notebook fixture from device (Test.rmdoc) (task 52)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/Test.rmdoc — Device fixture downloaded via cloud get /Test (commit 69f8d4e)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/test-documents.json — Registered device fixture in UI manifest
+

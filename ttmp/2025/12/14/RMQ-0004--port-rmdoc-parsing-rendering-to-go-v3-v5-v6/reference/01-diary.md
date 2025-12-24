@@ -33,6 +33,10 @@ RelatedFiles:
       Note: Python reference implementation we’re porting (TaggedBlockReader.read_block/read_subblock)
     - Path: ../../../../../../../rmscene/src/rmscene/text.py
       Note: Python reference for expand_text_items and TextDocument.from_scene_item
+    - Path: cmd/remarquee-ui/testdata/Test.rmdoc
+      Note: Step 19 - real device fixture (downloaded from cloud /Test)
+    - Path: cmd/remarquee-ui/testdata/test-documents.json
+      Note: Step 19 - added device-test entry
     - Path: cmd/remarquee/cmds/rmdoc/render_v6.go
       Note: Step 18 (commit f974bb7) - user-facing render-v6 command
     - Path: cmd/remarquee/cmds/rmdoc/render_v6_test.go
@@ -114,6 +118,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -1071,3 +1076,22 @@ It runs the Go V6 parser + merge + smart highlights path and writes an annotated
 
 ### Code review instructions
 - Start with `cmd/remarquee/cmds/rmdoc/render_v6.go`
+
+## Step 19: Add real device V6 notebook fixture (“Test.rmdoc”) (task 52)
+
+This step adds a **real** V6 notebook fixture exported from the device/cloud (“Test”) into the repo so we can validate parsing and rendering against a non-synthetic input with a variety of strokes/features.
+
+**Commit (fixture):** 69f8d4e — "Add device Test.rmdoc fixture"
+
+### What I did
+- Downloaded from cloud:
+  - `remarquee cloud get "/Test" --out-dir cmd/remarquee-ui/testdata`
+- Verified the archive has V6 `.rm` files and parses as cPages:
+  - `remarquee rmdoc inspect cmd/remarquee-ui/testdata/Test.rmdoc`
+- Registered it in `cmd/remarquee-ui/testdata/test-documents.json` as `device-test`.
+- Smoke-rendered it through the Go V6 pipeline:
+  - `remarquee rmdoc render-v6 cmd/remarquee-ui/testdata/Test.rmdoc --out /tmp/Test-v6.pdf --force`
+
+### Why
+- Tasks 50–53 require at least one real V6 notebook fixture from a device to validate anchors/highlights/merge behavior beyond the synthetic fixtures.
+
