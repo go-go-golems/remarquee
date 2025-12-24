@@ -102,3 +102,12 @@ Added rmdoc vlm-validate helper CLI: renders selected PDF pages to PNGs and invo
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/vlm_validate.go — New VLM validation CLI
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — VLM helper task
 
+
+## 2025-12-24
+
+Added decision analysis doc on how to run remarks locally/CI (Nix flake vs Poetry vs pyenv/pip vs pipx/uv), grounded in remarks repo config (flake.nix + pyproject scripts). Captures tradeoffs and recommended path (Nix for CI).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/analysis/02-running-remarks-locally-in-ci-nix-vs-poetry-vs-pyenv-decision-doc.md — Decision doc
+
