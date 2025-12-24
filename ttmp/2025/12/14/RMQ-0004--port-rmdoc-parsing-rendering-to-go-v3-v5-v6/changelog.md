@@ -220,3 +220,12 @@ Step 16: match remarks merge semantics (highlights_x_translation + rotation) (ta
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Rotation-aware background placement
 
+
+## 2025-12-24
+
+Step 17: smart highlights for V6 (GlyphRanges->PDF Highlight annotations) (tasks 47-49) (commit 63af7f6)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Apply PdfAnnotationHighlight
+

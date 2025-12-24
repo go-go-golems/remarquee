@@ -15,7 +15,9 @@ RelatedFiles:
         Legacy PDF renderer reference for coordinate inversion and content stream composition
         Legacy baseline approach: append drawing ops to existing page content
     - Path: ../../../../../../../rmc/src/rmc/exporters/svg.py
-      Note: Reference for SCALE/X_SHIFT mapping from screen units to PDF points
+      Note: |-
+        Reference for SCALE/X_SHIFT mapping from screen units to PDF points
+        Reference for xx/yy scaling and coordinate conventions
     - Path: ../../../../../../../rmscene/src/rmscene/crdt_sequence.py
       Note: Python reference algorithm toposort_items ported to Go
     - Path: ../../../../../../../rmscene/src/rmscene/scene_stream.py
@@ -24,6 +26,7 @@ RelatedFiles:
         Python reference for build_tree + SceneTreeBlock/TreeNodeBlock formats
         Python reference for line_from_stream + point_from_stream
         Python reference for RootTextBlock and TreeNodeBlock anchor fields
+        Python reference for glyph_range_from_stream and SceneGlyphItemBlock
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_common.py
       Note: Python reference for V6 header
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_reader.py
@@ -38,10 +41,13 @@ RelatedFiles:
         RMQ-0004 Step 14 (commit e0fc0f4) - anchor-aware bbox traversal
     - Path: pkg/rmdoc/bbox_test.go
       Note: Tests for stroke bbox + fixture smoke (commit cb097e1)
+    - Path: pkg/rmdoc/pen_color.go
+      Note: RMQ-0004 Step 17 (commit 63af7f6) - PenColor->RGB mapping (ported from RMQ-0001)
     - Path: pkg/rmdoc/render/v6_merge_background.go
       Note: |-
         RMQ-0004 Step 15 (commit 8b64ce5) - merge V6 strokes onto UI-ordered background PDF
         RMQ-0004 Step 16 (commit df07e2c) - highlights_x_translation + rotation-aware merge via background Form XObject
+        Step 17 - create PDF highlight annotations using highlights_x_translation
     - Path: pkg/rmdoc/render/v6_merge_background_test.go
       Note: |-
         Fixture smoke test for merged output page count + overlay marker
@@ -58,6 +64,10 @@ RelatedFiles:
       Note: RMQ-0004 Step 8 (commit 6adfc05) - CRDT sequence container + deterministic toposort ordering
     - Path: pkg/rmdoc/rmv6_crdt_sequence_test.go
       Note: Tests for ordering determinism + cycles (commit 6adfc05)
+    - Path: pkg/rmdoc/rmv6_glyph_decode.go
+      Note: Step 17 - decode GlyphRange rectangles + color
+    - Path: pkg/rmdoc/rmv6_glyph_extract.go
+      Note: Step 17 - anchor-aware glyph range extraction
     - Path: pkg/rmdoc/rmv6_line_decode.go
       Note: RMQ-0004 Step 11 (commit b9a1ee9) - DecodeRMV6Line implementation
     - Path: pkg/rmdoc/rmv6_line_decode_test.go
@@ -98,6 +108,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -973,3 +984,56 @@ This step refines the merge implementation so it matches the `remarks` behavior 
   - `remarquee/pkg/rmdoc/render/v6_merge_background_test.go`
 - Run:
   - `cd remarquee && go test ./pkg/rmdoc/render -count=1`
+
+## Step 17: Smart highlights for V6 (GlyphRanges → PDF Highlight annotations) (tasks 47–49)
+
+This step adds the first “real” text-aligned V6 feature: **smart highlights**. We now decode `GlyphRange` items from V6 `.rm` files (rectangles + color), map the reMarkable `PenColor` to RGB, and add PDF **Highlight** annotations positioned using `highlights_x_translation` (the same value used by `remarks`).
+
+**Commit (code):** 63af7f6 — "RMQ-0004: add V6 smart highlights (glyph ranges)"
+
+### What I did
+- Added `PenColor` + RGBA mapping and `PenColorToRGB` in:
+  - `pkg/rmdoc/pen_color.go`
+  - ported from RMQ-0001 `scripts/color_map.go` (generated from `rmscene.scene_items.HARDCODED_COLORMAP`)
+- Implemented V6 `GlyphRange` decoding:
+  - `pkg/rmdoc/rmv6_glyph_decode.go` (`DecodeRMV6GlyphRange`)
+  - decodes:
+    - optional `start`/`length`
+    - `color` + `text`
+    - rectangles subblock (list of `x,y,w,h`)
+    - optional trailing RGBA marker (maps via `HardcodedColorMap`)
+- Extended scene tree parsing to populate glyph items:
+  - `pkg/rmdoc/rmv6_scene_tree.go` now decodes glyph payloads for `item_type=0x01`
+- Added anchor-aware glyph extraction:
+  - `pkg/rmdoc/rmv6_glyph_extract.go` (`ExtractRMV6GlyphRangesWithAnchors`)
+- Wired smart highlights into the V6 merge pipeline:
+  - `pkg/rmdoc/render/v6_merge_background.go`
+  - creates `PdfAnnotationHighlight` objects with:
+    - `QuadPoints` from each highlight rectangle
+    - `Rect` bounding union
+    - `C` set from `PenColorToRGB`
+    - opacity via `CA`
+  - positions rectangles using:
+    - \(x\_pt = xx(x) + highlights\_x\_translation\)
+    - \(y\) converted from top-origin to PDF bottom-origin using the merged page height
+- Added a no-crash smoke test:
+  - `pkg/rmdoc/render/v6_merge_background_test.go`
+
+### Why
+- Smart highlights are the first feature that requires correct interplay between:
+  - V6 parsing (glyph ranges)
+  - page merge alignment (x translation + rotation)
+  - PDF-level annotations.
+
+### What worked
+- `gofmt` + `go test ./... -count=1` passed.
+- The merge pipeline now supports highlights without breaking non-highlight docs.
+
+### What warrants a second pair of eyes
+- Validate highlight rectangle coordinate conventions against a fixture known to contain highlights (we currently don’t assert highlight count because the fixture may not include any).
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/pen_color.go`
+  - `remarquee/pkg/rmdoc/rmv6_glyph_decode.go`
+  - `remarquee/pkg/rmdoc/render/v6_merge_background.go`

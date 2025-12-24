@@ -71,9 +71,9 @@
 
 ### 6) Smart highlights
 
-- [ ] Implement smart highlights for V6:
-  - [ ] Use `PenColor` mapping to RGB (from RMQ-0001 `scripts/color_map.go`)
-  - [ ] Create PDF highlight annotations and position them using `x_translation`
+- [x] Implement smart highlights for V6:
+- [x] Use `PenColor` mapping to RGB (from RMQ-0001 `scripts/color_map.go`)
+- [x] Create PDF highlight annotations and position them using `x_translation`
 
 ### 7) Fixtures + golden tests (REAL DOCUMENTS)
 
