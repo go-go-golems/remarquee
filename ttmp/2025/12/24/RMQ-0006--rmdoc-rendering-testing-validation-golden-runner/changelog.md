@@ -80,3 +80,14 @@ Added legacy golden-style smoke test for legacy-pdf-a4.zip using rmapi PdfGenera
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_legacy_rmapi_test.go — Legacy rmapi-backed golden smoke test
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — Checked off legacy test
 
+
+## 2025-12-24
+
+Added basic golden file management: created cmd/remarquee-ui/testdata/golden/ with README and naming convention, and added go test flag -update-golden so remarks-based golden tests can write/update committed reference PDFs when desired (otherwise fall back to running remarks or skip).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/golden/README.md — Golden directory documentation
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_test.go — Update-golden flag + golden reference selection
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — Checked off golden management tasks
+

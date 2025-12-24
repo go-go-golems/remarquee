@@ -161,3 +161,12 @@ Added a legacy (V3/V5) golden-style smoke test for the legacy PDF-backed fixture
 - **Fixture**: `cmd/remarquee-ui/testdata/legacy-pdf-a4.zip`
 - **Location**: `remarquee/pkg/rmdoc/render/golden_legacy_rmapi_test.go`
 - **Notes**: This does not use `remarks` (which is V6-oriented). Instead it validates the rmapi-backed legacy renderer end-to-end and asserts output PDF page count matches our parsed UI page plan.
+
+### Evening: Golden file management (committed reference PDFs)
+
+Added basic golden file management so the remarks-based golden tests can use a committed reference PDF when available:
+
+- **Golden dir**: `cmd/remarquee-ui/testdata/golden/` (contains a README and naming convention)
+- **Go test flag**: `-update-golden`
+  - updates `*.remarks.pdf` reference files under the golden dir (opt-in)
+  - tests use the committed golden when present; otherwise they fall back to running `remarks` (and skip if neither is available)

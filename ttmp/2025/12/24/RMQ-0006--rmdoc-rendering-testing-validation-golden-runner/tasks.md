@@ -58,10 +58,10 @@
   - [x] Generate diff images on mismatch (save to test output directory)
 
 - [ ] Set up golden file management:
-  - [ ] Create `testdata/golden/` directory structure
+  - [x] Create `testdata/golden/` directory structure
   - [ ] Script to generate golden PDFs from remarks for all fixtures
-  - [ ] Document golden file naming convention
-  - [ ] Add `-update-golden` flag to tests for intentional changes
+  - [x] Document golden file naming convention
+  - [x] Add `-update-golden` flag to tests for intentional changes
 
 - [ ] Create golden test cases:
   - [x] `TestRenderV6Golden_TestRmdoc` (device V6 notebook fixture)
