@@ -131,3 +131,16 @@ Added a small helper package to run the Python `remarks` CLI and locate the resu
 - **Output discovery**: `FindRemarksPDFs(outputDir)` and `FindSingleRemarksPDF(outputDir)` search recursively for `* _remarks.pdf`
 
 This gives us a deterministic way to generate a reference PDF for later golden tests (paired with the pure-Go comparator from commit `a93a0856a49559893dd97d661fd4ca3c71646f0f`).
+
+### Evening: First golden test wired up (remarks reference + Go comparator)
+
+Added the first end-to-end golden test for the device V6 notebook fixture:
+
+- **Test**: `TestRenderV6Golden_RemarksReference_TestRmdoc`
+- **Location**: `remarquee/pkg/rmdoc/render/golden_remarks_test.go`
+- **Behavior**:
+  - renders the fixture via `render.MergeRMDocV6OntoBackgroundPDF`
+  - runs the `remarks` CLI via `pkg/refimpl/remarks.Runner` to produce a reference PDF
+  - compares PDFs via `pkg/pdfcmp.CompareFilesVisual` with a tolerance (currently 1%)
+  - writes diff PNGs to the test temp dir on mismatch
+  - skips if `remarks` is not available on PATH

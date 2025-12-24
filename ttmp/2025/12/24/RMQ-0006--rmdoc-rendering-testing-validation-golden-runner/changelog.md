@@ -50,3 +50,13 @@ Implemented remarks reference runner (Go wrapper around the  CLI): run remarks w
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/refimpl/remarks/runner.go — remarks CLI runner
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/refimpl/remarks/runner_test.go — remarks runner tests
 
+
+## 2025-12-24
+
+Added first golden test comparing remarquee V6 render against remarks reference for cmd/remarquee-ui/testdata/Test.rmdoc. Test renders with MergeRMDocV6OntoBackgroundPDF, runs remarks via pkg/refimpl/remarks, compares via pkg/pdfcmp with tolerance, emits diff PNGs on mismatch, and skips when remarks is not on PATH.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_test.go — Golden test using remarks reference
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/tasks.md — Checked off first golden test
+
