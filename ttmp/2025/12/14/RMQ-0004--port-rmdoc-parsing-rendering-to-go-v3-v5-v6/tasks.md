@@ -51,7 +51,7 @@
 
 - [ ] Implement V6 parser (scene tree) with a minimal stroke-only milestone:
 - [x] Tagged block reader (header + main blocks + subblocks)
-  - [ ] CRDT sequence decoding needed for scene items
+- [x] CRDT sequence decoding needed for scene items
   - [ ] Build scene tree (groups + lines)
   - [ ] Expose strokes as normalized primitives for rendering
   - [ ] Expand incrementally:

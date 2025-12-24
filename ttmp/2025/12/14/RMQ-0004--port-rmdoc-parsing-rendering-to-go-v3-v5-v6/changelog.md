@@ -146,3 +146,13 @@ Step 8: add CRDT sequence container + deterministic ordering (commit 6adfc05)
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_crdt_sequence.go — New CRDT ordering foundation
 
+
+## 2025-12-24
+
+Step 9: decode V6 scene-item headers (CRDT sequence item fields) (commit f09f78c)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_scene_item_block.go — New scene header decode
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_tagged_block_values.go — Tagged value read helpers
+

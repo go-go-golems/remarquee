@@ -12,6 +12,8 @@ Owners: []
 RelatedFiles:
     - Path: ../../../../../../../rmscene/src/rmscene/crdt_sequence.py
       Note: Python reference algorithm toposort_items ported to Go
+    - Path: ../../../../../../../rmscene/src/rmscene/scene_stream.py
+      Note: Python reference for SceneItemBlock.from_stream (tags 1..6)
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_common.py
       Note: Python reference for V6 header
     - Path: ../../../../../../../rmscene/src/rmscene/tagged_block_reader.py
@@ -20,10 +22,16 @@ RelatedFiles:
       Note: RMQ-0004 Step 8 (commit 6adfc05) - CRDT sequence container + deterministic toposort ordering
     - Path: pkg/rmdoc/rmv6_crdt_sequence_test.go
       Note: Tests for ordering determinism + cycles (commit 6adfc05)
+    - Path: pkg/rmdoc/rmv6_scene_item_block.go
+      Note: RMQ-0004 Step 9 (commit f09f78c) - minimal SceneItemBlock header decode (parent_id + CRDT sequence header + raw value subblock)
+    - Path: pkg/rmdoc/rmv6_scene_item_block_test.go
+      Note: Fixture-based test for SceneItemBlock decoding (commit f09f78c)
     - Path: pkg/rmdoc/rmv6_tagged_block_reader.go
       Note: RMQ-0004 Step 7 (commit 1cbf052) - Go port of rmscene tagged-block reader primitives (header + block + subblock boundaries)
     - Path: pkg/rmdoc/rmv6_tagged_block_reader_test.go
       Note: Fixture-based test exercising V6 header/block/subblock parsing (commit 1cbf052)
+    - Path: pkg/rmdoc/rmv6_tagged_block_values.go
+      Note: RMQ-0004 Step 9 (commit f09f78c) - tagged value readers (read_id/read_uint32/etc)
     - Path: ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/reference/06-diary-rmdoc-format-analysis-and-go-reimplementation-prep.md
       Note: Prior research diary that this ticket builds on
     - Path: ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/design-doc/01-design-go-rmdoc-data-model-and-apis.md
@@ -34,6 +42,7 @@ LastUpdated: 2025-12-14T20:59:20.929388092-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -448,3 +457,63 @@ The implementation intentionally mirrors the Python algorithm (dependency graph 
 
 ### Technical details
 - This is a direct port of `rmscene/src/rmscene/crdt_sequence.py` (`toposort_items`) adapted to Go’s data structures.
+
+## Step 9: Decode V6 scene-item headers (CRDT sequence item fields) from tagged blocks
+
+This step advances the V6 parser milestone by moving from “we can read block boundaries” to “we can decode real structured data out of those blocks”. Concretely, we now parse the **SceneItemBlock header fields** used to build the scene tree: `parent_id` plus the CRDT sequence item header (`item_id`, `left_id`, `right_id`, `deleted_length`). We also parse the presence of the value subblock (index 6), read its first byte (`item_type`), and keep the remaining value bytes as raw payload for later stroke/glyph decoding.
+
+This is the minimum viable piece of task 34: CRDT sequence decoding as required by scene item blocks.
+
+**Commit (code):** f09f78c — "RMQ-0004: decode V6 scene item headers"
+
+### What I did
+- Added tagged-value helpers on top of the tagged-block reader:
+  - `checkTag`, `readExpectedTag`
+  - `readID`, `readUint32`, `readBool`, `readFloat32`, `readFloat64`, and optional variants
+  - `hasSubBlock` and a first `readString` helper (subblock-based)
+- Implemented a minimal V6 `SceneItemBlock` decoder:
+  - Reads `parent_id` (tag 1)
+  - Reads CRDT sequence item header fields (tags 2..5)
+  - Optionally reads value subblock 6:
+    - reads `item_type` (first byte)
+    - stores remaining subblock bytes as raw payload for later decoding
+  - Captures unread bytes at block boundaries as `ExtraBlockData`
+- Added a fixture-based test that extracts a real V6 `.rm` from `cmd/remarquee-ui/testdata/cpage-pdf.rmdoc` and asserts we can decode at least one scene item block.
+
+### Why
+- Scene tree construction (task 35) depends on these exact fields; without them we can’t place items into groups/layers in deterministic order.
+- Keeping the value subblock as raw bytes lets us stage the work: first get structural decode correct, then decode strokes/highlights incrementally.
+
+### What worked
+- `gofmt` + `go test ./... -count=1` passed.
+- The fixture-based test successfully finds and parses at least one scene item block.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- The scene item “value” is always nested under subblock 6, but its contents are item-type specific. Treating it as raw until we implement per-item decoders is the safest incremental path.
+
+### What was tricky to build
+- “Rewind on mismatch” semantics for expected tags: we explicitly seek back when an index/type doesn’t match so optional reads can probe safely.
+- Maintaining forward progress on partial parse failures: the parser is structured to discard remaining bytes and continue scanning blocks.
+
+### What warrants a second pair of eyes
+- Validate that the block types we classify as “scene item blocks” (0x03/0x04/0x05/0x06/0x08) match `rmscene` for the device documents we care about.
+- Confirm that mapping `deleted_length` as `uint32` is correct for all observed files (rmscene uses “unsigned int” but notes uncertainty).
+
+### What should be done in the future
+- Implement typed decoding for at least one item type (strokes/lines) so we can hit the “strokes-only” milestone (tasks 35–36).
+- Consider moving V6 parsing code into a dedicated subpackage (e.g. `pkg/rmdoc/anno/v6`) once it grows beyond a couple files.
+
+### Code review instructions
+- Start with:
+  - `remarquee/pkg/rmdoc/rmv6_tagged_block_values.go`
+  - `remarquee/pkg/rmdoc/rmv6_scene_item_block.go`
+  - `remarquee/pkg/rmdoc/rmv6_scene_item_block_test.go`
+- Run:
+  - `cd remarquee && go test ./pkg/rmdoc -count=1`
+
+### Technical details
+- Based on `rmscene/src/rmscene/scene_stream.py` `SceneItemBlock.from_stream`:
+  - tags: 1 (parent), 2 (item_id), 3 (left_id), 4 (right_id), 5 (deleted_length), 6 (value subblock)
