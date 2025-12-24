@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -61,7 +60,7 @@ func HandleRenderBackground(testDocsPath, outputsDir string) http.HandlerFunc {
 		}
 
 		// Open document
-		ctx := context.Background()
+		ctx := r.Context()
 		doc, err := rmdoc.OpenFile(ctx, docPath)
 		if err != nil {
 			log.Printf("Failed to open rmdoc %s: %v", docPath, err)
@@ -136,7 +135,7 @@ func HandleRenderLegacy(testDocsPath, outputsDir string) http.HandlerFunc {
 		}
 
 		// Verify it's a legacy document
-		ctx := context.Background()
+		ctx := r.Context()
 		doc, err := rmdoc.OpenFile(ctx, docPath)
 		if err != nil {
 			log.Printf("Failed to open rmdoc %s: %v", docPath, err)
@@ -180,4 +179,3 @@ func HandleRenderLegacy(testDocsPath, outputsDir string) http.HandlerFunc {
 		})
 	}
 }
-

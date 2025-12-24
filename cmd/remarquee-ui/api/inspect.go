@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,13 +12,13 @@ import (
 
 // InspectResponse represents the JSON response for the inspect endpoint
 type InspectResponse struct {
-	UUID          string          `json:"uuid"`
-	Schema        string          `json:"schema"`
-	DocType       string          `json:"docType"`
-	PageCount     int             `json:"pageCount"`
-	Pages         []PageRefJSON   `json:"pages"`
-	HasPayloadPDF bool            `json:"hasPayloadPDF"`
-	Error         string          `json:"error,omitempty"`
+	UUID          string        `json:"uuid"`
+	Schema        string        `json:"schema"`
+	DocType       string        `json:"docType"`
+	PageCount     int           `json:"pageCount"`
+	Pages         []PageRefJSON `json:"pages"`
+	HasPayloadPDF bool          `json:"hasPayloadPDF"`
+	Error         string        `json:"error,omitempty"`
 }
 
 // PageRefJSON is the JSON representation of a page reference
@@ -59,7 +58,7 @@ func HandleInspect(testDocsPath string) http.HandlerFunc {
 		}
 
 		// Open and inspect the document using pkg/rmdoc
-		ctx := context.Background()
+		ctx := r.Context()
 		doc, err := rmdoc.OpenFile(ctx, docPath)
 		if err != nil {
 			log.Printf("Failed to open rmdoc %s: %v", docPath, err)
@@ -81,14 +80,14 @@ func HandleInspect(testDocsPath string) http.HandlerFunc {
 			}
 		}
 
-	response := InspectResponse{
-		UUID:          doc.UUID,
-		Schema:        doc.Schema.String(),
-		DocType:       doc.Type.String(),
-		PageCount:     len(doc.Pages),
-		Pages:         pages,
-		HasPayloadPDF: len(doc.PayloadPDF) > 0,
-	}
+		response := InspectResponse{
+			UUID:          doc.UUID,
+			Schema:        doc.Schema.String(),
+			DocType:       doc.Type.String(),
+			PageCount:     len(doc.Pages),
+			Pages:         pages,
+			HasPayloadPDF: len(doc.PayloadPDF) > 0,
+		}
 
 		respondJSON(w, http.StatusOK, response)
 	}
@@ -120,4 +119,3 @@ func findDocumentPath(testDocsPath, docID string) (string, error) {
 
 	return "", fmt.Errorf("document %s not found in manifest", docID)
 }
-

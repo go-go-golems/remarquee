@@ -2,7 +2,6 @@ package api
 
 import (
 	"archive/zip"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -61,7 +60,7 @@ func HandleInternalStructure(testDocsPath string) http.HandlerFunc {
 		}
 
 		// Open the rmdoc to get metadata
-		ctx := context.Background()
+		ctx := r.Context()
 		doc, err := rmdoc.OpenFile(ctx, docPath)
 		if err != nil {
 			log.Printf("Failed to open rmdoc %s: %v", docPath, err)
@@ -109,7 +108,7 @@ func HandleInternalStructure(testDocsPath string) http.HandlerFunc {
 
 			if strings.HasSuffix(file.Name, ".rm") {
 				pageID := strings.TrimSuffix(filepath.Base(file.Name), ".rm")
-				
+
 				// Try to read first 43 bytes to get version
 				// Format: "reMarkable .lines file, version=X      " (43 bytes total)
 				version := "unknown"
@@ -179,4 +178,3 @@ func HandleInternalStructure(testDocsPath string) http.HandlerFunc {
 		})
 	}
 }
-

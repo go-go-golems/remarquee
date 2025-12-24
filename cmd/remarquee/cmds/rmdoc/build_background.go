@@ -76,14 +76,12 @@ For notebooks (no payload) it currently creates blank pages using a default size
 }
 
 func (c *BuildBackgroundCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
-	_ = ctx
-
 	s := &BuildBackgroundSettings{}
 	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
 		return err
 	}
 
-	doc, err := pkg_rmdoc.OpenFile(context.Background(), s.File)
+	doc, err := pkg_rmdoc.OpenFile(ctx, s.File)
 	if err != nil {
 		return err
 	}
@@ -105,7 +103,7 @@ func (c *BuildBackgroundCommand) Run(ctx context.Context, parsedLayers *layers.P
 		}
 	}
 
-	bg, err := rmdocrender.BuildBackgroundPDF(context.Background(), doc, rmdocrender.BackgroundOptions{})
+	bg, err := rmdocrender.BuildBackgroundPDF(ctx, doc, rmdocrender.BackgroundOptions{})
 	if err != nil {
 		return err
 	}
