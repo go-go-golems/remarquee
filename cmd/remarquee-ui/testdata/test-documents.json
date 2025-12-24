@@ -10,6 +10,16 @@
     "annotationVersion": "V6"
   },
   {
+    "id": "device-test",
+    "name": "Device 'Test' (downloaded from cloud)",
+    "path": "testdata/Test.rmdoc",
+    "description": "Downloaded via `remarquee cloud get /Test`. Real device document intended to exercise a variety of strokes/features for V6 parsing/rendering validation.",
+    "schema": "cPages",
+    "docType": "Unknown",
+    "expectedPages": 2,
+    "annotationVersion": "V6"
+  },
+  {
     "id": "fake-cpages-pdf-no-annotations",
     "name": "Fake cPages PDF-backed (no annotations)",
     "path": "testdata/generated/fake-cpages-pdf-no-annotations.rmdoc",
