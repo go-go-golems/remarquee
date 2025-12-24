@@ -122,3 +122,21 @@ Created bug report for UniDoc rasterizer failure ('type check error') in vlm-val
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/vlm_validate.go — Poppler rasterization pipeline
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/02-diary-golden-testing-research-and-rendering-issues-analysis.md — Recorded first real VLM run findings
 
+
+## 2025-12-24
+
+Added human-readable guide for the RMQ-0006 golden testing + validation system (how to use + how it works), including setup, commands, implementation pointers, and troubleshooting for brittle environments.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/03-golden-testing-validation-system-how-to-use-how-it-works.md — New guide
+
+
+## 2025-12-24
+
+Updated diary with note about the new human-readable golden testing system guide.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/02-diary-golden-testing-research-and-rendering-issues-analysis.md — Diary update
+

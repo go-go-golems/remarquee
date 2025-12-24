@@ -198,3 +198,9 @@ Then switched `vlm-validate` to Poppler (`pdftoppm`) rasterization and re-ran su
 High-signal VLM findings from the first run (pages 1–2):
 - **Color strokes**: reference output includes colored strokes; remarquee output appears black-only (matches our “stroke color missing” investigation).
 - **Typed text**: reference output shows typed text (e.g. “Test”); remarquee output is missing it (matches “typed text not rendered” investigation).
+
+### Night: Wrote a human guide for the golden testing system
+
+Added a readable guide describing how to use and debug the golden system (golden tests + pdfcmp + remarks runner + vlm-validate), including the “brittle setup” failure modes and what to check.
+
+- `reference/03-golden-testing-validation-system-how-to-use-how-it-works.md`
