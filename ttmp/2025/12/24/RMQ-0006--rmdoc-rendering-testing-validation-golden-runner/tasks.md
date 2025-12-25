@@ -65,7 +65,7 @@
   - [ ] Script to generate golden PDFs from remarks for all fixtures
   - [x] Document golden file naming convention
   - [x] Add `-update-golden` flag to tests for intentional changes
-  - [ ] Store reusable ticket scripts for generating A/B PDFs + diagnostics (avoid brittle one-liners)
+  - [x] Store reusable ticket scripts for generating A/B PDFs + diagnostics (avoid brittle one-liners)
 
 - [ ] Create golden test cases:
   - [x] `TestRenderV6Golden_TestRmdoc` (device V6 notebook fixture)
@@ -105,6 +105,8 @@
   - [ ] Check if highlight rectangles use same coordinate transform as strokes
   - [ ] Compare highlight positioning logic with remarks
   - [ ] Document alignment issues and root causes
+  - [x] Add human-in-the-loop validation loop to confirm whether this is actually an issue (device screenshot + plz-confirm image widget)
+  - [ ] Decide/record conclusion: acceptable vs needs fix (and why)
 
 - [ ] **Typed text not rendered**:
   - [ ] Investigate `RootTextBlock` parsing vs rendering
@@ -135,4 +137,11 @@
 
 - [x] Add `remarquee rmdoc vlm-validate` helper to render PDF pages to PNGs and invoke pinocchio VLM for semantic validation/comparison
 - [x] Switch `vlm-validate` PNG rasterization to Poppler (`pdftoppm`) to avoid UniDoc "type check error" failures (see bug report)
+ - [x] Ensure pinocchio runs are non-interactive by default (avoid “continue in chat?” prompts)
+
+### Human-in-the-loop visual review (new)
+
+- [x] Import real-device screenshot reference for `Test.rmdoc` page 1 into ticket `reference/`
+- [x] Add `plz-confirm image` scripts to ask humans to compare rendered output vs device screenshot
+- [ ] Add a small “image review playbook” (how to interpret answers; where to store results)
 
