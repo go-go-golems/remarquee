@@ -173,3 +173,12 @@ Diagnosed and fixed a major golden brittleness issue: remarks notebook/blank pag
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/04-debug-golden-size-mismatch-test-rmdoc.sh — Repro script
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/06-debug-golden-size-mismatch-cpage-pdf.sh — Repro script
 
+
+## 2025-12-24
+
+Retroactive diary update: imported real-device screenshot for Test.rmdoc page 1, added VLM + plz-confirm human-in-loop scripts for visual review, added page mapping sanity-check widget, and added small debug scripts for stroke tools and group anchor/bbox inspection.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/02-diary-golden-testing-research-and-rendering-issues-analysis.md — Diary update
+

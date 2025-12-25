@@ -247,3 +247,35 @@ Outcome:
 
 - `TestRenderV6Golden_RemarksReference_CpagePdf` now passes reliably (no more size-mismatch-driven failure).
 - `Test.rmdoc` golden now fails with a meaningful diff ratio (~4.2%) and diff PNGs, i.e. we’re back to “real diffs” (typed text, etc.) instead of “dimension mismatch”.
+
+### Later: Human-in-the-loop validation with a real device screenshot
+
+At this point, the “A vs B” loop (remarquee vs `remarks`) was working, but we also wanted a **ground-truth reference from the actual device**. The goal was to avoid chasing phantom issues (especially around highlighter alignment) by comparing to what the reMarkable shows.
+
+Work done:
+
+- **Imported a device screenshot** of `Test.rmdoc` page 1 into the ticket:
+  - `reference/test-rmdoc-page1-remarkable-device.jpg`
+  - `reference/test-rmdoc-page1-remarkable-device.png` (resized to max 1280px for VLM ingestion)
+- **Added VLM scripts** to compare a rendered PNG vs the device screenshot using pinocchio:
+  - `scripts/07-render-test-rmdoc-page1-png.sh`
+  - `scripts/08-vlm-compare-test-page1-vs-device-screenshot.sh`
+  - `scripts/09-convert-device-screenshot-to-png.sh`
+- **Made pinocchio runs non-interactive** to avoid getting stuck on “continue in chat?”:
+  - `remarquee rmdoc vlm-validate` now passes `--non-interactive`
+- **Added plz-confirm image widgets** to explicitly keep a human in the loop for visual judgement:
+  - `scripts/10-plz-confirm-review-test-page1-vs-device.sh` (highlighter alignment question)
+
+Notes:
+
+- The human-in-loop result for highlighter alignment was: **slight offset (<= 2mm) acceptable**.
+- We also added a “page mapping sanity check” to avoid comparing the device screenshot to the wrong rendered page:
+  - `scripts/12-render-test-rmdoc-pages1-2-pngs.sh`
+  - `scripts/13-plz-confirm-match-device-to-rendered-page.sh`
+  - Result: **A1 matches B** (rendered page 1 matches the device photo).
+
+Additional debugging helpers created during the ellipse/alignment discussion:
+
+- `scripts/11-dump-test-rmdoc-stroke-tools-page1.go` (tool/color counts for page 1 strokes)
+- `scripts/14-dump-test-page1-groups-and-stroke-bboxes.go` (group anchor info + per-stroke bboxes)
+- `scripts/15-dump-rmscene-group-anchors-test-page1.py` (optional: compare anchors with `rmscene` ground truth via Poetry)

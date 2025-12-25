@@ -37,10 +37,11 @@ A_PNG="$(grep '^A_PNG=' "$GEN_LOG" | tail -n1 | cut -d= -f2-)"
 plz-confirm image \
   --title "RMQ-0006: Test.rmdoc page 1 vs device (highlighter alignment)" \
   --message "Compare the thick translucent highlighter strokes. Are they aligned between the rendered PNG and the device screenshot? Pick the best description." \
+  --wait-timeout 600 \
   --image "$A_PNG" --image-label "A: remarquee render (page 1)" \
   --image "$DEVICE_PNG" --image-label "B: reMarkable device photo (page 1)" \
   --option "Aligned / no obvious offset" \
-  --option "Slight offset (<= 2mm), acceptable" \
+  --option "Slight offset (<= 2mm) acceptable" \
   --option "Noticeable offset (> 2mm), needs fix" \
   --option "Can't tell (needs better screenshot / crop)" \
   --output json

@@ -76,6 +76,14 @@ Uses `plz-confirm image` to put a **human** in the loop for image review. It sho
 
 and asks a structured multiple-choice question about highlighter alignment.
 
+### `12-render-test-rmdoc-pages1-2-pngs.sh`
+
+Renders `Test.rmdoc` pages 1–2 to PNGs via `remarquee rmdoc render-v6` + `pdftoppm`.
+
+### `13-plz-confirm-match-device-to-rendered-page.sh`
+
+Uses `plz-confirm image` to ask a human: which rendered page (1 or 2) matches the device screenshot best? This prevents us from debugging “misalignment” when it’s actually a page mapping/order issue.
+
 ## Prerequisites
 
 - `pdftoppm` (Poppler) must be installed and on PATH.
