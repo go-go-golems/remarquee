@@ -52,6 +52,21 @@ Same as `01-...` but for the PDF-backed fixture `cpage-pdf.rmdoc`.
 
 Same as `04-...` but for `cpage-pdf.rmdoc`.
 
+### `07-render-test-rmdoc-page1-png.sh`
+
+Renders `Test.rmdoc` page 1 to a PNG via `remarquee rmdoc render-v6` + `pdftoppm`. Useful as a stable input for VLM comparisons.
+
+### `08-vlm-compare-test-page1-vs-device-screenshot.sh`
+
+Runs a VLM comparison between:
+
+- `Test.rmdoc` page 1 rendered by remarquee (PNG)
+- a real-device screenshot stored in `reference/test-rmdoc-page1-remarkable-device.jpg`
+
+### `09-convert-device-screenshot-to-png.sh`
+
+Converts `reference/test-rmdoc-page1-remarkable-device.jpg` → PNG (some vision backends/tools are picky about JPEG).
+
 ## Prerequisites
 
 - `pdftoppm` (Poppler) must be installed and on PATH.
