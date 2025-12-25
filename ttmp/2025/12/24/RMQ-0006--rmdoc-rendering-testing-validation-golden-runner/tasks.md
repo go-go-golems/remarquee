@@ -108,6 +108,13 @@
   - [x] Add human-in-the-loop validation loop to confirm whether this is actually an issue (device screenshot + plz-confirm image widget)
   - [ ] Decide/record conclusion: acceptable vs needs fix (and why)
 
+- [ ] **Ellipse/oval shape appears misaligned (Test.rmdoc page 1, vs device screenshot)**:
+  - [ ] Confirm the issue is real (page mapping sanity: A1 matches device; then do a focused crop/side-by-side review)
+  - [ ] Identify which stroke corresponds to the oval in our data (tool/color + bbox; correlate to on-page position)
+  - [ ] Verify group anchor + root text anchor math for that stroke (dump group anchors + bbox after transforms)
+  - [ ] Compare with `remarks` rendering for the same page (A vs B vs device)
+  - [ ] Fix if needed, and add a short note explaining root cause (anchor translation vs scale vs coordinate inversion)
+
 - [ ] **Typed text not rendered**:
   - [ ] Investigate `RootTextBlock` parsing vs rendering
   - [ ] Check if `ParseRMV6RootTextBlock` output is used anywhere
