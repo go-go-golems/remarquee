@@ -58,6 +58,6 @@ Task: Focus on highlighter strokes (thick translucent strokes) and their alignme
 
 Also quickly note whether non-highlighter colored strokes (red/green/pink) appear in the same spots.'
 
-pinocchio code professional --images "$A_PNG,$SCREENSHOT_PNG" "$VLM_PROMPT" | tee "$OUT_LOG"
+pinocchio code professional --non-interactive --output text --images "$A_PNG,$SCREENSHOT_PNG" "$VLM_PROMPT" | tee "$OUT_LOG"
 
 

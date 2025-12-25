@@ -171,7 +171,8 @@ func (c *VLMValidateCommand) Run(ctx context.Context, parsedLayers *layers.Parse
 	}
 
 	imagesArg := strings.Join(images, ",")
-	cmd := exec.CommandContext(ctx, s.Pinocchio, "code", "professional", "--images", imagesArg, s.Prompt)
+	// Ensure non-interactive runs (CI/scripts) don't block on "continue in chat?" prompts.
+	cmd := exec.CommandContext(ctx, s.Pinocchio, "code", "professional", "--non-interactive", "--output", "text", "--images", imagesArg, s.Prompt)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

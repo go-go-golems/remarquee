@@ -67,6 +67,15 @@ Runs a VLM comparison between:
 
 Converts `reference/test-rmdoc-page1-remarkable-device.jpg` → PNG (some vision backends/tools are picky about JPEG).
 
+### `10-plz-confirm-review-test-page1-vs-device.sh`
+
+Uses `plz-confirm image` to put a **human** in the loop for image review. It shows:
+
+- A: remarquee-rendered `Test.rmdoc` page 1 (PNG)
+- B: reMarkable device screenshot (PNG)
+
+and asks a structured multiple-choice question about highlighter alignment.
+
 ## Prerequisites
 
 - `pdftoppm` (Poppler) must be installed and on PATH.
