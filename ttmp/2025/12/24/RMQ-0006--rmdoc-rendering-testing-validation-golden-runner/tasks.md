@@ -79,8 +79,8 @@
     - [x] Provide clear failure messages
 
 - [ ] CI integration:
-  - [ ] Ensure remarks is available in CI environment (or skip golden tests if not)
-  - [ ] Add golden tests to CI pipeline
+- [x] Ensure remarks is available in CI environment (or skip golden tests if not)
+- [x] Add golden tests to CI pipeline
 - [x] Configure artifact storage for diff images
 - [x] Document CI setup requirements
 

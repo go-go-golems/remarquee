@@ -90,6 +90,15 @@ We addressed the biggest brittleness points:
 
 This section is copy/paste oriented. If you only remember one thing: start with the V6 golden tests and look at the diff PNGs when it fails.
 
+### CI golden job
+
+CI runs a dedicated “golden” job that:
+- installs a **pinned** `remarks` version from GitHub
+- runs `TestRenderV6Golden_RemarksReference_*`
+- uploads `RMQ_GOLDEN_WORKDIR` as an artifact when the job fails
+
+See: `.github/workflows/push.yml`.
+
 ### 1) Install `remarks` (Poetry + pyenv)
 
 This repo includes `remarks/` as a sibling project. `remarks` requires Python 3.12.

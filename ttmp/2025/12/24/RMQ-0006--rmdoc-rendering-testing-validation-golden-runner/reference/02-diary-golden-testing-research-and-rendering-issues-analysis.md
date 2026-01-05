@@ -367,3 +367,33 @@ This is intentionally small and mechanical, but it’s required for the “updat
 
 ### What should be done in the future
 - If we ever need multiple reference PDFs per fixture, replace `FindSingleRemarksPDF` with a fixture-aware selection rule (and update tests accordingly).
+
+## Step 4: Add a CI golden job (install pinned remarks + upload diffs)
+
+This step closes the loop for regressions: CI now runs the remarks-based goldens in a dedicated job and uploads the rendered PDFs + diff PNGs when the job fails. The job is intentionally **allow-fail** for now because we still have known, tracked rendering gaps (typed text, templates). The value is immediate: every PR gets a “did rendering change?” signal with artifacts you can inspect.
+
+We pin the `remarks` commit in CI to avoid silent reference drift.
+
+### What I did
+- Added a `golden` job to `.github/workflows/push.yml`:
+  - installs Python 3.12
+  - installs `remarks` from a pinned Git commit
+  - runs `go test ./pkg/rmdoc/render -run TestRenderV6Golden_RemarksReference_`
+  - uploads `RMQ_GOLDEN_WORKDIR` when the golden step fails
+- Marked CI integration tasks as complete (62–63).
+
+### Why
+- CI failures are only actionable if we can retrieve the A/B PDFs and diff images.
+- Pinning the reference implementation is critical; otherwise “CI changed” can mean “remarks changed”.
+
+### What worked
+- CI now has a first-class golden lane and will preserve artifacts for inspection.
+
+### What was tricky to build
+- Keeping the job useful while it’s still allow-fail: we want artifacts and signal without blocking merges during known-incomplete fidelity.
+
+### What warrants a second pair of eyes
+- Confirm the pinned `remarks` commit is the right one to standardize on, and decide when/how we bump it.
+
+### What should be done in the future
+- Once typed text/templates are implemented, flip the golden job to be required (remove allow-fail) and consider tightening tolerances.

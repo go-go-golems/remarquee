@@ -214,3 +214,12 @@ Fix golden updater loop: isolate remarks output directory per fixture so TestUpd
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_test.go — Use per-fixture remarks-out subdirs to avoid multiple PDFs in one scan
 
+
+## 2026-01-04
+
+Add dedicated CI golden job that installs pinned remarks and runs remarks-based golden tests (allow-fail initially), uploading RMQ_GOLDEN_WORKDIR artifacts on failures (tasks 62–63).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/.github/workflows/push.yml — Add golden job (pinned remarks install + artifact upload)
+
