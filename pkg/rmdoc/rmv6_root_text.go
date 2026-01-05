@@ -120,20 +120,17 @@ func ParseRMV6RootTextBlock(tr *rmV6TaggedBlockReader) (*RMV6RootText, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tr.discardSubBlockRemainder(sb2) }()
 
 	// Text items section: subblock(1)->subblock(1)->varuint count -> repeated text_item_from_stream()
 	sbItemsOuter, err := tr.readSubBlock(1)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tr.discardSubBlockRemainder(sbItemsOuter) }()
 
 	sbItemsInner, err := tr.readSubBlock(1)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tr.discardSubBlockRemainder(sbItemsInner) }()
 
 	nItems, err := tr.readVarUint()
 	if err != nil {
@@ -147,19 +144,23 @@ func ParseRMV6RootTextBlock(tr *rmV6TaggedBlockReader) (*RMV6RootText, error) {
 		}
 		items = append(items, it)
 	}
+	if err := tr.discardSubBlockRemainder(sbItemsInner); err != nil {
+		return nil, err
+	}
+	if err := tr.discardSubBlockRemainder(sbItemsOuter); err != nil {
+		return nil, err
+	}
 
 	// Formatting section: subblock(2)->subblock(1)->varuint count -> repeated text_format_from_stream()
 	sbFmtOuter, err := tr.readSubBlock(2)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tr.discardSubBlockRemainder(sbFmtOuter) }()
 
 	sbFmtInner, err := tr.readSubBlock(1)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tr.discardSubBlockRemainder(sbFmtInner) }()
 
 	nFmt, err := tr.readVarUint()
 	if err != nil {
@@ -173,13 +174,21 @@ func ParseRMV6RootTextBlock(tr *rmV6TaggedBlockReader) (*RMV6RootText, error) {
 		}
 		styles[charID] = code
 	}
+	if err := tr.discardSubBlockRemainder(sbFmtInner); err != nil {
+		return nil, err
+	}
+	if err := tr.discardSubBlockRemainder(sbFmtOuter); err != nil {
+		return nil, err
+	}
+	if err := tr.discardSubBlockRemainder(sb2); err != nil {
+		return nil, err
+	}
 
 	// Last section: subblock(3) pos_x,pos_y float64
 	sb3, err := tr.readSubBlock(3)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tr.discardSubBlockRemainder(sb3) }()
 
 	posX, err := tr.readFloat64Raw()
 	if err != nil {
@@ -187,6 +196,9 @@ func ParseRMV6RootTextBlock(tr *rmV6TaggedBlockReader) (*RMV6RootText, error) {
 	}
 	posY, err := tr.readFloat64Raw()
 	if err != nil {
+		return nil, err
+	}
+	if err := tr.discardSubBlockRemainder(sb3); err != nil {
 		return nil, err
 	}
 

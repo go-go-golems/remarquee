@@ -6,19 +6,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const rmv6TextTopY = -88.0
-
-var rmv6LineHeights = map[uint8]float64{
-	1: 70,  // PLAIN
-	3: 70,  // BOLD
-	2: 150, // HEADING
-	4: 35,  // BULLET
-	5: 35,  // BULLET2
-	6: 35,  // CHECKBOX
-	7: 35,  // CHECKBOX_CHECKED
-	0: 70,  // BASIC
-}
-
 // BuildRMV6AnchorPos builds a mapping from text character IDs to Y positions (screen units),
 // using the same approach as `rmc`'s svg exporter (build_anchor_pos + TextDocument.from_scene_item).
 func BuildRMV6AnchorPos(rt *RMV6RootText) (map[RMV6CrdtID]float64, error) {
@@ -122,7 +109,7 @@ func BuildRMV6AnchorPos(rt *RMV6RootText) (map[RMV6CrdtID]float64, error) {
 		vals[it.ItemID] = it.Value
 	}
 
-	ypos := rt.PosY + rmv6TextTopY
+	ypos := rt.PosY + RMV6TextTopY
 
 	for len(keys) > 0 {
 		startID := RMV6EndMarker
@@ -153,10 +140,7 @@ func BuildRMV6AnchorPos(rt *RMV6RootText) (map[RMV6CrdtID]float64, error) {
 				style = s
 			}
 		}
-		lh, ok := rmv6LineHeights[style]
-		if !ok {
-			lh = 70
-		}
+		lh := RMV6ParagraphLineHeight(style)
 
 		ypos += lh
 		if math.IsNaN(ypos) || math.IsInf(ypos, 0) {
