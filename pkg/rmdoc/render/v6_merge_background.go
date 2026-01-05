@@ -17,7 +17,8 @@ import (
 )
 
 type V6MergeOptions struct {
-	// StrokeWidthPt is used for all strokes (milestone renderer).
+	// StrokeWidthPt is used as a fallback when a stroke doesn't provide enough
+	// information to derive a tool-specific width.
 	StrokeWidthPt float64
 }
 
@@ -30,6 +31,115 @@ func (o V6MergeOptions) withDefaults() V6MergeOptions {
 
 func xx(v float64) float64 { return v * rmv6Scale }
 func yy(v float64) float64 { return v * rmv6Scale }
+
+type strokeStyle struct {
+	WidthScreenUnits float64
+	Opacity          float64
+	LineCap          int64 // 0=butt, 1=round, 2=square
+}
+
+func clamp01(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
+}
+
+func strokeAlphaFromColorID(color uint32) (float64, bool) {
+	// Shader colors encode their alpha in the hardcoded RGBA map.
+	// For highlight colors, alpha is always 255 (opaque), and the transparency comes from the tool.
+	switch rmdoc.PenColor(color) {
+	case rmdoc.PenColorShaderGray:
+		return 64.0 / 255.0, true
+	case rmdoc.PenColorShaderOrange:
+		return 115.0 / 255.0, true
+	case rmdoc.PenColorShaderMagenta:
+		return 128.0 / 255.0, true
+	case rmdoc.PenColorShaderBlue:
+		return 77.0 / 255.0, true
+	case rmdoc.PenColorShaderRed:
+		return 102.0 / 255.0, true
+	case rmdoc.PenColorShaderGreen:
+		return 128.0 / 255.0, true
+	case rmdoc.PenColorShaderYellow:
+		return 115.0 / 255.0, true
+	case rmdoc.PenColorShaderCyan:
+		return 102.0 / 255.0, true
+	default:
+		return 0, false
+	}
+}
+
+func strokeStyleForTool(tool uint32, thicknessScale float64, color uint32) strokeStyle {
+	// This mirrors rmc.exporters.writing_tools.Pen.create at a coarse level.
+	// We intentionally don't implement dynamic point-driven widths yet; the goal is to match
+	// major tool differences (highlighter/shader transparency and brush widths) for goldens.
+	switch tool {
+	case 5, 18: // HIGHLIGHTER_1, HIGHLIGHTER_2
+		return strokeStyle{WidthScreenUnits: 25, Opacity: 0.3, LineCap: 2}
+	case 23: // SHADER
+		opacity := 1.0
+		if a, ok := strokeAlphaFromColorID(color); ok {
+			opacity = a
+		}
+		return strokeStyle{WidthScreenUnits: 12, Opacity: clamp01(opacity), LineCap: 1}
+	case 4, 17: // FINELINER_1, FINELINER_2
+		return strokeStyle{WidthScreenUnits: thicknessScale * 1.8, Opacity: 1.0, LineCap: 1}
+	case 7, 13: // MECHANICAL_PENCIL_1, MECHANICAL_PENCIL_2
+		return strokeStyle{WidthScreenUnits: thicknessScale * thicknessScale, Opacity: 0.7, LineCap: 1}
+	default:
+		// Most pens map thickness_scale directly to a base width.
+		return strokeStyle{WidthScreenUnits: thicknessScale, Opacity: 1.0, LineCap: 1}
+	}
+}
+
+func alphaKey(alpha float64) int {
+	return int(math.Round(clamp01(alpha) * 1000))
+}
+
+func alphaGStateName(alpha float64) core.PdfObjectName {
+	return core.PdfObjectName(fmt.Sprintf("RMQGsA%03d", alphaKey(alpha)))
+}
+
+func ensureAlphaGState(res *pdf.PdfPageResources, alpha float64) (core.PdfObjectName, error) {
+	name := alphaGStateName(alpha)
+	if _, ok := res.GetExtGState(name); ok {
+		return name, nil
+	}
+
+	d := core.MakeDict()
+	d.Set(core.PdfObjectName("CA"), core.MakeFloat(clamp01(alpha))) // stroke alpha
+	d.Set(core.PdfObjectName("ca"), core.MakeFloat(clamp01(alpha))) // fill alpha
+	if err := res.AddExtGState(name, d); err != nil {
+		return "", err
+	}
+	return name, nil
+}
+
+func ensureStrokeGStates(res *pdf.PdfPageResources, strokes []rmdoc.Stroke) error {
+	// Always ensure opaque state exists so we can reset after transparent strokes.
+	if _, err := ensureAlphaGState(res, 1.0); err != nil {
+		return err
+	}
+	for _, s := range strokes {
+		st := strokeStyleForTool(s.Tool, s.ThicknessScale, s.Color)
+		if _, err := ensureAlphaGState(res, st.Opacity); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func setLineCap(cc *contentstream.ContentCreator, lineCap int64) {
+	ops := cc.Operations()
+	*ops = append(*ops, &contentstream.ContentStreamOperation{
+		Params:  []core.PdfObject{core.MakeInteger(lineCap)},
+		Operand: "J",
+	})
+}
 
 type typedTextFontNames struct {
 	Plain   core.PdfObjectName
@@ -364,6 +474,10 @@ func buildAnnotationOnlyPage(width, height float64, strokes []rmdoc.Stroke, bbox
 	page.CropBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
 	page.Resources = pdf.NewPdfPageResources()
 
+	if err := ensureStrokeGStates(page.Resources, strokes); err != nil {
+		return nil, err
+	}
+
 	overlayOps := buildOverlayOps(strokes, nil, nil, bbox, 0, 0, wSvg, hSvg, opts)
 	page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder())
 	return page, nil
@@ -374,6 +488,10 @@ func buildOverlayOnlyPage(width, height float64, strokes []rmdoc.Stroke, bbox rm
 	page.MediaBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
 	page.CropBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
 	page.Resources = pdf.NewPdfPageResources()
+
+	if err := ensureStrokeGStates(page.Resources, strokes); err != nil {
+		return nil, err
+	}
 
 	overlayOps := buildOverlayOps(strokes, nil, nil, bbox, xSvg, ySvg, wSvg, hSvg, opts)
 	page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder())
@@ -394,6 +512,9 @@ func buildOverlayOnlyPageFullScreen(width, height float64, strokes []rmdoc.Strok
 			return nil, err
 		}
 	}
+	if err := ensureStrokeGStates(page.Resources, strokes); err != nil {
+		return nil, err
+	}
 
 	overlayOps := buildOverlayOpsScreen(strokes, rt, paragraphs, width, height, scale, fonts, opts)
 	page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder())
@@ -404,9 +525,14 @@ func buildOverlayOpsScreen(strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, parag
 	cc := contentstream.NewContentCreator()
 	cc.Add_q()
 	cc.Add_w(opts.StrokeWidthPt)
+	cc.Add_gs(alphaGStateName(1.0))
+	setLineCap(cc, 1)
 	cc.Add_RG(0, 0, 0)
 	lastColor := uint32(0)
 	lastColorSet := false
+	lastAlpha := alphaKey(1.0)
+	lastLineCap := int64(1)
+	lastWidthPt := opts.StrokeWidthPt
 
 	xShift := pageWidth / 2.0
 
@@ -414,6 +540,25 @@ func buildOverlayOpsScreen(strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, parag
 		if len(s.Points) == 0 {
 			continue
 		}
+
+		st := strokeStyleForTool(s.Tool, s.ThicknessScale, s.Color)
+		widthPt := st.WidthScreenUnits * scale
+		if widthPt <= 0 {
+			widthPt = opts.StrokeWidthPt
+		}
+		if math.Abs(widthPt-lastWidthPt) > 1e-9 {
+			cc.Add_w(widthPt)
+			lastWidthPt = widthPt
+		}
+		if ak := alphaKey(st.Opacity); ak != lastAlpha {
+			cc.Add_gs(alphaGStateName(st.Opacity))
+			lastAlpha = ak
+		}
+		if st.LineCap != lastLineCap {
+			setLineCap(cc, st.LineCap)
+			lastLineCap = st.LineCap
+		}
+
 		if !lastColorSet || s.Color != lastColor {
 			r, g, b := rmdoc.PenColorToRGBForStroke(rmdoc.PenColor(s.Color))
 			cc.Add_RG(r, g, b)
@@ -440,13 +585,36 @@ func buildOverlayOps(strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, paragraphs 
 	cc.Add_q()
 
 	cc.Add_w(opts.StrokeWidthPt)
+	cc.Add_gs(alphaGStateName(1.0))
+	setLineCap(cc, 1)
 	cc.Add_RG(0, 0, 0)
 	lastColor := uint32(0)
 	lastColorSet := false
+	lastAlpha := alphaKey(1.0)
+	lastLineCap := int64(1)
+	lastWidthPt := opts.StrokeWidthPt
 
 	for _, s := range strokes {
 		if len(s.Points) == 0 {
 			continue
+		}
+
+		st := strokeStyleForTool(s.Tool, s.ThicknessScale, s.Color)
+		widthPt := xx(st.WidthScreenUnits)
+		if widthPt <= 0 {
+			widthPt = opts.StrokeWidthPt
+		}
+		if math.Abs(widthPt-lastWidthPt) > 1e-9 {
+			cc.Add_w(widthPt)
+			lastWidthPt = widthPt
+		}
+		if ak := alphaKey(st.Opacity); ak != lastAlpha {
+			cc.Add_gs(alphaGStateName(st.Opacity))
+			lastAlpha = ak
+		}
+		if st.LineCap != lastLineCap {
+			setLineCap(cc, st.LineCap)
+			lastLineCap = st.LineCap
 		}
 
 		// Apply per-stroke color. V6 line items store a "color_id" which matches rmscene/rmc's PenColor enum.
@@ -618,6 +786,9 @@ func buildMergedPage(width, height, xBg, yBg, xSvg, ySvg float64, bgPage *pdf.Pd
 		if _, err := ensureTypedTextFonts(merged.Resources); err != nil {
 			return nil, err
 		}
+	}
+	if err := ensureStrokeGStates(merged.Resources, strokes); err != nil {
+		return nil, err
 	}
 
 	// Compose content: background form first, then overlay strokes.
