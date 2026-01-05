@@ -20,9 +20,9 @@ B_PDF="$(grep '^B_PDF=' "$OUT_LOG" | tail -n1 | cut -d= -f2-)"
 echo
 echo "== boxes (unidoc) =="
 cd "$REMARQUEE"
-go run "$SCRIPTS/03-pdf-box-dump.go" "$A_PDF"
+go run "$SCRIPTS/03-pdf-box-dump/main.go" "$A_PDF"
 echo
-go run "$SCRIPTS/03-pdf-box-dump.go" "$B_PDF"
+go run "$SCRIPTS/03-pdf-box-dump/main.go" "$B_PDF"
 
 echo
 echo "== raster dims (pdftoppm) =="
@@ -30,5 +30,4 @@ bash "$SCRIPTS/02-measure-pdf-page-and-raster-dims.sh" "$A_PDF" "$B_PDF"
 
 echo
 echo "LOG=$OUT_LOG"
-
 
