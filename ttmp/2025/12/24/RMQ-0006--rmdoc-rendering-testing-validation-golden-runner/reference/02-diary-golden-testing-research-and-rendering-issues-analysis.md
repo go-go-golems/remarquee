@@ -279,3 +279,38 @@ Additional debugging helpers created during the ellipse/alignment discussion:
 - `scripts/11-dump-test-rmdoc-stroke-tools-page1.go` (tool/color counts for page 1 strokes)
 - `scripts/14-dump-test-page1-groups-and-stroke-bboxes.go` (group anchor info + per-stroke bboxes)
 - `scripts/15-dump-rmscene-group-anchors-test-page1.py` (optional: compare anchors with `rmscene` ground truth via Poetry)
+
+## Step 1: Make remarks goldens regeneratable (all fixtures)
+
+This step removes a sharp edge in the golden workflow: `-update-golden` previously did nothing if a `*.remarks.pdf` already existed, which made it easy to think you refreshed goldens when you hadn’t. It also adds a single-purpose “generate-only” test so we can refresh committed references without being blocked by known rendering diffs (e.g., typed text).
+
+With this in place, updating committed `remarks` goldens becomes a deterministic, repeatable action you can run whenever fixtures or the reference pipeline changes.
+
+**Commit (code):** 3aa3065 — "RMQ-0006: add remarks golden updater"
+
+### What I did
+- Fixed `-update-golden` semantics so it always regenerates and overwrites existing `*.remarks.pdf` files.
+- Added `TestUpdateRemarksGoldens` to generate committed `remarks` goldens for all `.rmdoc` fixtures (including `testdata/generated/`) without running a remarquee-vs-remarks comparison.
+
+### Why
+- We need a reliable way to refresh reference PDFs independent of whether our renderer currently matches the reference implementation.
+- “Update” should be explicit and fail loudly if `remarks` isn’t available, rather than silently skipping.
+
+### What worked
+- The update path now overwrites existing goldens and produces deterministic output locations.
+
+### What was tricky to build
+- Making `-update-golden` safe: update requests should overwrite, but normal test runs should still prefer a committed golden and skip cleanly when `remarks` is missing.
+
+### What warrants a second pair of eyes
+- Confirm the fixture glob list for “all fixtures” matches what we actually want long-term (top-level `testdata/*.rmdoc` plus `testdata/generated/*.rmdoc`).
+
+### What should be done in the future
+- If CI is expected to run goldens, decide whether CI should install/run `remarks` or rely only on committed `*.remarks.pdf` artifacts (and document that contract).
+
+### Code review instructions
+- Start in:
+  - `remarquee/pkg/rmdoc/render/golden_remarks_test.go`
+  - `remarquee/pkg/rmdoc/render/golden_remarks_update_test.go`
+- Update goldens:
+  - `cd remarquee && go test ./pkg/rmdoc/render -run TestUpdateRemarksGoldens -update-golden -count=1`

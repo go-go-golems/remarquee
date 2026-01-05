@@ -84,6 +84,14 @@ Renders `Test.rmdoc` pages 1–2 to PNGs via `remarquee rmdoc render-v6` + `pdft
 
 Uses `plz-confirm image` to ask a human: which rendered page (1 or 2) matches the device screenshot best? This prevents us from debugging “misalignment” when it’s actually a page mapping/order issue.
 
+### `16-update-remarks-goldens-all-fixtures.sh`
+
+Regenerates and overwrites all committed `remarks` reference PDFs under:
+
+- `cmd/remarquee-ui/testdata/golden/`
+
+It runs the dedicated Go test `TestUpdateRemarksGoldens` with `-update-golden`, so it does **not** depend on remarquee-vs-remarks comparisons passing.
+
 ## Prerequisites
 
 - `pdftoppm` (Poppler) must be installed and on PATH.
@@ -95,5 +103,4 @@ command -v remarks
 ```
 
 `pdfinfo` is optional (helpful if present).
-
 

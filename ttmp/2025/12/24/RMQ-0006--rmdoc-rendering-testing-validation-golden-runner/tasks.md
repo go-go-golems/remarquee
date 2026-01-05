@@ -62,7 +62,7 @@
 
 - [ ] Set up golden file management:
   - [x] Create `testdata/golden/` directory structure
-  - [ ] Script to generate golden PDFs from remarks for all fixtures
+- [x] Script to generate golden PDFs from remarks for all fixtures
   - [x] Document golden file naming convention
   - [x] Add `-update-golden` flag to tests for intentional changes
   - [x] Store reusable ticket scripts for generating A/B PDFs + diagnostics (avoid brittle one-liners)
@@ -106,7 +106,7 @@
   - [ ] Compare highlight positioning logic with remarks
   - [ ] Document alignment issues and root causes
   - [x] Add human-in-the-loop validation loop to confirm whether this is actually an issue (device screenshot + plz-confirm image widget)
-  - [ ] Decide/record conclusion: acceptable vs needs fix (and why)
+- [x] Decide/record conclusion: acceptable vs needs fix (and why)
 
 - [ ] **Ellipse/oval shape appears misaligned (Test.rmdoc page 1, vs device screenshot)**:
   - [ ] Confirm the issue is real (page mapping sanity: A1 matches device; then do a focused crop/side-by-side review)

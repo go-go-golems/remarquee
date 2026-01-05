@@ -182,3 +182,15 @@ Retroactive diary update: imported real-device screenshot for Test.rmdoc page 1,
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/02-diary-golden-testing-research-and-rendering-issues-analysis.md — Diary update
 
+
+## 2026-01-04
+
+Add dedicated remarks-golden updater: fix -update-golden to overwrite existing goldens, add TestUpdateRemarksGoldens, and add a script to regenerate all remarks goldens; also mark tasks 47 and 84 done.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_test.go — Make -update-golden regenerate/overwrite existing goldens
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_update_test.go — Dedicated generator test to update all remarks goldens without compare
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/03-golden-testing-validation-system-how-to-use-how-it-works.md — Document new TestUpdateRemarksGoldens workflow
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/16-update-remarks-goldens-all-fixtures.sh — One-shot script to regenerate all committed remarks goldens
+

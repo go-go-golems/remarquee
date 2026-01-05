@@ -132,6 +132,12 @@ go test ./pkg/rmdoc/render -run TestRenderV6Golden_RemarksReference_ -update-gol
 
 This will write `*.remarks.pdf` files into the golden directory (overwriting existing files).
 
+If your goal is **only** to regenerate committed `remarks` reference PDFs (without depending on remarquee-vs-remarks comparisons passing), use:
+
+```bash
+go test ./pkg/rmdoc/render -run TestUpdateRemarksGoldens -update-golden -count=1
+```
+
 ### 4) Run the VLM helper (pinocchio)
 
 The `vlm-validate` command renders pages to PNG using **Poppler** (`pdftoppm`) and then calls `pinocchio` with the PNG list.
