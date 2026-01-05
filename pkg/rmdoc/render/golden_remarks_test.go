@@ -119,7 +119,7 @@ func ensureRemarksReferencePDF(
 	if *updateGolden {
 		// We treat "update" as an explicit action: if remarks isn't available, fail loudly
 		// rather than silently skipping.
-		refOutDir := filepath.Join(workspaceDir, "remarks-out")
+		refOutDir := filepath.Join(workspaceDir, "remarks-out", sanitizeFilename(filepath.Base(fixture)))
 		if err := os.MkdirAll(refOutDir, 0o755); err != nil {
 			t.Fatalf("mkdir remarks out: %v", err)
 		}
@@ -147,7 +147,7 @@ func ensureRemarksReferencePDF(
 
 	// Not updating: no committed golden, so try generating with remarks for this test run.
 	{
-		refOutDir := filepath.Join(workspaceDir, "remarks-out")
+		refOutDir := filepath.Join(workspaceDir, "remarks-out", sanitizeFilename(filepath.Base(fixture)))
 		if err := os.MkdirAll(refOutDir, 0o755); err != nil {
 			t.Fatalf("mkdir remarks out: %v", err)
 		}
