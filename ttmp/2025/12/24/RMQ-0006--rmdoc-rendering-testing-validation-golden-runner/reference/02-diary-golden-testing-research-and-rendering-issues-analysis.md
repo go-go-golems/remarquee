@@ -314,3 +314,30 @@ With this in place, updating committed `remarks` goldens becomes a deterministic
   - `remarquee/pkg/rmdoc/render/golden_remarks_update_test.go`
 - Update goldens:
   - `cd remarquee && go test ./pkg/rmdoc/render -run TestUpdateRemarksGoldens -update-golden -count=1`
+
+## Step 2: Make golden diff artifacts CI-uploadable
+
+This step makes golden failures actionable in CI by ensuring the PDFs and diff PNGs land in a stable directory (instead of a transient `t.TempDir()` path that’s hard to collect). The GitHub Actions workflow is updated to install Poppler (for `pdftoppm` fallback) and upload that directory as an artifact on failure.
+
+This doesn’t change the comparison logic; it just makes the existing diffs easy to retrieve when a test fails on a remote runner.
+
+**Commit (code):** 09e4f3c — "RMQ-0006: persist golden diffs for CI"
+
+### What I did
+- Added `RMQ_GOLDEN_WORKDIR` support to the remarks-based golden tests so PDFs/diffs can be written to a deterministic path.
+- Updated `.github/workflows/push.yml` to install `poppler-utils`, set `RMQ_GOLDEN_WORKDIR`, and upload the directory as an artifact on failures.
+
+### Why
+- Without artifacts, CI failures aren’t debuggable: you can’t see the A/B renderings or the diff images.
+
+### What worked
+- CI now has a “known place” for golden artifacts and will upload them when tests fail.
+
+### What was tricky to build
+- Keeping the local developer UX unchanged (default remains `t.TempDir()`), while allowing CI to opt into persistence via an env var.
+
+### What warrants a second pair of eyes
+- Confirm the artifact volume is acceptable (PDFs can be large), and consider limiting outputs to failing pages only if this becomes too noisy.
+
+### What should be done in the future
+- If we decide CI should always run goldens, pick and document the “reference availability” contract (commit goldens vs install `remarks` in CI).

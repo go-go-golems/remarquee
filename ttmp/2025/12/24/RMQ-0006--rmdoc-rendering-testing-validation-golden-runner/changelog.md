@@ -194,3 +194,14 @@ Add dedicated remarks-golden updater: fix -update-golden to overwrite existing g
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/03-golden-testing-validation-system-how-to-use-how-it-works.md — Document new TestUpdateRemarksGoldens workflow
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/16-update-remarks-goldens-all-fixtures.sh — One-shot script to regenerate all committed remarks goldens
 
+
+## 2026-01-04
+
+Make golden diffs CI-friendly: allow golden tests to write PDFs/diff PNGs to RMQ_GOLDEN_WORKDIR, install Poppler in CI, and upload the directory as a GitHub Actions artifact on failure (tasks 64–65).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/.github/workflows/push.yml — Install poppler-utils and upload golden artifacts on test failures
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_test.go — Add RMQ_GOLDEN_WORKDIR for stable diff/PDF output locations
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/03-golden-testing-validation-system-how-to-use-how-it-works.md — Document RMQ_GOLDEN_WORKDIR usage
+

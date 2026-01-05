@@ -81,8 +81,8 @@
 - [ ] CI integration:
   - [ ] Ensure remarks is available in CI environment (or skip golden tests if not)
   - [ ] Add golden tests to CI pipeline
-  - [ ] Configure artifact storage for diff images
-  - [ ] Document CI setup requirements
+- [x] Configure artifact storage for diff images
+- [x] Document CI setup requirements
 
 - [ ] Documentation and validation:
   - [ ] Update testing playbook with golden test procedures

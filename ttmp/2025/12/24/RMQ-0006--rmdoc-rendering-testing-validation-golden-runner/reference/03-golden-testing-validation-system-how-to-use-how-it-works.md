@@ -167,6 +167,8 @@ go run ./cmd/remarquee rmdoc vlm-validate \
 - **Golden comparison fails**:
   - inspect diff PNGs (printed as `diff image: ...` in test logs)
   - inspect both PDFs (remarquee vs reference)
+  - if you want diffs and PDFs to be kept in a stable location (e.g. for CI artifacts), set:
+    - `RMQ_GOLDEN_WORKDIR=/tmp/rmq-golden-artifacts`
 
 ## Usage Examples
 
