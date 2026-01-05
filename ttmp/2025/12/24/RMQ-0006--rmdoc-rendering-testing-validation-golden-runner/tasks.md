@@ -115,12 +115,12 @@
   - [ ] Compare with `remarks` rendering for the same page (A vs B vs device)
   - [ ] Fix if needed, and add a short note explaining root cause (anchor translation vs scale vs coordinate inversion)
 
-- [ ] **Typed text not rendered**:
-  - [ ] Investigate `RootTextBlock` parsing vs rendering
-  - [ ] Check if `ParseRMV6RootTextBlock` output is used anywhere
-  - [ ] Trace typed text extraction from scene tree
-  - [ ] Compare with remarks typed text rendering approach
-  - [ ] Document where typed text rendering should be added
+- [x] **Typed text not rendered**:
+- [x] Investigate `RootTextBlock` parsing vs rendering
+- [x] Check if `ParseRMV6RootTextBlock` output is used anywhere
+- [x] Trace typed text extraction from scene tree
+- [x] Compare with remarks typed text rendering approach
+- [x] Document where typed text rendering should be added
 
 - [ ] **Page format uses annotation bbox instead of full page**:
   - [ ] Investigate page size calculation in `MergeRMDocV6OntoBackgroundPDFWithInfo`

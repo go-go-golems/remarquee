@@ -223,3 +223,15 @@ Add dedicated CI golden job that installs pinned remarks and runs remarks-based 
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/.github/workflows/push.yml — Add golden job (pinned remarks install + artifact upload)
 
+
+## 2026-01-05
+
+Render V6 typed text (RootTextBlock) and match highlighter/shader stroke opacity + width so remarquee output matches remarks reference goldens.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Render tool-specific stroke style + typed text overlay
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_anchor_pos.go — Anchor positions now share text layout constants
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_text_document.go — Build minimal per-paragraph text document for rendering
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_text_layout.go — Shared text top-y + line-height constants
+

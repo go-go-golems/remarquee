@@ -11,13 +11,26 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: remarquee/pkg/rmdoc/render/v6_merge_background.go
+      Note: V6 merge pipeline now renders strokes + typed text
+    - Path: remarquee/pkg/rmdoc/rmv6_anchor_pos.go
+      Note: Uses shared layout constants
+    - Path: remarquee/pkg/rmdoc/rmv6_root_text.go
+      Note: RootTextBlock parser now discards subblocks eagerly
+    - Path: remarquee/pkg/rmdoc/rmv6_text_document.go
+      Note: Extract text paragraphs from RootTextBlock
+    - Path: remarquee/pkg/rmdoc/rmv6_text_layout.go
+      Note: Text layout constants shared by anchors/rendering
+    - Path: remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/11-dump-test-rmdoc-stroke-tools-page1/main.go
+      Note: Debug tool/color counts for Test.rmdoc
 ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-24T10:45:40.570801121-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # RMDOC rendering: testing + validation + golden runner
 

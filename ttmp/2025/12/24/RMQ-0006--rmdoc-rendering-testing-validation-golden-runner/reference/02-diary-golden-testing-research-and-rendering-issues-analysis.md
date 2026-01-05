@@ -397,3 +397,52 @@ We pin the `remarks` commit in CI to avoid silent reference drift.
 
 ### What should be done in the future
 - Once typed text/templates are implemented, flip the golden job to be required (remove allow-fail) and consider tightening tolerances.
+
+## Step 5: Render typed text + match highlighter stroke fidelity (goldens pass)
+
+This step closes the biggest remaining fidelity gap for the `Test.rmdoc` golden: typed text now renders, and highlighter/shader strokes use tool-specific opacity + width. With those changes, the `remarks` reference golden tests pass locally.
+
+**Commit (scripts):** 23eeee9 — "RMQ-0006: isolate ticket Go scripts"  
+**Commit (code):** bc03b8c — "RMQ-0006: render V6 typed text"  
+**Commit (code):** 34df1e8 — "RMQ-0006: match highlighter stroke style"
+
+### What I did
+- Moved ticket helper programs into per-script subdirectories so `go test ./...` doesn't fail due to multiple `main()`s.
+- Implemented minimal RootTextBlock rendering:
+  - built a paragraph-oriented view from CRDT text items (including empty paragraphs for correct Y offsets)
+  - rendered typed text as PDF text operators (`BT/ET`, `Tf`, `Tm`, `Tj`) with rmc-like fonts/sizes
+- Implemented tool-specific stroke style:
+  - highlighter uses a wide brush (25 screen units) and alpha (0.3)
+  - shader uses alpha derived from hardcoded RGBA values
+  - used PDF `ExtGState` + `gs` to control opacity
+- Validated by running the remarks reference goldens:
+  - `RMQ_GOLDEN_WORKDIR=/tmp/rmq-goldendiff PATH="/tmp/remarks-venv/bin:$PATH" go test ./pkg/rmdoc/render -run 'TestRender.*Golden_RemarksReference_.*' -count=1`
+
+### Why
+- Typed text was a known mismatch (and made the diff PNGs noisy/less actionable).
+- Highlighter strokes dominated the remaining pixel diffs because we were rendering them as thin opaque pen strokes.
+
+### What worked
+- Typed text appears in the expected location on `Test.rmdoc` (page 1) and matches the reference output closely enough for goldens.
+- With highlighter opacity/width in place, the `Test.rmdoc` remarks-reference golden passes.
+
+### What didn't work
+- N/A (this step was a straight-through fix once the reference behavior was understood).
+
+### What I learned
+- The most important fidelity improvements for goldens are “big semantic levers” (typed text + transparency/brush width) rather than micro-coordinate tuning.
+
+### What was tricky to build
+- RootText paragraph styles are keyed by **paragraph start IDs**, not the END_MARKER; using END_MARKER as a default style shifts anchors/typed text to the wrong Y.
+- PDF opacity needs `ExtGState` resources; you must also reset back to opaque after a translucent stroke, or subsequent strokes inherit the alpha.
+
+### What warrants a second pair of eyes
+- The exact mapping of pen tool IDs → base widths/opacities (currently coarse; good enough for goldens but worth validating against more fixtures).
+
+### What should be done in the future
+- If we see drift on other fixtures, consider porting the rmc segment-based stroke width model (per-tool segment length + per-point dynamics) instead of using a single stroke-wide width.
+
+### Code review instructions
+- Start in `pkg/rmdoc/render/v6_merge_background.go` (stroke `ExtGState` usage + typed text ops).
+- Then review `pkg/rmdoc/rmv6_text_document.go` and confirm the paragraph start-id style logic.
+- Validate with `PATH="/tmp/remarks-venv/bin:$PATH" go test ./pkg/rmdoc/render -run 'TestRender.*Golden_RemarksReference_.*' -count=1`.
