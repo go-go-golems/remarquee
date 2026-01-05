@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -54,6 +55,43 @@ func copyFile(src, dst string, perm os.FileMode) error {
 
 	_, err = io.Copy(out, in)
 	return err
+}
+
+func sanitizeFilename(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return "unnamed"
+	}
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z':
+			b.WriteRune(r)
+		case r >= 'A' && r <= 'Z':
+			b.WriteRune(r)
+		case r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '-' || r == '_' || r == '.':
+			b.WriteRune(r)
+		default:
+			b.WriteByte('_')
+		}
+	}
+	return b.String()
+}
+
+func goldenTestWorkDir(t *testing.T) string {
+	t.Helper()
+
+	if base := strings.TrimSpace(os.Getenv("RMQ_GOLDEN_WORKDIR")); base != "" {
+		dir := filepath.Join(base, sanitizeFilename(t.Name()))
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("mkdir RMQ_GOLDEN_WORKDIR dir: %v", err)
+		}
+		return dir
+	}
+
+	return t.TempDir()
 }
 
 func ensureRemarksReferencePDF(
@@ -148,7 +186,7 @@ func TestRenderV6Golden_RemarksReference_TestRmdoc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MergeRMDocV6OntoBackgroundPDF: %v", err)
 	}
-	work := t.TempDir()
+	work := goldenTestWorkDir(t)
 	actualPath := filepath.Join(work, "remarquee-v6.pdf")
 	if err := os.WriteFile(actualPath, actualPDFBytes, 0o644); err != nil {
 		t.Fatalf("write actual pdf: %v", err)
@@ -194,7 +232,7 @@ func TestRenderV6Golden_RemarksReference_CpagePdf(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MergeRMDocV6OntoBackgroundPDF: %v", err)
 	}
-	work := t.TempDir()
+	work := goldenTestWorkDir(t)
 	actualPath := filepath.Join(work, "remarquee-v6.pdf")
 	if err := os.WriteFile(actualPath, actualPDFBytes, 0o644); err != nil {
 		t.Fatalf("write actual pdf: %v", err)

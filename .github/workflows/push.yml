@@ -18,6 +18,19 @@ jobs:
         with:
           go-version: '>=1.19.5'
           cache: true
+      - name: Install Poppler utils (pdftoppm)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
       -
         name: Run unit tests
-        run: go test ./...
+        env:
+          RMQ_GOLDEN_WORKDIR: ${{ runner.temp }}/rmq-golden-artifacts
+        run: go test ./... -count=1
+      - name: Upload golden diff artifacts (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rmq-golden-artifacts
+          path: ${{ runner.temp }}/rmq-golden-artifacts
+          if-no-files-found: ignore
