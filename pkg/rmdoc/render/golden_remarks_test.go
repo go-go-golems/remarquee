@@ -67,32 +67,39 @@ func ensureRemarksReferencePDF(
 	root := repoRootFromThisFile(t)
 	golden := remarksGoldenPath(root, fixture)
 
-	if _, err := os.Stat(golden); err == nil {
-		return golden
-	}
-
-	// No committed golden: try generating with remarks.
-	refOutDir := filepath.Join(workspaceDir, "remarks-out")
-	if err := os.MkdirAll(refOutDir, 0o755); err != nil {
-		t.Fatalf("mkdir remarks out: %v", err)
-	}
-
-	r := remarksref.Runner{LogLevel: "ERROR"}
-	_, err := r.Run(ctx, fixture, refOutDir)
-	if err != nil {
-		if errors.Is(err, remarksref.ErrNotFound) {
-			t.Skip("no golden reference present and remarks not installed on PATH; skipping")
+	// In update mode, always regenerate and overwrite (even if the golden exists).
+	if !*updateGolden {
+		if _, err := os.Stat(golden); err == nil {
+			return golden
 		}
-		t.Fatalf("run remarks: %v", err)
 	}
 
-	refPath, err = remarksref.FindSingleRemarksPDF(refOutDir)
-	if err != nil {
-		t.Fatalf("FindSingleRemarksPDF: %v", err)
+	if err := os.MkdirAll(goldenDir(root), 0o755); err != nil {
+		t.Fatalf("mkdir golden dir: %v", err)
 	}
 
-	// If requested, write the generated reference into the repo's golden dir.
 	if *updateGolden {
+		// We treat "update" as an explicit action: if remarks isn't available, fail loudly
+		// rather than silently skipping.
+		refOutDir := filepath.Join(workspaceDir, "remarks-out")
+		if err := os.MkdirAll(refOutDir, 0o755); err != nil {
+			t.Fatalf("mkdir remarks out: %v", err)
+		}
+
+		r := remarksref.Runner{LogLevel: "ERROR"}
+		_, err := r.Run(ctx, fixture, refOutDir)
+		if err != nil {
+			if errors.Is(err, remarksref.ErrNotFound) {
+				t.Fatalf("update-golden requested but remarks not installed on PATH (or Runner.Bin); install remarks or adjust PATH")
+			}
+			t.Fatalf("run remarks: %v", err)
+		}
+
+		refPath, err = remarksref.FindSingleRemarksPDF(refOutDir)
+		if err != nil {
+			t.Fatalf("FindSingleRemarksPDF: %v", err)
+		}
+
 		if err := copyFile(refPath, golden, 0o644); err != nil {
 			t.Fatalf("write golden: %v", err)
 		}
@@ -100,7 +107,29 @@ func ensureRemarksReferencePDF(
 		return golden
 	}
 
-	return refPath
+	// Not updating: no committed golden, so try generating with remarks for this test run.
+	{
+		refOutDir := filepath.Join(workspaceDir, "remarks-out")
+		if err := os.MkdirAll(refOutDir, 0o755); err != nil {
+			t.Fatalf("mkdir remarks out: %v", err)
+		}
+
+		r := remarksref.Runner{LogLevel: "ERROR"}
+		_, err := r.Run(ctx, fixture, refOutDir)
+		if err != nil {
+			if errors.Is(err, remarksref.ErrNotFound) {
+				t.Skip("no golden reference present and remarks not installed on PATH; skipping")
+			}
+			t.Fatalf("run remarks: %v", err)
+		}
+
+		refPath, err = remarksref.FindSingleRemarksPDF(refOutDir)
+		if err != nil {
+			t.Fatalf("FindSingleRemarksPDF: %v", err)
+		}
+
+		return refPath
+	}
 }
 
 func TestRenderV6Golden_RemarksReference_TestRmdoc(t *testing.T) {
@@ -193,5 +222,3 @@ func TestRenderV6Golden_RemarksReference_CpagePdf(t *testing.T) {
 		t.Fatalf("pdf mismatch vs remarks reference: maxDiffRatio=%0.6f (A=%s B=%s)", cmp.MaxDiffRatio, cmp.SHA256A, cmp.SHA256B)
 	}
 }
-
-
