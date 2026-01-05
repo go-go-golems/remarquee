@@ -341,3 +341,29 @@ This doesn’t change the comparison logic; it just makes the existing diffs eas
 
 ### What should be done in the future
 - If we decide CI should always run goldens, pick and document the “reference availability” contract (commit goldens vs install `remarks` in CI).
+
+## Step 3: Fix golden updater collision across fixtures
+
+While wiring `TestUpdateRemarksGoldens`, we noticed a subtle but fatal issue: the loop reused a single `remarks-out/` directory, so the second fixture would see *multiple* `* _remarks.pdf` files and `FindSingleRemarksPDF` would fail. This step isolates each fixture’s remarks output into its own subdirectory so the updater can process multiple fixtures reliably.
+
+This is intentionally small and mechanical, but it’s required for the “update all fixtures” workflow to actually work.
+
+**Commit (code):** 66b48f1 — "RMQ-0006: isolate remarks-out per fixture"
+
+### What I did
+- Changed remarks output paths to `.../remarks-out/<fixture-basename>/` so each run produces exactly one discoverable reference PDF.
+
+### Why
+- The updater test intentionally iterates multiple fixtures; sharing one output directory breaks determinism and makes the workflow flaky.
+
+### What worked
+- `FindSingleRemarksPDF` can remain strict (exactly one), while the updater remains multi-fixture.
+
+### What was tricky to build
+- Catching the failure mode early: the single-fixture golden tests mask this issue because they only generate one reference at a time.
+
+### What warrants a second pair of eyes
+- Confirm the per-fixture folder naming is stable enough for debugging (it uses the fixture basename with sanitization).
+
+### What should be done in the future
+- If we ever need multiple reference PDFs per fixture, replace `FindSingleRemarksPDF` with a fixture-aware selection rule (and update tests accordingly).

@@ -205,3 +205,12 @@ Make golden diffs CI-friendly: allow golden tests to write PDFs/diff PNGs to RMQ
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_test.go — Add RMQ_GOLDEN_WORKDIR for stable diff/PDF output locations
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/reference/03-golden-testing-validation-system-how-to-use-how-it-works.md — Document RMQ_GOLDEN_WORKDIR usage
 
+
+## 2026-01-04
+
+Fix golden updater loop: isolate remarks output directory per fixture so TestUpdateRemarksGoldens can process multiple fixtures without FindSingleRemarksPDF collisions.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/golden_remarks_test.go — Use per-fixture remarks-out subdirs to avoid multiple PDFs in one scan
+
