@@ -473,3 +473,14 @@ What we learned:
 - Fixture identity matters more than any single coordinate hunch: if the device screenshot is of a different fixture/page/view, the debug loop collapses.
 - A “case language” is the right abstraction boundary: it separates “test intent” from “device encoding / renderer internals”.
 
+Follow-up (same day): implemented the JS execution path using an embedded goja VM.
+
+- Added `pkg/rmdsl`:
+  - load cases from YAML or JS (`LoadFromFile`)
+  - JS runner provides a minimal `rm` builder API via a prelude, plus `rm.include()` for reuse
+- Updated `scripts/18-rmdsl-render-to-png` to accept `.js` inputs.
+- Added a sample JS case:
+  - `cases/02-ellipse-at-bottom.js`
+
+This unlocks scripted sweeps and parametrized fixtures without needing to hand-edit YAML for every variant.
+
