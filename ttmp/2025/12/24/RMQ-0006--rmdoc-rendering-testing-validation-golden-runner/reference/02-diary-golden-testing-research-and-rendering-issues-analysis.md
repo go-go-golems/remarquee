@@ -484,3 +484,27 @@ Follow-up (same day): implemented the JS execution path using an embedded goja V
 
 This unlocks scripted sweeps and parametrized fixtures without needing to hand-edit YAML for every variant.
 
+### Ellipse sweep: end-to-end device validation loop (PDF transport)
+
+We implemented and exercised a full “protocol run” for the ellipse/oval investigation using the new DSL and JS scriptability. The key idea was to remove ambiguity by generating a *family* of pages where the ellipse position is known and unambiguous, then verifying on-device that the ellipse moves monotonically down the page as expected.
+
+Work done:
+
+- Added a JS case generator producing 5 pages (y=200..1700), each with:
+  - an ellipse at the target y
+  - a rotated square reference
+  - a page marker: N short red dashes near the top-left (N = page index)
+  - a green bottom marker line
+- Added a pragmatic “PDF transport” renderer (DSL → multi-page PDF) so we can upload to the tablet using existing `cloud put` (since we don’t yet upload `.rmdoc` notebooks as editable docs).
+- Added a single orchestrator script that:
+  - renders the PDF
+  - uploads it to `/remarquee/rendering/rmq-0006-ellipse`
+  - asks the user (via `plz-confirm`) which pages look wrong
+
+Observed result (human on device):
+
+- Pages behaved as expected: “first page is at the top … ellipse moves towards the bottom”.
+- On the last page, the ellipse begins to clip at the bottom edge (expected when y is close to 1872).
+
+This gives us strong confidence that the **basic coordinate model (rm_screen_v6)** and our DSL-based rendering pipeline are consistent and that the earlier “ellipse mismatch” discussion likely involved fixture/view confusion rather than a fundamental y-transform bug.
+
