@@ -508,3 +508,22 @@ Observed result (human on device):
 
 This gives us strong confidence that the **basic coordinate model (rm_screen_v6)** and our DSL-based rendering pipeline are consistent and that the earlier “ellipse mismatch” discussion likely involved fixture/view confusion rather than a fundamental y-transform bug.
 
+### Inverse test: device-authored ellipses-test -> parse -> regenerate -> compare
+
+We then ran the “inverse” workflow to validate that parsing and regeneration don’t lose information:
+
+1) Download a device-authored document (`ellipses-test`) from the cloud as `.rmdoc`.
+2) Render it with `remarquee rmdoc render-v6` (A).
+3) Parse it and emit a RMDoc-DSL YAML that replays the extracted strokes (`kind: stroke`).
+4) Render the regenerated YAML to PDF (B).
+5) Rasterize and compare A vs B, and ask a human to confirm.
+
+Result:
+
+- The A vs B images were judged “perfect” via `plz-confirm`, which indicates our V6 stroke parsing + anchor application is stable enough to round-trip into a declarative representation (for strokes).
+
+Artifacts/scripts added for this:
+
+- `scripts/21-rmdoc-v6-to-dsl-yaml/main.go` — exports strokes per page to RMDoc-DSL YAML
+- `scripts/21-ellipses-test-parse-regenerate-compare.sh` — orchestrates the end-to-end A/B compare
+
