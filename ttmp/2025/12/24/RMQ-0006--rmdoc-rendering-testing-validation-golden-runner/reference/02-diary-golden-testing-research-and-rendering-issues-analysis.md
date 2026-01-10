@@ -446,3 +446,30 @@ This step closes the biggest remaining fidelity gap for the `Test.rmdoc` golden:
 - Start in `pkg/rmdoc/render/v6_merge_background.go` (stroke `ExtGState` usage + typed text ops).
 - Then review `pkg/rmdoc/rmv6_text_document.go` and confirm the paragraph start-id style logic.
 - Validate with `PATH="/tmp/remarks-venv/bin:$PATH" go test ./pkg/rmdoc/render -run 'TestRender.*Golden_RemarksReference_.*' -count=1`.
+
+## 2026-01-10
+
+### DSL-based fixture generation (YAML + planned JS scriptability)
+
+We started standardizing on “controlled fixtures” as the fastest path to debug rendering problems (especially device vs export confusion). The repeated pain point: creating/editing `.rmdoc` fixtures is slow and easy to mix up, which makes visual comparisons unreliable.
+
+Decision: introduce a **versioned YAML DSL** to describe RMDoc-like content declaratively, and extend it with **JS scriptability** executed in an embedded goja VM (so we can generate whole families of fixtures with sweeps, randomness, and reusable helpers).
+
+Work done:
+
+- Added a ticket doc capturing the DSL design process and spec:
+  - `reference/06-yaml-dsl-rmdoc-spec-and-design.md`
+  - Includes a “supported now vs planned” matrix (critical to avoid overpromising).
+- Proposed a JS builder API in the same doc:
+  - `rm.doc(...).page(...).layer(...).ellipse(...).stroke(...)...`
+  - contract: JS returns a plain object `{ rm_dsl: "v0", document: ... }` which Go validates/normalizes.
+- Added the first canonical YAML case:
+  - `cases/01-ellipse-at-bottom.yaml`
+- Added a minimal Go renderer for YAML DSL → programmatic PNG (no PDF renderer):
+  - `scripts/18-rmdsl-render-to-png/main.go`
+
+What we learned:
+
+- Fixture identity matters more than any single coordinate hunch: if the device screenshot is of a different fixture/page/view, the debug loop collapses.
+- A “case language” is the right abstraction boundary: it separates “test intent” from “device encoding / renderer internals”.
+
