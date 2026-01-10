@@ -49,6 +49,19 @@ func NewCloudCommand() *cobra.Command {
 		cmd.AddCommand(findCmd)
 	}
 
+	searchCmd, err := NewSearchCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "search",
+			Short: "Search entries by name or path (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(searchCmd)
+	}
+
 	lsCmd, err := NewLsCobraCommand()
 	if err != nil {
 		cmd.AddCommand(&cobra.Command{
