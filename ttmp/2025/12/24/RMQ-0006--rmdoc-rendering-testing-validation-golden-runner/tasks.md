@@ -31,7 +31,7 @@
 
 ### New validation work (this ticket)
 
-- [ ] Write a detailed testing/validation playbook doc (feature-by-feature) in `reference/`
+- [x] Write a detailed testing/validation playbook doc (feature-by-feature) in `reference/`
 - [ ] Add stage-level debug CLIs to avoid console spam:
   - [ ] `remarquee rmdoc v6-stats <file>` (counts: strokes, glyph ranges, groups, anchors)
   - [ ] `remarquee rmdoc v6-dump-highlights <file> [--page N]` (rects + color + x_translation)
@@ -109,11 +109,11 @@
 - [x] Decide/record conclusion: acceptable vs needs fix (and why)
 
 - [ ] **Ellipse/oval shape appears misaligned (Test.rmdoc page 1, vs device screenshot)**:
-  - [ ] Confirm the issue is real (page mapping sanity: A1 matches device; then do a focused crop/side-by-side review)
-  - [ ] Identify which stroke corresponds to the oval in our data (tool/color + bbox; correlate to on-page position)
-  - [ ] Verify group anchor + root text anchor math for that stroke (dump group anchors + bbox after transforms)
-  - [ ] Compare with `remarks` rendering for the same page (A vs B vs device)
-  - [ ] Fix if needed, and add a short note explaining root cause (anchor translation vs scale vs coordinate inversion)
+  - [x] Confirm the issue is real (page mapping sanity: A1 matches device; then do a focused crop/side-by-side review)
+  - [x] Compare with `remarks` rendering for the same page (A vs B vs device)
+  - [x] Run controlled calibration: ellipse sweep (known Y positions) on device
+  - [x] Run inverse test: device-authored `ellipses-test` → parse → regen DSL → compare (A vs B)
+  - [x] Conclusion: coordinate model is consistent; earlier mismatch was fixture/view confusion (no transform bug to fix)
 
 - [x] **Typed text not rendered**:
 - [x] Investigate `RootTextBlock` parsing vs rendering
@@ -150,5 +150,23 @@
 
 - [x] Import real-device screenshot reference for `Test.rmdoc` page 1 into ticket `reference/`
 - [x] Add `plz-confirm image` scripts to ask humans to compare rendered output vs device screenshot
-- [ ] Add a small “image review playbook” (how to interpret answers; where to store results)
+- [x] Add a small “image review playbook” (how to interpret answers; where to store results)
+
+### RMDoc-DSL fixtures + scriptability (new)
+
+- [x] Define RMDoc-DSL v0 spec (YAML) + design notes (models “supported now” vs “planned”)
+- [x] Add JS scriptability (goja) with a minimal `rm` builder API + `rm.include()`
+- [x] Add user-facing docs page in `pkg/doc/topics/` for YAML+JS usage
+- [x] Add canonical ellipse sweep generator and end-to-end device upload + plz-confirm review script (PDF transport)
+- [x] Add inverse workflow tools:
+  - [x] Export V6 `.rmdoc` strokes → RMDoc-DSL YAML
+  - [x] Parse → regen → A/B compare (PDF + PNG raster + plz-confirm)
+
+### Next (recommended)
+
+- [ ] Compile RMDoc-DSL → real `.rmdoc` (editable notebook) + add upload command (so device truth uses the exact same fixture bytes, not just PDFs)
+- [ ] Add “sweep generators” beyond ellipses:
+  - [ ] anchor translation sweeps (groups anchored to text)
+  - [ ] highlight rectangle sweeps (glyph ranges vs stroke transforms)
+  - [ ] typed-text layout sweeps (paragraph styles, line heights, top offsets)
 
