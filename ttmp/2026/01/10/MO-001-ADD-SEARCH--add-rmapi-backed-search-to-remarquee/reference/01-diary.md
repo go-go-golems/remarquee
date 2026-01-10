@@ -8,12 +8,20 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: remarquee/.gitignore
+      Note: Step 5 ignore rendering artifacts
     - Path: remarquee/cmd/remarquee/cmds/cloud/find.go
       Note: Step 1 search behavior baseline
     - Path: remarquee/cmd/remarquee/cmds/cloud/ls.go
       Note: Step 1 output and template filtering reference
+    - Path: remarquee/cmd/remarquee/cmds/cloud/root.go
+      Note: Step 5 command wiring (commit b1cd9c8)
+    - Path: remarquee/cmd/remarquee/cmds/cloud/search.go
+      Note: Step 5 search command implementation (commit b1cd9c8)
     - Path: remarquee/ttmp/2026/01/10/MO-001-ADD-SEARCH--add-rmapi-backed-search-to-remarquee/analysis/01-rmapi-search-capability-and-remarquee-search-plan.md
       Note: Step 2 analysis write-up
+    - Path: rmapi/docs/filetree-and-sync15-model.md
+      Note: Step 6 sync15/filetree textbook (commit a181624)
     - Path: rmapi/shell/find.go
       Note: Step 1 rmapi find semantics
 ExternalSources: []
@@ -22,6 +30,7 @@ LastUpdated: 2026-01-10T15:37:45.254933679-05:00
 WhatFor: Track decisions, findings, and follow-ups while designing search.
 WhenToUse: Use during implementation and review of MO-001-ADD-SEARCH.
 ---
+
 
 
 # Diary
@@ -206,3 +215,104 @@ This step ensures the latest design and diary notes are available on-device for 
 - Commands:
   - `python3 /home/manuel/.local/bin/remarkable_upload.py --ticket-dir /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/MO-001-ADD-SEARCH--add-rmapi-backed-search-to-remarquee --force /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/MO-001-ADD-SEARCH--add-rmapi-backed-search-to-remarquee/analysis/01-rmapi-search-capability-and-remarquee-search-plan.md /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/MO-001-ADD-SEARCH--add-rmapi-backed-search-to-remarquee/reference/01-diary.md`
   - `python3 /home/manuel/.local/bin/remarkable_upload.py --ticket-dir /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/MO-001-ADD-SEARCH--add-rmapi-backed-search-to-remarquee --force /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/MO-001-ADD-SEARCH--add-rmapi-backed-search-to-remarquee/reference/01-diary.md`
+
+## Step 5: Implement rmapi-backed cloud search command
+
+I implemented a new `remarquee cloud search` command that searches by path or name with substring or regex matching, optional template/type filtering, and a match limit. I also wired it into the cloud command group and ignored an unexpected `rendering/` directory to keep the repo clean.
+
+This step delivers the core functionality requested for MO-001-ADD-SEARCH and validates it against live data with a few search queries.
+
+**Commit (code):** b1cd9c8 — "Add cloud search command"
+
+### What I did
+- Added `cloud/search.go` to implement query matching and output formatting.
+- Wired the new command in `cloud/root.go`.
+- Added `rendering/` to `.gitignore` to avoid committing unrelated artifacts.
+- Ran `gofmt` and executed search queries against the remote tree.
+
+### Why
+- Provide a user-facing search command that is clearer than `find` and matches against raw path/name strings.
+
+### What worked
+- Search returned expected hits for real queries (electronics, zigbee, idf) when run non-interactively.
+- Compact output format matches existing find semantics.
+
+### What didn't work
+- Initial build failed due to the wrong parameter type:
+  - `go run ./cmd/remarquee cloud search electronics --non-interactive`
+  - `cmd/remarquee/cmds/cloud/search.go:130:16: undefined: parameters.ParameterTypeInt`
+
+### What I learned
+- Glazed parameter definitions use `ParameterTypeInteger`, not `ParameterTypeInt`.
+
+### What was tricky to build
+- Ensuring match semantics are applied to raw path/name rather than formatted output, while keeping output consistent with existing find behavior.
+
+### What warrants a second pair of eyes
+- Confirm the match target defaults (`path`) and template inclusion defaults align with existing rmapi expectations.
+
+### What should be done in the future
+- Add cloud docs updates for the new `search` command and consider adding structured (Glazed) output.
+
+### Code review instructions
+- Start with `/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/search.go` and confirm match/filter logic.
+- Verify wiring in `/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/root.go`.
+- Validate by running:
+  - `cd /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee && go run ./cmd/remarquee cloud search electronics --non-interactive`
+  - `cd /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee && go run ./cmd/remarquee cloud search zigbee --non-interactive`
+  - `cd /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee && go run ./cmd/remarquee cloud search idf --start /ai --non-interactive`
+
+### Technical details
+- Files:
+  - `/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/search.go`
+  - `/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/root.go`
+  - `/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/.gitignore`
+- Commands:
+  - `gofmt -w /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/search.go`
+  - `go run ./cmd/remarquee cloud search electronics --non-interactive`
+  - `go run ./cmd/remarquee cloud search zigbee --non-interactive`
+  - `go run ./cmd/remarquee cloud search idf --start /ai --non-interactive`
+
+## Step 6: Write rmapi filetree/sync15 textbook and publish it in rmapi docs
+
+I created a textbook-style document explaining rmapi's filetree and Sync15 model, including pseudocode and a Mermaid flow diagram, and added details about the hash tree cache and refresh behavior. This consolidates the research context behind the search implementation and gives future readers a reliable reference for the underlying model.
+
+This step also captured how the hash tree cache is stored and refreshed, and where remote costs arise during sync.
+
+**Commit (code):** a181624 — "Add filetree and sync15 model textbook"
+
+### What I did
+- Wrote `/home/manuel/workspaces/2025-12-14/build-remarquee-tool/rmapi/docs/filetree-and-sync15-model.md`.
+- Added WalkTree/find/globbing pseudocode and a Sync15 flow diagram.
+- Documented cache location and refresh rules for the hash tree.
+- Uploaded the doc to reMarkable once (pre-update) for quick review.
+
+### Why
+- The search feature depends on rmapi's filetree and Sync15 behavior, so a durable reference helps future debugging and onboarding.
+
+### What worked
+- The doc builds a coherent end-to-end model and compiles all key source references in one place.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The Sync15 mirror is global (hash-based), not directory-by-directory, and the cache refresh is keyed off the root hash.
+
+### What was tricky to build
+- Keeping the document accurate across multiple updates (pseudocode, diagrams, cache notes).
+
+### What warrants a second pair of eyes
+- Confirm the cache path and refresh details match current rmapi behavior on all platforms.
+
+### What should be done in the future
+- Re-upload the updated textbook to reMarkable so the on-device copy stays current.
+
+### Code review instructions
+- Start with `/home/manuel/workspaces/2025-12-14/build-remarquee-tool/rmapi/docs/filetree-and-sync15-model.md` and skim the Sync15/cache sections.
+
+### Technical details
+- Files:
+  - `/home/manuel/workspaces/2025-12-14/build-remarquee-tool/rmapi/docs/filetree-and-sync15-model.md`
+- Commands:
+  - `python3 /home/manuel/.local/bin/remarkable_upload.py /home/manuel/workspaces/2025-12-14/build-remarquee-tool/rmapi/docs/filetree-and-sync15-model.md`
