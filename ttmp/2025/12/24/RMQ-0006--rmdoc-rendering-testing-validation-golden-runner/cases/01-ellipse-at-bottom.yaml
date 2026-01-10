@@ -1,0 +1,49 @@
+rm_dsl: v0
+document:
+  name: "ellipse-at-bottom"
+  kind: notebook
+  format: v6
+  pages:
+    - id: "p1"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      layers:
+        - name: "shapes"
+          items:
+            - kind: shape
+              shape: ellipse
+              stroke:
+                tool: fineliner_2
+                color: black
+                width: 1
+              center: { x: 0, y: 1500 }
+              rx: 240
+              ry: 140
+            - kind: shape
+              shape: rect
+              stroke:
+                tool: fineliner_2
+                color: black
+                width: 1
+              rect: { x: 280, y: 1050, w: 320, h: 320 }
+              rotate_deg: 15
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: red
+                width: 1
+              points:
+                - { x: -650, y: 50 }
+                - { x: -450, y: 50 }
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: green
+                width: 1
+              points:
+                - { x: -650, y: 1820 }
+                - { x: -450, y: 1820 }
+
+
