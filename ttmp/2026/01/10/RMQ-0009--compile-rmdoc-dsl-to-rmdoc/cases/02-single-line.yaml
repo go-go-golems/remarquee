@@ -1,0 +1,22 @@
+rm_dsl: v0
+document:
+  name: "rmq-0009-single-line"
+  kind: notebook
+  format: v6
+  pages:
+    - id: "p1"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      layers:
+        - name: "layer-1"
+          items:
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: black
+                width: 1
+              points:
+                - { x: -500, y: 200 }
+                - { x:  500, y: 200 }

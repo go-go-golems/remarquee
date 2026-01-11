@@ -1,0 +1,23 @@
+rm_dsl: v0
+document:
+  name: "rmq-0009-ellipse"
+  kind: notebook
+  format: v6
+  pages:
+    - id: "p1"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      layers:
+        - name: "layer-1"
+          items:
+            - kind: shape
+              shape: ellipse
+              stroke:
+                tool: fineliner_2
+                color: black
+                width: 1
+              center: { x: 0, y: 900 }
+              rx: 240
+              ry: 140

@@ -1,0 +1,95 @@
+rm_dsl: v0
+document:
+  name: "rmq-0009-complex-spiral-grid"
+  kind: notebook
+  format: v6
+  pages:
+    - id: "p1"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      layers:
+        - name: "grid"
+          items:
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: blue
+                width: 1
+              points:
+                - { x: -600, y: 200 }
+                - { x:  600, y: 200 }
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: blue
+                width: 1
+              points:
+                - { x: -600, y: 400 }
+                - { x:  600, y: 400 }
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: blue
+                width: 1
+              points:
+                - { x: -600, y: 600 }
+                - { x:  600, y: 600 }
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: blue
+                width: 1
+              points:
+                - { x: -600, y: 800 }
+                - { x:  600, y: 800 }
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: blue
+                width: 1
+              points:
+                - { x: -600, y: 1000 }
+                - { x:  600, y: 1000 }
+        - name: "spiral"
+          items:
+            - kind: stroke
+              stroke:
+                tool: marker_2
+                color: red
+                width: 2
+              points:
+                - { x: 0, y: 800 }
+                - { x: 80, y: 800 }
+                - { x: 80, y: 720 }
+                - { x: -20, y: 720 }
+                - { x: -20, y: 840 }
+                - { x: 120, y: 840 }
+                - { x: 120, y: 680 }
+                - { x: -60, y: 680 }
+                - { x: -60, y: 900 }
+                - { x: 160, y: 900 }
+                - { x: 160, y: 640 }
+                - { x: -100, y: 640 }
+                - { x: -100, y: 960 }
+                - { x: 200, y: 960 }
+        - name: "shapes"
+          items:
+            - kind: shape
+              shape: rect
+              stroke:
+                tool: fineliner_2
+                color: black
+                width: 1
+              rect: { x: -300, y: 300, w: 600, h: 350 }
+              rotate_deg: 15
+            - kind: shape
+              shape: ellipse
+              stroke:
+                tool: ballpoint_2
+                color: green
+                width: 1
+              center: { x: 0, y: 1200 }
+              rx: 220
+              ry: 120

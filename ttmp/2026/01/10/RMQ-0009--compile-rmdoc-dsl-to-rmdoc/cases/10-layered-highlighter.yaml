@@ -1,0 +1,79 @@
+rm_dsl: v0
+document:
+  name: "rmq-0009-layered-highlighter"
+  kind: notebook
+  format: v6
+  pages:
+    - id: "p1"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      layers:
+        - name: "base-lines"
+          items:
+            - kind: stroke
+              stroke:
+                tool: pencil_2
+                color: black
+                width: 1
+              points:
+                - { x: -500, y: 300 }
+                - { x:  500, y: 300 }
+            - kind: stroke
+              stroke:
+                tool: pencil_2
+                color: black
+                width: 1
+              points:
+                - { x: -500, y: 450 }
+                - { x:  500, y: 450 }
+            - kind: stroke
+              stroke:
+                tool: pencil_2
+                color: black
+                width: 1
+              points:
+                - { x: -500, y: 600 }
+                - { x:  500, y: 600 }
+        - name: "highlight-green"
+          items:
+            - kind: stroke
+              stroke:
+                tool: highlighter_2
+                color: highlight_green
+                width: 2
+              points:
+                - { x: -450, y: 320 }
+                - { x:  450, y: 320 }
+            - kind: stroke
+              stroke:
+                tool: highlighter_2
+                color: highlight_green
+                width: 2
+              points:
+                - { x: -450, y: 470 }
+                - { x:  450, y: 470 }
+        - name: "highlight-pink"
+          items:
+            - kind: stroke
+              stroke:
+                tool: highlighter_2
+                color: highlight_pink
+                width: 2
+              points:
+                - { x: -450, y: 620 }
+                - { x:  450, y: 620 }
+        - name: "annotation"
+          items:
+            - kind: stroke
+              stroke:
+                tool: ballpoint_2
+                color: red
+                width: 1.5
+              points:
+                - { x: -300, y: 800 }
+                - { x: -150, y: 700 }
+                - { x:  0, y: 760 }
+                - { x:  150, y: 680 }
+                - { x:  300, y: 720 }

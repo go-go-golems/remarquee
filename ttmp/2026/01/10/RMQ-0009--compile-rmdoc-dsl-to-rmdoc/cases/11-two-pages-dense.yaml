@@ -1,0 +1,94 @@
+rm_dsl: v0
+document:
+  name: "rmq-0009-two-pages-dense"
+  kind: notebook
+  format: v6
+  pages:
+    - id: "p1"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      layers:
+        - name: "shapes"
+          items:
+            - kind: shape
+              shape: rect
+              stroke:
+                tool: fineliner_2
+                color: black
+                width: 1
+              rect: { x: -500, y: 250, w: 1000, h: 500 }
+              rotate_deg: -10
+            - kind: shape
+              shape: rect
+              stroke:
+                tool: fineliner_2
+                color: red
+                width: 1
+              rect: { x: -350, y: 450, w: 700, h: 350 }
+              rotate_deg: 25
+            - kind: shape
+              shape: ellipse
+              stroke:
+                tool: marker_2
+                color: green
+                width: 2
+              center: { x: 0, y: 1000 }
+              rx: 260
+              ry: 180
+        - name: "accents"
+          items:
+            - kind: stroke
+              stroke:
+                tool: ballpoint_2
+                color: blue
+                width: 1
+              points:
+                - { x: -500, y: 1300 }
+                - { x: -250, y: 1450 }
+                - { x: 0, y: 1320 }
+                - { x: 250, y: 1500 }
+                - { x: 500, y: 1360 }
+    - id: "p2"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      layers:
+        - name: "zigzag"
+          items:
+            - kind: stroke
+              stroke:
+                tool: marker_2
+                color: red
+                width: 2
+              points:
+                - { x: -500, y: 300 }
+                - { x: -250, y: 450 }
+                - { x: 0, y: 320 }
+                - { x: 250, y: 480 }
+                - { x: 500, y: 350 }
+                - { x: 250, y: 520 }
+                - { x: 0, y: 380 }
+                - { x: -250, y: 560 }
+                - { x: -500, y: 420 }
+        - name: "overlay"
+          items:
+            - kind: shape
+              shape: ellipse
+              stroke:
+                tool: fineliner_2
+                color: black
+                width: 1
+              center: { x: 0, y: 900 }
+              rx: 320
+              ry: 220
+            - kind: shape
+              shape: rect
+              stroke:
+                tool: fineliner_2
+                color: blue
+                width: 1
+              rect: { x: -280, y: 760, w: 560, h: 320 }
+              rotate_deg: 0
