@@ -324,6 +324,32 @@ If you’re executing the JS with a different runtime (or copying code into anot
 
 ---
 
+## Compile to .rmdoc (strokes-only)
+
+RMDoc-DSL can now be compiled into a real **V6 `.rmdoc` notebook** (strokes-only).
+This is the missing bridge for device validation: generate the same fixture bytes,
+upload them, and confirm the notebook is editable.
+
+Run from the `remarquee/` repo root:
+
+```bash
+go run ./cmd/remarquee rmdsl compile \
+  ./ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/cases/03-ellipse-sweep.js \
+  --out ./rendering/rmq-0009-ellipse/ellipse-sweep.rmdoc
+```
+
+Notes:
+
+- This compiler currently supports **strokes-only** content.
+- Shapes (`ellipse`, `rect`) are lowered to polyline strokes.
+- Typed text, highlights, and templates are planned but not yet encoded.
+
+There is a convenience script in the RMQ-0009 ticket:
+
+- `ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/01-compile-ellipse-sweep-rmdoc.sh`
+
+---
+
 ## Where to look in the code (for developers extending this)
 
 The core implementation lives in:
@@ -348,7 +374,6 @@ The initial consumer is:
 - Extend the PNG renderer with optional overlays:
   - per-item bbox outlines
   - layer visibility toggles
-- Add a compiler target:
-  - RMDoc-DSL → `.rmdoc` (so the exact fixture can be uploaded to device and photographed)
-
+- Extend the compiler beyond strokes-only:
+  - glyph highlights, typed text, and templates
 

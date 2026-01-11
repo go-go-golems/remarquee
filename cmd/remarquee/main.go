@@ -10,6 +10,7 @@ import (
 	"github.com/go-go-golems/remarquee/cmd/remarquee/cmds/cloud"
 	ocr_cmd "github.com/go-go-golems/remarquee/cmd/remarquee/cmds/ocr"
 	rmdoc_cmd "github.com/go-go-golems/remarquee/cmd/remarquee/cmds/rmdoc"
+	rmdsl_cmd "github.com/go-go-golems/remarquee/cmd/remarquee/cmds/rmdsl"
 	"github.com/go-go-golems/remarquee/cmd/remarquee/cmds/upload"
 	"github.com/go-go-golems/remarquee/pkg/doc"
 	"github.com/spf13/cobra"
@@ -39,6 +40,7 @@ func main() {
 	rootCmd.AddCommand(cmds.NewStatusCommand())
 	rootCmd.AddCommand(cloud.NewCloudCommand())
 	rootCmd.AddCommand(ocr_cmd.NewOCRCommand())
+	rootCmd.AddCommand(rmdsl_cmd.NewRmdslCommand())
 	rootCmd.AddCommand(rmdoc_cmd.NewRmdocCommand())
 	rootCmd.AddCommand(upload.NewUploadCommand())
 
