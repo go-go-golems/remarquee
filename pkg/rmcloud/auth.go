@@ -5,6 +5,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const authRetries = 3
+
 // AuthSettings mirrors the common rmapi authentication knobs used by remarquee commands.
 //
 // Note: command-layer structs may add struct tags (e.g. glazed.parameter), but this package
@@ -16,17 +18,27 @@ type AuthSettings struct {
 
 // CreateApiCtx creates an rmapi ApiCtx using rmapi's token bootstrap logic.
 func CreateApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
-	// rmapi does retries in its own main.go; keep this minimal for now and bubble errors.
-	httpCtx := api.AuthHttpCtx(auth.Reauth, auth.NonInteractive)
-	userInfo, err := api.ParseToken(httpCtx.Tokens.UserToken)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse rmapi user token")
+	var lastErr error
+	for i := 0; i < authRetries; i++ {
+		reauth := auth.Reauth || i > 0
+		httpCtx := api.AuthHttpCtx(reauth, auth.NonInteractive)
+		userInfo, err := api.ParseToken(httpCtx.Tokens.UserToken)
+		if err != nil {
+			lastErr = errors.Wrap(err, "failed to parse rmapi user token")
+			continue
+		}
+
+		apiCtx, err := api.CreateApiCtx(httpCtx, userInfo.SyncVersion)
+		if err != nil {
+			lastErr = errors.Wrap(err, "failed to create rmapi api context")
+			continue
+		}
+
+		return userInfo, apiCtx, nil
 	}
 
-	apiCtx, err := api.CreateApiCtx(httpCtx, userInfo.SyncVersion)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create rmapi api context")
+	if lastErr == nil {
+		lastErr = errors.New("failed to create rmapi api context")
 	}
-
-	return userInfo, apiCtx, nil
+	return nil, nil, lastErr
 }
