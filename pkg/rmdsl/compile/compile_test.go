@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -15,21 +16,7 @@ import (
 func TestCompileRMDoc_OpenAndParse(t *testing.T) {
 	t.Parallel()
 
-	casePath := filepath.Join("..", "..", "..", "ttmp", "2025", "12", "24", "RMQ-0006--rmdoc-rendering-testing-validation-golden-runner", "cases", "01-ellipse-at-bottom.yaml")
-	doc, err := rmdsl.LoadFromFile(context.Background(), casePath, rmdsl.LoadOptions{})
-	if err != nil {
-		t.Fatalf("load case: %v", err)
-	}
-
-	compiled, err := Compile(context.Background(), doc, CompileOptions{})
-	if err != nil {
-		t.Fatalf("compile: %v", err)
-	}
-
-	archiveBytes, err := buildRMDocArchive(compiled, CompileOptions{})
-	if err != nil {
-		t.Fatalf("build archive: %v", err)
-	}
+	archiveBytes := buildArchiveFromCase(t)
 
 	reader := bytes.NewReader(archiveBytes)
 	docParsed, err := rmdoc.OpenReaderAt(context.Background(), reader, int64(len(archiveBytes)))
@@ -58,6 +45,22 @@ func TestCompileRMDoc_OpenAndParse(t *testing.T) {
 
 	if _, err := render.RenderRMV6RMToPDFBytes(context.Background(), bytes.NewReader(rmBytes)); err != nil {
 		t.Fatalf("render pdf: %v", err)
+	}
+}
+
+func TestCompileRMDoc_RenderV6Archive(t *testing.T) {
+	archiveBytes := buildArchiveFromCase(t)
+	rmdocPath := filepath.Join(t.TempDir(), "case.rmdoc")
+	if err := os.WriteFile(rmdocPath, archiveBytes, 0o644); err != nil {
+		t.Fatalf("write archive: %v", err)
+	}
+
+	res, err := render.MergeRMDocV6OntoBackgroundPDFWithInfo(context.Background(), rmdocPath, render.V6MergeOptions{})
+	if err != nil {
+		t.Fatalf("render-v6 merge: %v", err)
+	}
+	if len(res.PDF) == 0 {
+		t.Fatalf("render-v6 merge: empty pdf")
 	}
 }
 
@@ -121,4 +124,26 @@ func readRMFromArchive(t *testing.T, archive []byte, docID string, pageID string
 	}
 	t.Fatalf("rm file not found: %s", target)
 	return nil
+}
+
+func buildArchiveFromCase(t *testing.T) []byte {
+	t.Helper()
+
+	casePath := filepath.Join("..", "..", "..", "ttmp", "2025", "12", "24", "RMQ-0006--rmdoc-rendering-testing-validation-golden-runner", "cases", "01-ellipse-at-bottom.yaml")
+	doc, err := rmdsl.LoadFromFile(context.Background(), casePath, rmdsl.LoadOptions{})
+	if err != nil {
+		t.Fatalf("load case: %v", err)
+	}
+
+	compiled, err := Compile(context.Background(), doc, CompileOptions{})
+	if err != nil {
+		t.Fatalf("compile: %v", err)
+	}
+
+	archiveBytes, err := buildRMDocArchive(compiled, CompileOptions{})
+	if err != nil {
+		t.Fatalf("build archive: %v", err)
+	}
+
+	return archiveBytes
 }
