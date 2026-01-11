@@ -57,8 +57,8 @@ LastUpdated: 2026-01-10
 ## Milestone 3: Extend beyond strokes (planned)
 
 - [x] Shapes lowering (ellipse/rect) → stroke polylines (if not already compiled as stroke)
-- [ ] Highlights / glyph rectangles (SceneGlyphItem blocks)
-- [ ] Typed text (RootTextBlock + anchors)
+- [x] Highlights / glyph rectangles (SceneGlyphItem blocks)
+- [x] Typed text (RootTextBlock + anchors)
 - [ ] Templates (ties into RMQ-0007)
 
 ## Milestone 4: Tests + CI + docs

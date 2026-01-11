@@ -33,12 +33,20 @@ RelatedFiles:
       Note: Shape/stroke lowering logic
     - Path: remarquee/pkg/rmdsl/compile/metadata.go
       Note: Minimal .metadata JSON builder
+    - Path: remarquee/pkg/rmdsl/compile/rmv6_blocks.go
+      Note: Step 13 RootTextBlock + SceneGlyphItemBlock writers
     - Path: remarquee/pkg/rmdsl/compile/rmv6_encode.go
       Note: Line payload encoding and CRDT ID generation
     - Path: remarquee/pkg/rmdsl/compile/rmv6_page.go
       Note: RMV6 scene tree + line item block writer
     - Path: remarquee/pkg/rmdsl/compile/rmv6_writer.go
       Note: Tagged-block writer implementation
+    - Path: remarquee/pkg/rmdsl/compile/text.go
+      Note: Step 13 typed text defaults and counts
+    - Path: remarquee/pkg/rmdsl/js.go
+      Note: Step 13 JS builder updates for text/glyph
+    - Path: remarquee/pkg/rmdsl/model.go
+      Note: Step 13 DSL schema for text/glyph
     - Path: remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/20-ellipse-sweep-generate-upload-review.sh
       Note: Primary script proving the PDF upload path for the red-dash fixture
     - Path: remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/analysis/01-rmq-0006-red-dash-pdf-vs-rmdoc-findings.md
@@ -73,22 +81,33 @@ RelatedFiles:
       Note: Step 10 complicated validation case
     - Path: remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/cases/12-tools-showcase-advanced.yaml
       Note: Step 10 complicated validation case
+    - Path: remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/cases/13-typed-text-basic.yaml
+      Note: Step 13 typed text case
+    - Path: remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/cases/14-glyph-highlight-basic.yaml
+      Note: Step 13 glyph highlight case
     - Path: remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/01-compile-ellipse-sweep-rmdoc.sh
       Note: Fixture compile helper
     - Path: remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/02-compile-upload-review.sh
-      Note: Compile/upload/editable notebook prompt script
+      Note: |-
+        Compile/upload/editable notebook prompt script
+        Step 14 uploads remarks PDFs for protocol
     - Path: remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/03-batch-compile-upload-tests.sh
-      Note: Batch compile/upload script
+      Note: |-
+        Batch compile/upload script
+        Step 14 uploads remarks PDFs for simple set
     - Path: remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/04-dump-rm-blocks/main.go
       Note: Script used to compare RMV6 block sets
     - Path: remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/05-batch-compile-render-upload-complicated.sh
-      Note: Step 10 batch compile/render/upload script
+      Note: |-
+        Step 10 batch compile/render/upload script
+        Step 14 uploads remarks PDFs for complicated set
 ExternalSources: []
 Summary: Implementation diary tracking RMQ-0009 research, compilation work, and device validation steps.
-LastUpdated: 2026-01-10T22:05:20-05:00
+LastUpdated: 2026-01-10T22:27:57-05:00
 WhatFor: Provide step-by-step implementation notes, decisions, and validation commands for RMQ-0009.
 WhenToUse: Use to review work history, reproduce validation steps, or continue implementation.
 ---
+
 
 
 
@@ -662,3 +681,101 @@ The test is intentionally minimal: it validates the render pipeline doesn’t fa
 
 ### Technical details
 - Test command: `go test ./pkg/rmdsl/compile -count=1`
+
+## Step 13: Emit glyph highlights and typed text blocks
+
+I extended the RMDoc-DSL compiler to emit RMV6 glyph highlight blocks (SceneGlyphItemBlock) and typed text blocks (RootTextBlock). This required new DSL schema fields, new compiled model types, and writer support for the RootTextBlock and glyph payload formats.
+
+I also added integration tests for glyph extraction and root text parsing so we can confirm the new blocks round-trip through the parser. Two new DSL cases (`13-typed-text-basic` and `14-glyph-highlight-basic`) were added to exercise the features.
+
+**Commit (code):** 0ce0452 — "✨ RMQ-0009: add glyph + text emission"
+
+### What I did
+- Added RMDoc-DSL schema support for `page.text` and `item.kind: glyph` with rectangles.
+- Added compiled model types for glyphs and typed text, plus helpers for ASCII validation and text counts.
+- Implemented RootTextBlock and SceneGlyphItemBlock writers, including highlight RGBA markers.
+- Updated the RMV6 page writer to emit typed text and glyph items in scene sequences.
+- Added tests for root text parsing and glyph extraction.
+- Added two new DSL cases: `13-typed-text-basic` and `14-glyph-highlight-basic`.
+- Updated the RMDoc-DSL doc to reflect typed text + highlight support.
+
+### Why
+- RMQ-0009 required glyph highlights and typed text emission to move beyond strokes-only notebooks.
+
+### What worked
+- `go test ./pkg/rmdsl/compile -count=1` passed, including the new glyph/text tests.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- RootTextBlock formatting requires writing raw CRDT IDs and a special subblock structure for paragraph styles.
+- Glyph highlights use a different RGBA marker prefix (0xA4 0x01) than strokes.
+
+### What was tricky to build
+- Matching rmscene’s RootTextBlock subblock layout (nested subblocks with raw CRDT IDs).
+- Preserving scene item order while mixing lines and glyphs in the same layer.
+
+### What warrants a second pair of eyes
+- Validate the RootTextBlock defaults (pos/width/style) against a device-authored typed text page.
+- Confirm glyph highlight rectangles align with remarks/renderer expectations.
+
+### What should be done in the future
+- Add typed text cases with non-plain styles once formatting is fully modeled.
+
+### Code review instructions
+- Start in `remarquee/pkg/rmdsl/compile/rmv6_blocks.go` (RootTextBlock, SceneGlyphItemBlock).
+- Review `remarquee/pkg/rmdsl/compile/rmv6_page.go` and `remarquee/pkg/rmdsl/compile/text.go`.
+- See `remarquee/pkg/rmdsl/compile/compile_test.go` for glyph/text tests.
+
+### Technical details
+- Tests: `go test ./pkg/rmdsl/compile -count=1`
+
+## Step 14: Upload remarks golden PDFs alongside rmdocs
+
+I updated the RMQ-0009 scripts to generate a remarks reference PDF for each case, alongside the rmdoc and render-v6 PDF. This makes on-device comparisons immediate for both the simple and complicated test sets.
+
+The simple batch script ran end-to-end; the complicated script hit a transient 400 on one upload, so I retried that file and finished the remaining case manually.
+
+**Commit (code):** f8e3594 — "🧰 RMQ-0009: upload remarks golden PDFs"
+
+### What I did
+- Updated the simple and complicated batch scripts to render and upload `*-remarks.pdf` outputs.
+- Updated the ellipse protocol script to upload a remarks golden PDF for the ellipse sweep.
+- Ran the simple batch script to regenerate and upload notebooks + PDFs.
+- Manually re-uploaded the failing complicated case and completed the remaining case.
+
+### Why
+- Provide side-by-side comparisons of rmdoc notebooks vs our render-v6 output vs remarks reference output on-device.
+
+### What worked
+- Simple batch script completed and uploaded notebooks + PDFs.
+- Complicated set is fully uploaded after manual retries.
+
+### What didn't work
+- The complicated batch script failed once with a 400 on `11-two-pages-dense.rmdoc`:
+  - Command: `bash .../scripts/05-batch-compile-render-upload-complicated.sh`
+  - Error: `failed to upload file [.../11-two-pages-dense.rmdoc]: request failed with status 400`
+- The remote mkdir in the simple script prints `Error: entry already exists` (expected, but noisy).
+
+### What I learned
+- rmapi can intermittently return 400 on re-upload; retrying the single file succeeds.
+
+### What was tricky to build
+- Ensuring unique basenames for rmdoc, render-v6 PDF, and remarks PDF so rmapi does not overwrite.
+
+### What warrants a second pair of eyes
+- Verify the remarks PDFs appear on-device and match the expected reference output.
+
+### What should be done in the future
+- Consider adding a small retry loop in the complicated script for upload failures.
+
+### Code review instructions
+- Start in `remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/03-batch-compile-upload-tests.sh` and `.../scripts/05-batch-compile-render-upload-complicated.sh`.
+
+### Technical details
+- Commands:
+  - `bash .../scripts/03-batch-compile-upload-tests.sh`
+  - `bash .../scripts/05-batch-compile-render-upload-complicated.sh`
+  - `go run ./cmd/remarquee cloud put --non-interactive --force .../11-two-pages-dense.rmdoc /remarquee/rendering/rmq-0009-complicated`
+  - `go run ./cmd/remarquee cloud ls --non-interactive /remarquee/rendering/rmq-0009-complicated`
