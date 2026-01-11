@@ -16,7 +16,7 @@ RelatedFiles:
       Note: ParseToken expiration logic
 ExternalSources: []
 Summary: Diary for rmapi reauth investigation
-LastUpdated: 2026-01-11T18:44:25-05:00
+LastUpdated: 2026-01-11T18:55:18-05:00
 WhatFor: Track investigation steps and decisions
 WhenToUse: Use while working on RMQ-0010
 ---
@@ -260,3 +260,41 @@ I added a small playbook describing the reauth/reset flow and expanded the `clou
 
 ### Technical details
 - Command: `go run ./cmd/remarquee cloud account --help`
+
+## Step 7: Close RMQ-0010 after remediation is documented
+
+I closed the RMQ-0010 ticket now that the retry fix, guidance, and playbook are in place. The docmgr close step updated the ticket status and logged a changelog entry, while flagging one open task (no tasks were ever added explicitly).
+
+**Commit (code):** N/A
+
+### What I did
+- Ran `docmgr ticket close --ticket RMQ-0010 --changelog-entry "Completed rmapi reauth investigation + remediation docs"`.
+- Verified the ticket status moved to `complete`.
+
+### Why
+- The remediation is complete and documented; the ticket can be closed.
+
+### What worked
+- docmgr updated `index.md` and the changelog successfully.
+
+### What didn't work
+- docmgr warned: `Not all tasks are done (1 open, 0 done)`. No tasks had been defined.
+
+### What I learned
+- docmgr will warn on close if tasks are open, even when the tasks list is empty/unused.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- Ensure the ticket close is acceptable despite the open-task warning.
+
+### What should be done in the future
+- If needed, add explicit tasks to RMQ-0010 to avoid close warnings.
+
+### Code review instructions
+- Check `remarquee/ttmp/2026/01/11/RMQ-0010--rmapi-reauth-investigation/index.md` for `Status: complete`.
+- Review `remarquee/ttmp/2026/01/11/RMQ-0010--rmapi-reauth-investigation/changelog.md`.
+
+### Technical details
+- Command: `docmgr ticket close --ticket RMQ-0010 --changelog-entry "Completed rmapi reauth investigation + remediation docs"`

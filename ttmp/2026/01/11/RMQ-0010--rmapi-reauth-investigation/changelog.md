@@ -31,3 +31,8 @@ Step 6: add reauth recovery playbook + help text (commit fb0f0b7)
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/account.go — Help text for reauth/reset
 
+
+## 2026-01-11
+
+Completed rmapi reauth investigation + remediation docs
+

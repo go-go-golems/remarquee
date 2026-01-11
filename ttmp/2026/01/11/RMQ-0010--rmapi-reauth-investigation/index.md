@@ -1,7 +1,7 @@
 ---
 Title: rmapi reauth investigation
 Ticket: RMQ-0010
-Status: active
+Status: complete
 Topics:
     - backend
 DocType: index
@@ -10,10 +10,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-11T18:21:47.69381953-05:00
+LastUpdated: 2026-01-11T18:54:33.716149461-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # rmapi reauth investigation
 
