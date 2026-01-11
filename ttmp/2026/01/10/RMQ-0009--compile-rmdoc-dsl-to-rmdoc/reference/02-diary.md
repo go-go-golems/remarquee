@@ -24,7 +24,9 @@ RelatedFiles:
     - Path: remarquee/pkg/rmdsl/compile/compile.go
       Note: Compiler entrypoint and archive assembly
     - Path: remarquee/pkg/rmdsl/compile/compile_test.go
-      Note: Integration and round-trip tests
+      Note: |-
+        Integration and round-trip tests
+        Step 12 render-v6 integration test
     - Path: remarquee/pkg/rmdsl/compile/content.go
       Note: Minimal cPages .content JSON builder
     - Path: remarquee/pkg/rmdsl/compile/lower.go
@@ -83,10 +85,11 @@ RelatedFiles:
       Note: Step 10 batch compile/render/upload script
 ExternalSources: []
 Summary: Implementation diary tracking RMQ-0009 research, compilation work, and device validation steps.
-LastUpdated: 2026-01-10T21:56:36-05:00
+LastUpdated: 2026-01-10T22:05:20-05:00
 WhatFor: Provide step-by-step implementation notes, decisions, and validation commands for RMQ-0009.
 WhenToUse: Use to review work history, reproduce validation steps, or continue implementation.
 ---
+
 
 
 
@@ -619,3 +622,43 @@ I updated the batch script to render PDFs with a `-pdf` suffix in the filename s
 - Commands:
   - `bash /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/05-batch-compile-render-upload-complicated.sh`
   - `go run ./cmd/remarquee cloud ls --non-interactive /remarquee/rendering/rmq-0009-complicated`
+
+## Step 12: Add render-v6 integration test for compiled archives
+
+I added a focused integration test that compiles a DSL case into a `.rmdoc`, writes it to disk, and runs the full render-v6 merge pipeline. This ensures the compile output can be consumed by the V6 renderer end-to-end without errors.
+
+The test is intentionally minimal: it validates the render pipeline doesn’t fail and produces a non-empty PDF, which satisfies the current acceptance criteria for task 34.
+
+**Commit (code):** fc2175d — "🧪 RMQ-0009: add render-v6 integration test"
+
+### What I did
+- Added `TestCompileRMDoc_RenderV6Archive` in `pkg/rmdsl/compile/compile_test.go` to compile → write archive → `MergeRMDocV6OntoBackgroundPDFWithInfo`.
+- Refactored the test setup into a helper to avoid duplication.
+- Ran `go test ./pkg/rmdsl/compile -count=1`.
+
+### Why
+- Task 34 calls for compile → parse → render-v6 coverage to ensure the pipeline can render `.rmdoc` outputs without errors.
+
+### What worked
+- The new test produces a non-empty PDF and the suite passes.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- The render-v6 merge path works for notebook archives with blank background pages, so we can rely on it for integration validation.
+
+### What was tricky to build
+- Avoiding redundant compile logic across tests while keeping the helper narrow and deterministic.
+
+### What warrants a second pair of eyes
+- Confirm the test case selection is representative enough for the render-v6 path (currently uses a single ellipse case).
+
+### What should be done in the future
+- Expand the integration coverage to use a multi-page case once highlights or typed text are added.
+
+### Code review instructions
+- Start in `remarquee/pkg/rmdsl/compile/compile_test.go` and focus on `TestCompileRMDoc_RenderV6Archive`.
+
+### Technical details
+- Test command: `go test ./pkg/rmdsl/compile -count=1`

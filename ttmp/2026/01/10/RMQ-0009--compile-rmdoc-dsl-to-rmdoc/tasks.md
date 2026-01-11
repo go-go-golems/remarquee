@@ -67,7 +67,7 @@ LastUpdated: 2026-01-10
   - [ ] golden bytes tests for small blocks (tag encoding, varuint, crdt ids)
   - [ ] parse-then-reparse invariants (writer output is readable by our parser)
 - [x] Integration tests:
-  - [ ] compile DSL → `.rmdoc` → parse → render-v6 (no error)
+- [x] compile DSL → `.rmdoc` → parse → render-v6 (no error)
 - [x] Document the compiler in `pkg/doc/topics/`
 
 

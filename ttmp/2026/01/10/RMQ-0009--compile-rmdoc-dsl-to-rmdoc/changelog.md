@@ -123,3 +123,12 @@ Renamed PDF outputs with -pdf suffix to avoid basename collisions; reuploaded pa
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/05-batch-compile-render-upload-complicated.sh — Use -pdf suffix to keep PDF uploads distinct
 
+
+## 2026-01-10
+
+Step 12: add render-v6 integration test (commit fc2175d)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdsl/compile/compile_test.go — Cover compile→render-v6 pipeline
+
