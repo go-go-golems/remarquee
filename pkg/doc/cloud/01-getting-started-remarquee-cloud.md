@@ -111,6 +111,21 @@ go run ./cmd/remarquee cloud ls / --with-glaze-output --output json
 go run ./cmd/remarquee cloud stat /Books --with-glaze-output --output json
 ```
 
+## Searching: find by name or path when you don't know the exact location
+
+If you know a name fragment (or a pattern) but not the full path, use `cloud search`. It recursively walks the tree from `--start` (default: `/`) and matches either the full path (default) or the entry name.
+
+```bash
+# substring search (default: match against path)
+go run ./cmd/remarquee cloud search electronics
+
+# match against just the name
+go run ./cmd/remarquee cloud search notes --match name --start /Books
+
+# regexp search
+go run ./cmd/remarquee cloud search ".*pdf$" --regex
+```
+
 ## Downloading and uploading
 
 `get` downloads a single document as a `.rmdoc` archive (a container format used by rmapi). A `.rmdoc` file is essentially a zip archive that contains the document's metadata, content files (PDF, EPUB, or notebook layers), and annotations. This is the safest way to back up content for local processing because it preserves the document data as rmapi understands it—you're getting the "raw" representation that can be re-uploaded or inspected without loss.

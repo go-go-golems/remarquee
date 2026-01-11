@@ -34,3 +34,8 @@ Step 5: add rmapi-backed cloud search command (commit b1cd9c8) and document Sync
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/cloud/search.go — Search command implementation
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/rmapi/docs/filetree-and-sync15-model.md — Sync15/filetree textbook
 
+
+## 2026-01-10
+
+Closed ticket after implementing cloud search and documenting rmapi filetree/Sync15 model.
+

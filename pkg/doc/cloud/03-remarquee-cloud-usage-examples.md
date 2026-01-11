@@ -82,9 +82,24 @@ go run ./cmd/remarquee cloud ls / --with-glaze-output --output json | jq '.[] | 
 
 ## 4) Find things across your tree
 
-Use `find` when you want a recursive scan. This is the "search everything under a path" command—it walks the entire tree from a starting point and prints every entry. The optional pattern is a regexp applied to the formatted output path, so it can match directory names, document names, and file-like suffixes you may have in names. This makes `find` a powerful tool for locating content when you remember part of a name but not the full path, or when you want to audit everything in a folder hierarchy.
+There are two related commands for “search everything under a path”:
+
+- `search`: match against raw **path** (default) or **name**, with substring or regexp matching, plus type/template filters.
+- `find`: match a regexp against the **formatted output path** (rmapi-like), which is handy for quick scans but can be less explicit about what is being matched.
 
 ```bash
+# substring match against path (default)
+go run ./cmd/remarquee cloud search electronics
+
+# regexp match (paths by default)
+go run ./cmd/remarquee cloud search ".*pdf$" --regex
+
+# match against just the entry name, starting in /Books
+go run ./cmd/remarquee cloud search notes --match name --start /Books
+
+# type filtering + cap output size
+go run ./cmd/remarquee cloud search sketch --type dir --limit 5 --compact
+
 # everything under /Books
 go run ./cmd/remarquee cloud find /Books --compact
 

@@ -54,7 +54,7 @@ Currently, the following verbs support structured output:
 - `ls`
 - `stat`
 
-Other verbs (`get`, `put`, `mkdir`, `mv`, `rm`, `find`, `account`, `version`) produce text output only, but they do so in a predictable format that's easy to wrap in shell scripts.
+Other verbs (`get`, `put`, `mkdir`, `mv`, `rm`, `find`, `search`, `account`, `version`) produce text output only, but they do so in a predictable format that's easy to wrap in shell scripts.
 
 Example:
 
@@ -193,6 +193,40 @@ Recursively walks the tree from `start` (default: `/`) and prints entries. If `p
 
 ```bash
 remarquee cloud find [start] [pattern] [--compact]
+```
+
+### cloud search <query>
+
+Searches entries by **path** (default) or **name** starting from a directory (`--start`, default: `/`). This is a recursive search over rmapi's filetree, with explicit matching semantics:
+
+- By default, `<query>` is treated as a substring match.
+- With `--regex`, `<query>` is treated as a Go regexp.
+
+This is often a better fit than `find` when you want to match against raw path/name strings (instead of `find`'s regexp against formatted output).
+
+**Usage:**
+
+```bash
+remarquee cloud search <query> [flags]
+```
+
+**Flags:**
+- `--start`: start directory (default: `/`)
+- `--regex`: treat query as a regexp
+- `--case-sensitive`: use case-sensitive matching (substring or regex)
+- `--match path|name`: match target (default: `path`)
+- `-c, --compact`: compact output (no `[d]`/`[f]` prefix; `/` suffix for directories)
+- `--include-templates`: include template entries in results (templates are hidden by default)
+- `--type dir|file|template`: filter by entry type
+- `--limit N`: stop after N matches (0 = no limit)
+
+**Examples:**
+
+```bash
+remarquee cloud search electronics
+remarquee cloud search ".*pdf$" --regex
+remarquee cloud search notes --match name --start /Books
+remarquee cloud search sketch --type dir --limit 5
 ```
 
 ### cloud account
