@@ -3,6 +3,7 @@ package rmcloud
 import (
 	"github.com/juruen/rmapi/api"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 const authRetries = 3
@@ -22,9 +23,17 @@ func CreateApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
 	for i := 0; i < authRetries; i++ {
 		reauth := auth.Reauth || i > 0
 		httpCtx := api.AuthHttpCtx(reauth, auth.NonInteractive)
+		if httpCtx.Tokens.UserToken == "" {
+			lastErr = errors.New("rmapi did not return a user token; device token may be invalid, run `rmapi reset` and re-register this device")
+			continue
+		}
 		userInfo, err := api.ParseToken(httpCtx.Tokens.UserToken)
 		if err != nil {
-			lastErr = errors.Wrap(err, "failed to parse rmapi user token")
+			if strings.Contains(err.Error(), "token Expired") {
+				lastErr = errors.Wrap(err, "rmapi user token expired after reauth; check system clock or re-register via `rmapi reset`")
+			} else {
+				lastErr = errors.Wrap(err, "failed to parse rmapi user token")
+			}
 			continue
 		}
 
