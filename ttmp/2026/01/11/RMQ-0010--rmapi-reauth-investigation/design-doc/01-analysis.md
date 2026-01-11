@@ -20,7 +20,7 @@ RelatedFiles:
       Note: AUTH_RETRIES pattern
 ExternalSources: []
 Summary: Analyze rmapi reauth flow and how remarquee should handle expired user tokens
-LastUpdated: 2026-01-11T18:37:35-05:00
+LastUpdated: 2026-01-11T18:44:25-05:00
 WhatFor: Guide fixes for rmapi token expiration handling in remarquee
 WhenToUse: When implementing or reviewing rmapi reauth handling
 ---
@@ -79,3 +79,4 @@ Add a small retry loop in `rmcloud.CreateApiCtx` (or wrap it in the `remarquee` 
 - `rmapi/api/api.go:ParseToken`
 - `rmapi/main.go` retry loop
 - `remarquee/ttmp/2026/01/11/RMQ-0010--rmapi-reauth-investigation/scripts/decode_rmapi_tokens.py`
+- `remarquee/ttmp/2026/01/11/RMQ-0010--rmapi-reauth-investigation/playbook/01-reauth-recovery.md`

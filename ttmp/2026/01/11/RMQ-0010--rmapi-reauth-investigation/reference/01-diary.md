@@ -16,7 +16,7 @@ RelatedFiles:
       Note: ParseToken expiration logic
 ExternalSources: []
 Summary: Diary for rmapi reauth investigation
-LastUpdated: 2026-01-11T18:37:35-05:00
+LastUpdated: 2026-01-11T18:44:25-05:00
 WhatFor: Track investigation steps and decisions
 WhenToUse: Use while working on RMQ-0010
 ---
@@ -221,3 +221,42 @@ I added clearer error messages for missing user tokens and persistent expiration
 
 ### Technical details
 - Command: `go run ./cmd/remarquee cloud account`
+
+## Step 6: Document reauth recovery and add help text
+
+I added a small playbook describing the reauth/reset flow and expanded the `cloud account` help text so users can recover without digging into code. This step makes the remediation self-serve and consistent with the new error guidance.
+
+**Commit (code):** fb0f0b7 — "Docs: add reauth guidance to cloud account"
+
+### What I did
+- Added a reauth recovery playbook in `playbook/01-reauth-recovery.md`.
+- Expanded the long help text in `remarquee/cmd/remarquee/cmds/cloud/account.go`.
+- Linked the playbook in the RMQ-0010 bug report and analysis references.
+
+### Why
+- Give users a direct path to recover when auth fails without waiting for help.
+
+### What worked
+- The help text now advertises the reauth/reset flow.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Including `rmapi reset` guidance in the help text prevents repeated guesswork when device tokens are invalid.
+
+### What was tricky to build
+- Keeping the playbook concise while covering the full remediation flow.
+
+### What warrants a second pair of eyes
+- Review the wording to ensure we are not encouraging unnecessary resets.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Check `remarquee/cmd/remarquee/cmds/cloud/account.go` for the new help block.
+- Review `remarquee/ttmp/2026/01/11/RMQ-0010--rmapi-reauth-investigation/playbook/01-reauth-recovery.md`.
+
+### Technical details
+- Command: `go run ./cmd/remarquee cloud account --help`

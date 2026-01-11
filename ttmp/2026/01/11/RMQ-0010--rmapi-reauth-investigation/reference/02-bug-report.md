@@ -18,7 +18,7 @@ RelatedFiles:
       Note: rmapi retry loop for auth
 ExternalSources: []
 Summary: remarquee cloud commands fail when rmapi user tokens are expired; fixed by retrying auth and better guidance
-LastUpdated: 2026-01-11T18:37:35-05:00
+LastUpdated: 2026-01-11T18:44:25-05:00
 WhatFor: Capture reproduction, impact, and current fix/guidance for rmapi reauth
 WhenToUse: Use when remarquee reports token expiration or reauth fails
 ---
@@ -82,3 +82,4 @@ Current status:
 ## Related
 
 - `remarquee/ttmp/2026/01/11/RMQ-0010--rmapi-reauth-investigation/design-doc/01-analysis.md`
+- `remarquee/ttmp/2026/01/11/RMQ-0010--rmapi-reauth-investigation/playbook/01-reauth-recovery.md`
