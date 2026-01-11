@@ -24,12 +24,16 @@ var toolMap = map[string]uint32{
 }
 
 var colorMap = map[string]rmdoc.PenColor{
-	"black":           rmdoc.PenColorBlack,
-	"red":             rmdoc.PenColorRed,
-	"green":           rmdoc.PenColorGreen,
-	"blue":            rmdoc.PenColorBlue,
-	"highlight_pink":  rmdoc.PenColorHighlightPink,
-	"highlight_green": rmdoc.PenColorHighlightGreen,
+	"black":            rmdoc.PenColorBlack,
+	"red":              rmdoc.PenColorRed,
+	"green":            rmdoc.PenColorGreen,
+	"blue":             rmdoc.PenColorBlue,
+	"highlight_yellow": rmdoc.PenColorHighlightYellow,
+	"highlight_blue":   rmdoc.PenColorHighlightBlue,
+	"highlight_pink":   rmdoc.PenColorHighlightPink,
+	"highlight_orange": rmdoc.PenColorHighlightOrange,
+	"highlight_green":  rmdoc.PenColorHighlightGreen,
+	"highlight_gray":   rmdoc.PenColorHighlightGray,
 }
 
 func lowerPageToLayers(p rmdsl.Page) []CompiledLayer {
@@ -37,19 +41,24 @@ func lowerPageToLayers(p rmdsl.Page) []CompiledLayer {
 	for _, layer := range p.Layers {
 		out := CompiledLayer{Name: layer.Name}
 		for _, item := range layer.Items {
-			out.Strokes = append(out.Strokes, lowerItemToStrokes(item)...)
+			out.Items = append(out.Items, lowerItemToCompiledItems(item)...)
 		}
 		layers = append(layers, out)
 	}
 	return layers
 }
 
-func lowerItemToStrokes(item rmdsl.Item) []rmdoc.Stroke {
+func lowerItemToCompiledItems(item rmdsl.Item) []CompiledItem {
 	switch strings.ToLower(strings.TrimSpace(item.Kind)) {
 	case "stroke":
-		return lowerStroke(item)
+		return wrapStrokes(lowerStroke(item))
 	case "shape":
-		return lowerShape(item)
+		return wrapStrokes(lowerShape(item))
+	case "glyph":
+		if g := lowerGlyph(item); g != nil {
+			return []CompiledItem{{Kind: CompiledItemGlyph, Glyph: g}}
+		}
+		return nil
 	default:
 		return nil
 	}
@@ -81,6 +90,46 @@ func lowerShape(item rmdsl.Item) []rmdoc.Stroke {
 		return []rmdoc.Stroke{buildStroke(*item.Stroke, pts)}
 	default:
 		return nil
+	}
+}
+
+func lowerGlyph(item rmdsl.Item) *CompiledGlyph {
+	if item.Glyph == nil {
+		return nil
+	}
+	color := colorMap[strings.ToLower(strings.TrimSpace(item.Glyph.Color))]
+	if color == 0 {
+		color = rmdoc.PenColorHighlightYellow
+	}
+
+	rects := make([]rmdoc.RMV6Rectangle, 0, len(item.Glyph.Rects))
+	for _, r := range item.Glyph.Rects {
+		rects = append(rects, rmdoc.RMV6Rectangle{
+			X: r.X,
+			Y: r.Y,
+			W: r.W,
+			H: r.H,
+		})
+	}
+
+	var start *uint32
+	if item.Glyph.Start != nil && *item.Glyph.Start >= 0 {
+		v := uint32(*item.Glyph.Start)
+		start = &v
+	}
+
+	var length *uint32
+	if item.Glyph.Length != nil && *item.Glyph.Length >= 0 {
+		v := uint32(*item.Glyph.Length)
+		length = &v
+	}
+
+	return &CompiledGlyph{
+		Start:  start,
+		Length: length,
+		Text:   item.Glyph.Text,
+		Color:  color,
+		Rects:  rects,
 	}
 }
 
@@ -159,4 +208,16 @@ func rectPoints(r rmdsl.Rect, rotDeg float64) []rmdsl.Point {
 		out = append(out, rmdsl.Point{X: rx, Y: ry})
 	}
 	return out
+}
+
+func wrapStrokes(strokes []rmdoc.Stroke) []CompiledItem {
+	if len(strokes) == 0 {
+		return nil
+	}
+	items := make([]CompiledItem, 0, len(strokes))
+	for _, stroke := range strokes {
+		st := stroke
+		items = append(items, CompiledItem{Kind: CompiledItemStroke, Stroke: &st})
+	}
+	return items
 }

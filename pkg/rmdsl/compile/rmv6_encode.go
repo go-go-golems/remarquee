@@ -108,6 +108,89 @@ func encodeRMV6LinePayload(stroke rmdoc.Stroke) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func encodeRMV6GlyphRange(glyph CompiledGlyph) ([]byte, error) {
+	var buf bytes.Buffer
+	w := newRMV6Writer(&buf)
+
+	if glyph.Start != nil {
+		if err := w.writeUint32(2, *glyph.Start); err != nil {
+			return nil, err
+		}
+	}
+	if glyph.Length != nil {
+		if err := w.writeUint32(3, *glyph.Length); err != nil {
+			return nil, err
+		}
+	}
+
+	color := glyph.Color
+	if rgba, ok := rmv6HighlightMarker(color); ok {
+		if err := w.writeUint32(4, uint32(rmdoc.PenColorHighlight)); err != nil {
+			return nil, err
+		}
+		if err := w.writeString(5, glyph.Text); err != nil {
+			return nil, err
+		}
+		if err := w.writeSubBlock(6, func(sw *rmv6Writer) error {
+			if err := sw.writeVarUint(uint64(len(glyph.Rects))); err != nil {
+				return err
+			}
+			for _, r := range glyph.Rects {
+				if err := sw.writeFloat64LE(r.X); err != nil {
+					return err
+				}
+				if err := sw.writeFloat64LE(r.Y); err != nil {
+					return err
+				}
+				if err := sw.writeFloat64LE(r.W); err != nil {
+					return err
+				}
+				if err := sw.writeFloat64LE(r.H); err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+		if err := w.writeBytes([]byte{0xA4, 0x01, rgba.B, rgba.G, rgba.R, rgba.A}); err != nil {
+			return nil, err
+		}
+		return buf.Bytes(), nil
+	}
+
+	if err := w.writeUint32(4, uint32(color)); err != nil {
+		return nil, err
+	}
+	if err := w.writeString(5, glyph.Text); err != nil {
+		return nil, err
+	}
+	if err := w.writeSubBlock(6, func(sw *rmv6Writer) error {
+		if err := sw.writeVarUint(uint64(len(glyph.Rects))); err != nil {
+			return err
+		}
+		for _, r := range glyph.Rects {
+			if err := sw.writeFloat64LE(r.X); err != nil {
+				return err
+			}
+			if err := sw.writeFloat64LE(r.Y); err != nil {
+				return err
+			}
+			if err := sw.writeFloat64LE(r.W); err != nil {
+				return err
+			}
+			if err := sw.writeFloat64LE(r.H); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
 func rmv6WritePoint(w *rmv6Writer, pt rmdoc.StrokePoint, version uint8) error {
 	if err := w.writeFloat32LE(float32(pt.X)); err != nil {
 		return err

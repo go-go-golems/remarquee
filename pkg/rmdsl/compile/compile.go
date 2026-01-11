@@ -46,12 +46,14 @@ func Compile(ctx context.Context, doc *rmdsl.Doc, opts CompileOptions) (*Compile
 		if _, err := uuid.Parse(pageID); err != nil {
 			pageID = uuid.NewSHA1(docUUIDObj, []byte(p.ID)).String()
 		}
+		text := compileTextBlock(p.Text, p.Canvas.Width)
 		pages = append(pages, CompiledPage{
 			ID:       pageID,
 			Template: p.Template,
 			CanvasW:  p.Canvas.Width,
 			CanvasH:  p.Canvas.Height,
 			Layers:   lowerPageToLayers(p),
+			Text:     text,
 		})
 	}
 

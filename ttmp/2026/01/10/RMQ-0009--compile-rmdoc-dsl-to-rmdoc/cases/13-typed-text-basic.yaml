@@ -1,0 +1,25 @@
+rm_dsl: v0
+document:
+  name: "rmq-0009-typed-text-basic"
+  kind: notebook
+  format: v6
+  pages:
+    - id: "p1"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      text:
+        content: "Hello typed text\nSecond line"
+        style: plain
+      layers:
+        - name: "guide"
+          items:
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: blue
+                width: 1
+              points:
+                - { x: -500, y: 500 }
+                - { x:  500, y: 500 }

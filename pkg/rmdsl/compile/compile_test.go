@@ -64,6 +64,69 @@ func TestCompileRMDoc_RenderV6Archive(t *testing.T) {
 	}
 }
 
+func TestCompileRMDoc_GlyphRange(t *testing.T) {
+	casePath := filepath.Join("..", "..", "..", "ttmp", "2026", "01", "10", "RMQ-0009--compile-rmdoc-dsl-to-rmdoc", "cases", "14-glyph-highlight-basic.yaml")
+	archiveBytes := buildArchiveFromCasePath(t, casePath)
+
+	reader := bytes.NewReader(archiveBytes)
+	docParsed, err := rmdoc.OpenReaderAt(context.Background(), reader, int64(len(archiveBytes)))
+	if err != nil {
+		t.Fatalf("open rmdoc: %v", err)
+	}
+	if len(docParsed.Pages) != 1 {
+		t.Fatalf("pages=%d want 1", len(docParsed.Pages))
+	}
+
+	rmBytes := readRMFromArchive(t, archiveBytes, docParsed.UUID, docParsed.Pages[0].PageID)
+	tree, err := rmdoc.ParseRMV6SceneTree(bytes.NewReader(rmBytes))
+	if err != nil {
+		t.Fatalf("parse rmv6: %v", err)
+	}
+	glyphs, err := rmdoc.ExtractRMV6GlyphRangesWithAnchors(tree)
+	if err != nil {
+		t.Fatalf("extract glyphs: %v", err)
+	}
+	if len(glyphs) == 0 {
+		t.Fatalf("expected glyph ranges")
+	}
+	if len(glyphs[0].Rectangles) == 0 {
+		t.Fatalf("expected glyph rectangles")
+	}
+}
+
+func TestCompileRMDoc_RootText(t *testing.T) {
+	casePath := filepath.Join("..", "..", "..", "ttmp", "2026", "01", "10", "RMQ-0009--compile-rmdoc-dsl-to-rmdoc", "cases", "13-typed-text-basic.yaml")
+	archiveBytes := buildArchiveFromCasePath(t, casePath)
+
+	reader := bytes.NewReader(archiveBytes)
+	docParsed, err := rmdoc.OpenReaderAt(context.Background(), reader, int64(len(archiveBytes)))
+	if err != nil {
+		t.Fatalf("open rmdoc: %v", err)
+	}
+	if len(docParsed.Pages) != 1 {
+		t.Fatalf("pages=%d want 1", len(docParsed.Pages))
+	}
+
+	rmBytes := readRMFromArchive(t, archiveBytes, docParsed.UUID, docParsed.Pages[0].PageID)
+	tree, err := rmdoc.ParseRMV6SceneTree(bytes.NewReader(rmBytes))
+	if err != nil {
+		t.Fatalf("parse rmv6: %v", err)
+	}
+	if tree.RootText == nil {
+		t.Fatalf("expected root text block")
+	}
+	paragraphs, err := rmdoc.BuildRMV6TextDocument(tree.RootText)
+	if err != nil {
+		t.Fatalf("build text doc: %v", err)
+	}
+	if len(paragraphs) == 0 {
+		t.Fatalf("expected text paragraphs")
+	}
+	if paragraphs[0].Text != "Hello typed text" {
+		t.Fatalf("paragraph text=%q want %q", paragraphs[0].Text, "Hello typed text")
+	}
+}
+
 func TestEncodeRMV6LinePayload_RoundTrip(t *testing.T) {
 	t.Parallel()
 
@@ -130,6 +193,12 @@ func buildArchiveFromCase(t *testing.T) []byte {
 	t.Helper()
 
 	casePath := filepath.Join("..", "..", "..", "ttmp", "2025", "12", "24", "RMQ-0006--rmdoc-rendering-testing-validation-golden-runner", "cases", "01-ellipse-at-bottom.yaml")
+	return buildArchiveFromCasePath(t, casePath)
+}
+
+func buildArchiveFromCasePath(t *testing.T, casePath string) []byte {
+	t.Helper()
+
 	doc, err := rmdsl.LoadFromFile(context.Background(), casePath, rmdsl.LoadOptions{})
 	if err != nil {
 		t.Fatalf("load case: %v", err)

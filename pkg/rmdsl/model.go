@@ -20,6 +20,7 @@ type Page struct {
 	Template string  `yaml:"template,omitempty" json:"template,omitempty"`
 	Canvas   Canvas  `yaml:"canvas" json:"canvas"`
 	Layers   []Layer `yaml:"layers" json:"layers"`
+	Text     *Text   `yaml:"text,omitempty" json:"text,omitempty"`
 }
 
 type Canvas struct {
@@ -47,6 +48,9 @@ type Item struct {
 	Ry        float64  `yaml:"ry,omitempty" json:"ry,omitempty"`
 	Rect      *Rect    `yaml:"rect,omitempty" json:"rect,omitempty"`
 	RotateDeg float64  `yaml:"rotate_deg,omitempty" json:"rotate_deg,omitempty"`
+
+	// glyph highlight (SceneGlyphItemBlock)
+	Glyph *GlyphRange `yaml:"glyph,omitempty" json:"glyph,omitempty"`
 }
 
 type StrokeStyle struct {
@@ -72,4 +76,18 @@ type Rect struct {
 	H float64 `yaml:"h" json:"h"`
 }
 
+type GlyphRange struct {
+	Start  *int   `yaml:"start,omitempty" json:"start,omitempty"`
+	Length *int   `yaml:"length,omitempty" json:"length,omitempty"`
+	Text   string `yaml:"text,omitempty" json:"text,omitempty"`
+	Color  string `yaml:"color,omitempty" json:"color,omitempty"`
+	Rects  []Rect `yaml:"rects,omitempty" json:"rects,omitempty"`
+}
 
+type Text struct {
+	Content string  `yaml:"content" json:"content"`
+	Style   string  `yaml:"style,omitempty" json:"style,omitempty"`
+	PosX    float64 `yaml:"pos_x,omitempty" json:"pos_x,omitempty"`
+	PosY    float64 `yaml:"pos_y,omitempty" json:"pos_y,omitempty"`
+	Width   float64 `yaml:"width,omitempty" json:"width,omitempty"`
+}

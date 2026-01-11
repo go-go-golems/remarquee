@@ -2,6 +2,7 @@ package compile
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/go-go-golems/remarquee/pkg/rmdoc"
 	"github.com/google/uuid"
@@ -29,7 +30,14 @@ func buildRMV6Page(page CompiledPage, structGen *crdtIDGen, lineGen *crdtIDGen, 
 	if err := writeMigrationInfoBlock(w, rmdoc.RMV6CrdtID{Part1: 1, Part2: 1}, true); err != nil {
 		return nil, err
 	}
-	if err := writePageInfoBlock(w, 1, 0, 0, 0, 0); err != nil {
+	textChars, textLines := uint32(0), uint32(0)
+	if page.Text != nil {
+		if !isASCII(page.Text.Text) {
+			return nil, fmt.Errorf("typed text must be ASCII (page=%s)", page.ID)
+		}
+		textChars, textLines = textCounts(page.Text.Text)
+	}
+	if err := writePageInfoBlock(w, 1, 0, textChars, textLines, 0); err != nil {
 		return nil, err
 	}
 	if err := writeSceneInfoBlock(w, rmv6ZeroID, true, true, 1620, 2160); err != nil {
@@ -53,6 +61,15 @@ func buildRMV6Page(page CompiledPage, structGen *crdtIDGen, lineGen *crdtIDGen, 
 		})
 	}
 
+	if page.Text != nil {
+		textGen := newCrdtIDGen(authorID, 16)
+		textItemID := textGen.Next()
+		styleTS := textGen.Next()
+		if err := writeRootTextBlock(w, *page.Text, textItemID, styleTS); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := writeTreeNodeBlock(w, rootID, "", rmv6ZeroID); err != nil {
 		return nil, err
 	}
@@ -71,17 +88,40 @@ func buildRMV6Page(page CompiledPage, structGen *crdtIDGen, lineGen *crdtIDGen, 
 	}
 
 	for _, g := range layers {
-		prevLine := rmdoc.RMV6EndMarker
-		for _, stroke := range g.Layer.Strokes {
+		prevItem := rmdoc.RMV6EndMarker
+		for _, item := range g.Layer.Items {
 			itemID := lineGen.Next()
-			payload, err := encodeRMV6LinePayload(stroke)
-			if err != nil {
-				return nil, err
+			switch item.Kind {
+			case CompiledItemStroke:
+				if item.Stroke == nil {
+					continue
+				}
+				payload, err := encodeRMV6LinePayload(*item.Stroke)
+				if err != nil {
+					return nil, err
+				}
+				if err := writeSceneLineItemBlock(w, g.ID, itemID, prevItem, rmdoc.RMV6EndMarker, payload); err != nil {
+					return nil, err
+				}
+				prevItem = itemID
+			case CompiledItemGlyph:
+				if item.Glyph == nil {
+					continue
+				}
+				if !isASCII(item.Glyph.Text) {
+					return nil, fmt.Errorf("glyph text must be ASCII (page=%s)", page.ID)
+				}
+				payload, err := encodeRMV6GlyphRange(*item.Glyph)
+				if err != nil {
+					return nil, err
+				}
+				if err := writeSceneGlyphItemBlock(w, g.ID, itemID, prevItem, rmdoc.RMV6EndMarker, payload); err != nil {
+					return nil, err
+				}
+				prevItem = itemID
+			default:
+				continue
 			}
-			if err := writeSceneLineItemBlock(w, g.ID, itemID, prevLine, rmdoc.RMV6EndMarker, payload); err != nil {
-				return nil, err
-			}
-			prevLine = itemID
 		}
 	}
 

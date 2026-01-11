@@ -60,6 +60,12 @@ var module = module || { exports: exports };
     return this;
   };
 
+  DocBuilder.prototype.text = function(content, style){
+    if (!this._curPage) throw new Error("rm.doc(...).page(...).text(...) requires an active page");
+    this._curPage.text = { content: content || "", style: style || "plain" };
+    return this;
+  };
+
   DocBuilder.prototype.layer = function(name){
     if (!this._curPage) throw new Error("rm.doc(...).page(...).layer(...) requires an active page");
     var l = { name: name || "", items: [] };
@@ -108,6 +114,12 @@ var module = module || { exports: exports };
     };
   };
 
+  DocBuilder.prototype.glyph = function(text, color, rects){
+    var it = { kind: "glyph", glyph: { text: text || "", color: color || "highlight_yellow", rects: deepClone(rects || []) } };
+    this._pushItem(it);
+    return this;
+  };
+
   DocBuilder.prototype.done = function(){
     return deepClone(this._doc);
   };
@@ -129,8 +141,12 @@ var module = module || { exports: exports };
     red: "red",
     green: "green",
     blue: "blue",
+    highlight_yellow: "highlight_yellow",
+    highlight_blue: "highlight_blue",
     highlight_pink: "highlight_pink",
-    highlight_green: "highlight_green"
+    highlight_orange: "highlight_orange",
+    highlight_green: "highlight_green",
+    highlight_gray: "highlight_gray"
   };
 
   // include() is bound from Go (rm.include(path)).
@@ -296,5 +312,3 @@ func loadJS(ctx context.Context, path string, opts LoadOptions) (*Doc, error) {
 	}
 	return &d, nil
 }
-
-

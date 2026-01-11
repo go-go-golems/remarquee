@@ -92,6 +92,10 @@ func (w *rmv6Writer) writeID(index uint32, id rmdoc.RMV6CrdtID) error {
 	if err := w.writeTag(index, rmv6TagTypeID); err != nil {
 		return err
 	}
+	return w.writeCrdtIDRaw(id)
+}
+
+func (w *rmv6Writer) writeCrdtIDRaw(id rmdoc.RMV6CrdtID) error {
 	if err := w.writeUint8(id.Part1); err != nil {
 		return err
 	}
@@ -161,6 +165,25 @@ func (w *rmv6Writer) writeString(index uint32, value string) error {
 			return err
 		}
 		return sw.writeBytes(b)
+	})
+}
+
+func (w *rmv6Writer) writeStringWithFormat(index uint32, value string, format *uint32) error {
+	return w.writeSubBlock(index, func(sw *rmv6Writer) error {
+		b := []byte(value)
+		if err := sw.writeVarUint(uint64(len(b))); err != nil {
+			return err
+		}
+		if err := sw.writeUint8(1); err != nil {
+			return err
+		}
+		if err := sw.writeBytes(b); err != nil {
+			return err
+		}
+		if format != nil {
+			return sw.writeUint32(2, *format)
+		}
+		return nil
 	})
 }
 

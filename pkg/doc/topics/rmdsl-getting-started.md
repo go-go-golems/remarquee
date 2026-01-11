@@ -324,9 +324,9 @@ If you’re executing the JS with a different runtime (or copying code into anot
 
 ---
 
-## Compile to .rmdoc (strokes-only)
+## Compile to .rmdoc (strokes + highlights + typed text)
 
-RMDoc-DSL can now be compiled into a real **V6 `.rmdoc` notebook** (strokes-only).
+RMDoc-DSL can now be compiled into a real **V6 `.rmdoc` notebook** with strokes, glyph highlights, and typed text.
 This is the missing bridge for device validation: generate the same fixture bytes,
 upload them, and confirm the notebook is editable.
 
@@ -340,9 +340,9 @@ go run ./cmd/remarquee rmdsl compile \
 
 Notes:
 
-- This compiler currently supports **strokes-only** content.
 - Shapes (`ellipse`, `rect`) are lowered to polyline strokes.
-- Typed text, highlights, and templates are planned but not yet encoded.
+- Glyph highlights and typed text are emitted as RMV6 blocks (RootTextBlock + SceneGlyphItemBlock).
+- Templates are still pending.
 
 There is a convenience script in the RMQ-0009 ticket:
 
@@ -374,6 +374,5 @@ The initial consumer is:
 - Extend the PNG renderer with optional overlays:
   - per-item bbox outlines
   - layer visibility toggles
-- Extend the compiler beyond strokes-only:
-  - glyph highlights, typed text, and templates
-
+- Extend the compiler beyond the current coverage:
+  - templates
