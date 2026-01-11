@@ -152,3 +152,12 @@ Step 14: upload remarks golden PDFs for test sets (commit f8e3594)
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/03-batch-compile-upload-tests.sh — Generate/upload remarks PDFs
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/05-batch-compile-render-upload-complicated.sh — Generate/upload remarks PDFs
 
+
+## 2026-01-11
+
+Step 15: verify typed text/glyph uploads; awaiting device diffs
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/reference/02-diary.md — Record device review request for typed text/glyph cases
+

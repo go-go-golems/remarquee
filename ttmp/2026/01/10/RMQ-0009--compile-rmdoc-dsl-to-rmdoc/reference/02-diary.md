@@ -103,7 +103,7 @@ RelatedFiles:
         Step 14 uploads remarks PDFs for complicated set
 ExternalSources: []
 Summary: Implementation diary tracking RMQ-0009 research, compilation work, and device validation steps.
-LastUpdated: 2026-01-10T22:27:57-05:00
+LastUpdated: 2026-01-11T18:55:18-05:00
 WhatFor: Provide step-by-step implementation notes, decisions, and validation commands for RMQ-0009.
 WhenToUse: Use to review work history, reproduce validation steps, or continue implementation.
 ---
@@ -779,3 +779,44 @@ The simple batch script ran end-to-end; the complicated script hit a transient 4
   - `bash .../scripts/05-batch-compile-render-upload-complicated.sh`
   - `go run ./cmd/remarquee cloud put --non-interactive --force .../11-two-pages-dense.rmdoc /remarquee/rendering/rmq-0009-complicated`
   - `go run ./cmd/remarquee cloud ls --non-interactive /remarquee/rendering/rmq-0009-complicated`
+
+## Step 15: Verify typed text + glyph uploads and request device diffs
+
+I confirmed the cloud folder contains the typed-text and glyph-highlight cases along with their `-pdf` and `-remarks` siblings, so the on-device review can compare all three variants per case. The remaining work is a visual check on the tablet to spot differences between the notebook render and the two reference PDFs.
+
+Because I cannot see the device screen from here, I logged the exact entries that should be compared and noted the needed user feedback to proceed with adjustments. Once we have diffs, we can decide whether the RMV6 emission needs changes.
+
+**Commit (code):** N/A
+
+### What I did
+- Listed `/remarquee/rendering/rmq-0009-tests` via `remarquee cloud ls`.
+- Verified `13-typed-text-basic`, `13-typed-text-basic-pdf`, `13-typed-text-basic-remarks` exist.
+- Verified `14-glyph-highlight-basic`, `14-glyph-highlight-basic-pdf`, `14-glyph-highlight-basic-remarks` exist.
+
+### Why
+- Ensure the device review compares the notebook render against both our renderer and the remarks golden output.
+
+### What worked
+- Cloud listing shows all required entries for the two new cases.
+
+### What didn't work
+- I cannot visually inspect the tablet output directly; the diffs need user review.
+
+### What I learned
+- The typed-text and glyph cases are uploaded and ready for side-by-side validation.
+
+### What was tricky to build
+- N/A (verification only).
+
+### What warrants a second pair of eyes
+- Confirm device output matches the PDFs for both cases or describe any divergence (glyph rectangles, text baseline, or clipping).
+
+### What should be done in the future
+- Record any visual diffs and adjust RMV6 emission (text anchors or glyph ranges) accordingly.
+
+### Code review instructions
+- Use `remarquee cloud ls /remarquee/rendering/rmq-0009-tests` to confirm the entries.
+- Open the three variants for cases 13 and 14 on-device and report differences.
+
+### Technical details
+- Command: `go run ./cmd/remarquee cloud ls /remarquee/rendering/rmq-0009-tests`
