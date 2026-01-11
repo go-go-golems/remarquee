@@ -16,7 +16,7 @@ RelatedFiles:
       Note: ParseToken expiration logic
 ExternalSources: []
 Summary: Diary for rmapi reauth investigation
-LastUpdated: 2026-01-11T18:28:43-05:00
+LastUpdated: 2026-01-11T18:37:35-05:00
 WhatFor: Track investigation steps and decisions
 WhenToUse: Use while working on RMQ-0010
 ---
@@ -180,3 +180,44 @@ I updated `rmcloud.CreateApiCtx` to retry authentication and token parsing, matc
 
 ### Technical details
 - Command: `go test ./pkg/rmcloud -count=1`
+
+## Step 5: Add explicit auth error guidance and verify account access
+
+I added clearer error messages for missing user tokens and persistent expiration failures so the CLI directs users to re-register their device when needed. After the change, I re-ran the rmcloud tests and confirmed the account command still authenticates successfully.
+
+**Commit (code):** 79cd1da — "Fix: add rmapi auth error guidance"
+
+### What I did
+- Added explicit error guidance in `remarquee/pkg/rmcloud/auth.go` for missing user tokens and expired tokens after reauth.
+- Ran `go test ./pkg/rmcloud -count=1`.
+- Ran `go run ./cmd/remarquee cloud account`.
+- Updated RMQ-0010 docs to reflect the guidance change.
+
+### Why
+- Make failures actionable when the device token is invalid or reauth does not refresh the token.
+
+### What worked
+- `go test ./pkg/rmcloud -count=1` passed.
+- `go run ./cmd/remarquee cloud account` returned `user=wesen@ruinwesen.com sync_version=1.5`.
+
+### What didn't work
+- N/A
+
+### What I learned
+- A missing user token after `AuthHttpCtx` is the clearest signal for device token issues.
+
+### What was tricky to build
+- Keeping guidance concise without over-specifying the remediation steps.
+
+### What warrants a second pair of eyes
+- Confirm the guidance text is appropriate for non-interactive contexts.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Inspect the error branches in `remarquee/pkg/rmcloud/auth.go`.
+- Validate with `go test ./pkg/rmcloud -count=1` and `go run ./cmd/remarquee cloud account`.
+
+### Technical details
+- Command: `go run ./cmd/remarquee cloud account`

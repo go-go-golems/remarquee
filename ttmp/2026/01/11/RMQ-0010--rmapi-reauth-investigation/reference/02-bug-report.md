@@ -17,9 +17,9 @@ RelatedFiles:
     - Path: rmapi/main.go
       Note: rmapi retry loop for auth
 ExternalSources: []
-Summary: remarquee cloud commands fail when rmapi user tokens are expired; fixed by retrying auth
-LastUpdated: 2026-01-11T18:28:43-05:00
-WhatFor: Capture reproduction, impact, and current fix for rmapi reauth
+Summary: remarquee cloud commands fail when rmapi user tokens are expired; fixed by retrying auth and better guidance
+LastUpdated: 2026-01-11T18:37:35-05:00
+WhatFor: Capture reproduction, impact, and current fix/guidance for rmapi reauth
 WhenToUse: Use when remarquee reports token expiration or reauth fails
 ---
 
@@ -77,6 +77,7 @@ Expected behavior (goal):
 Current status:
 
 - Implemented a retry loop in `remarquee/pkg/rmcloud/auth.go` (`authRetries=3`) so expired tokens trigger a reauth attempt.
+- Added explicit guidance when no user token is returned (likely invalid device token) and when a token remains expired after reauth (`79cd1da`).
 
 ## Related
 

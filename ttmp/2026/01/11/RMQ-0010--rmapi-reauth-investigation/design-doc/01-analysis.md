@@ -20,7 +20,7 @@ RelatedFiles:
       Note: AUTH_RETRIES pattern
 ExternalSources: []
 Summary: Analyze rmapi reauth flow and how remarquee should handle expired user tokens
-LastUpdated: 2026-01-11T18:28:43-05:00
+LastUpdated: 2026-01-11T18:37:35-05:00
 WhatFor: Guide fixes for rmapi token expiration handling in remarquee
 WhenToUse: When implementing or reviewing rmapi reauth handling
 ---
@@ -61,7 +61,7 @@ Add a small retry loop in `rmcloud.CreateApiCtx` (or wrap it in the `remarquee` 
 1. Add retry helper in `remarquee/pkg/rmcloud/auth.go` (done in commit `6a665f4`):
    - Attempt `CreateApiCtx` with `Reauth=false` (or the requested flag).
    - On `token Expired` or parse error, call `AuthHttpCtx` again with `Reauth=true` and re-parse.
-2. Thread improved error messages to CLI callers (`cmd/remarquee/cmds/cloud/...`).
+2. Thread improved error messages to CLI callers (`cmd/remarquee/cmds/cloud/...`) (done via rmcloud error hints in commit `6a665f4` and `79cd1da`).
 3. Add a small test or harness using a fake expired token to validate retry behavior.
 4. Document the reauth behavior in CLI help or a playbook if needed.
 
