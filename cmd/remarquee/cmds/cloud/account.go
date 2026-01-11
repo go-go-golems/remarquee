@@ -40,6 +40,10 @@ Shows basic account info as detected by rmapi token parsing.
 
 Examples:
   remarquee cloud account
+
+If auth fails:
+  - retry with: remarquee cloud account --reauth
+  - if it still fails, run: rmapi reset (then re-register the device with rmapi account)
 `),
 		glazecmds.WithFlags(
 			// Auth flags
