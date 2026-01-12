@@ -13,5 +13,7 @@ func NewDeviceCommand() *cobra.Command {
 	cmd.AddCommand(NewScreenshotCommand())
 	cmd.AddCommand(NewRawCommand())
 	cmd.AddCommand(NewStreamCommand())
+	cmd.AddCommand(NewEventsCommand())
+	cmd.AddCommand(NewGesturesCommand())
 	return cmd
 }

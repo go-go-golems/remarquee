@@ -1,11 +1,14 @@
 package device
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-go-golems/remarquee/pkg/devicecapture"
+	"github.com/go-go-golems/remarquee/pkg/deviceevents"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -39,6 +42,14 @@ func runServe(cmd *cobra.Command, s *serveSettings) error {
 		return err
 	}
 	defer reader.Close()
+
+	var eventBus *deviceevents.PubSub
+	if scanner, err := deviceevents.NewEventScanner(); err == nil {
+		eventBus = deviceevents.NewPubSub()
+		scanner.StartAndPublish(context.Background(), eventBus)
+	} else {
+		log.Printf("events disabled: %v", err)
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/info", func(w http.ResponseWriter, r *http.Request) {
@@ -83,6 +94,8 @@ func runServe(cmd *cobra.Command, s *serveSettings) error {
 	})
 
 	mux.Handle("/api/v1/stream", newStreamHandler(reader))
+	mux.Handle("/api/v1/events", newEventsHandler(eventBus))
+	mux.Handle("/api/v1/gestures", newGesturesHandler(eventBus))
 
 	handler := http.Handler(mux)
 	if !s.Unsafe {
