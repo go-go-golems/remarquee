@@ -85,3 +85,17 @@ Step 8: balance notebook margins and log VLM comparisons (commit 578ab36)
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Adjust blank-page bbox padding + margin balance
 
+
+## 2026-01-12
+
+Ticket closed
+
+
+## 2026-01-12
+
+Step 9: align index status text after ticket close
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/index.md — Status text updated to complete
+

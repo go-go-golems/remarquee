@@ -17,6 +17,8 @@ RelatedFiles:
       Note: Debug strategy analysis
     - Path: ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/analysis/02-preliminary-questions-cropping-checks-vlm-loop.md
       Note: Preliminary questions and VLM loop
+    - Path: ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/index.md
+      Note: Status text aligned with ticket closure
     - Path: ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/01-baseline/README.md
       Note: Baseline comparison writeup
     - Path: ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/02-bbox-expand/README.md
@@ -33,6 +35,7 @@ LastUpdated: 2026-01-12T13:34:17-05:00
 WhatFor: Track progress and validation steps for the RMQ-0013 right-edge PDF crop bug.
 WhenToUse: Update after each investigation or validation step.
 ---
+
 
 
 
@@ -376,3 +379,43 @@ I re-rendered page 65 for each case (bbox-only, stroke-pad, margin-balance), ran
   - `go test ./pkg/rmdoc/render -run TestMergeRMDocV6OntoBackgroundPDF_Smoke -count=1`
   - `go run ./cmd/remarquee rmdoc render-v6-png /tmp/rmq-0012-journal/Journal.rmdoc --pages 65 --out-dir ...`
   - `go run ./cmd/remarquee rmdoc vlm-validate --image-a ... --image-b ... --prompt "Compare right-edge alignment..."`
+
+## Step 9: Close RMQ-0013 after confirmation
+
+You confirmed the fix works, so I marked the remaining task complete and closed the ticket with docmgr. I also aligned the index status text with the closed state so the ticket summary reflects completion.
+
+**Commit (code):** N/A
+
+### What I did
+- Checked the remaining placeholder task and closed the ticket with `docmgr ticket close`.
+- Updated the index status text to match the closed state.
+
+### Why
+- The fix is validated and the ticket should be closed for bookkeeping hygiene.
+
+### What worked
+- docmgr updated ticket status + changelog cleanly.
+
+### What didn't work
+- N/A
+
+### What I learned
+- docmgr close updates frontmatter status but not the body status text.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review `remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/index.md` for the status line update.
+- Review `remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/changelog.md` for the close entry.
+
+### Technical details
+- Commands:
+  - `docmgr task check --ticket RMQ-0013 --id 1`
+  - `docmgr ticket close --ticket RMQ-0013`

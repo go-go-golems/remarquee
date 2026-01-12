@@ -1,7 +1,7 @@
 ---
 Title: PDF render crops right edge
 Ticket: RMQ-0013
-Status: active
+Status: complete
 Topics:
     - rendering
     - remarkable
@@ -11,10 +11,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-12T12:41:26.435073124-05:00
+LastUpdated: 2026-01-12T14:09:35.725921541-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # PDF render crops right edge
 
@@ -29,7 +30,7 @@ WhenToUse: ""
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 
