@@ -339,6 +339,8 @@ func ParseRMV6SceneTree(r io.ReadSeeker) (*RMV6SceneTree, error) {
 						BlockVersion: blk.CurrentVersion,
 						Raw:          raw,
 					}
+				case RMV6SceneItemText, RMV6SceneItemUnknown, RMV6SceneItemTombstone:
+					fallthrough
 				default:
 					// For other item kinds, keep the raw subblock payload for later.
 					pos, _ := tr.tell()

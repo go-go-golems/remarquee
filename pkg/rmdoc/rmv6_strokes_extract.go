@@ -63,6 +63,8 @@ func ExtractRMV6StrokesWithAnchors(tree *RMV6SceneTree) ([]Stroke, error) {
 				if err := walk(it.Value.Group, gx, gy); err != nil {
 					return err
 				}
+			case RMV6SceneItemGlyph, RMV6SceneItemText, RMV6SceneItemTombstone, RMV6SceneItemUnknown:
+				continue
 			default:
 				continue
 			}

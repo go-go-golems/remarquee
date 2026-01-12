@@ -114,37 +114,6 @@ func (r *rmV6TaggedBlockReader) readFloat32(index uint32) (float32, error) {
 	return r.readFloat32Raw()
 }
 
-func (r *rmV6TaggedBlockReader) readFloat64(index uint32) (float64, error) {
-	if err := r.readExpectedTag(index, rmV6TagTypeByte8); err != nil {
-		return 0, err
-	}
-	return r.readFloat64Raw()
-}
-
-func (r *rmV6TaggedBlockReader) readIDOptional(index uint32) (*RMV6CrdtID, error) {
-	ok, err := r.checkTag(index, rmV6TagTypeID)
-	if err != nil || !ok {
-		return nil, err
-	}
-	v, err := r.readID(index)
-	if err != nil {
-		return nil, err
-	}
-	return &v, nil
-}
-
-func (r *rmV6TaggedBlockReader) readUint32Optional(index uint32) (*uint32, error) {
-	ok, err := r.checkTag(index, rmV6TagTypeByte4)
-	if err != nil || !ok {
-		return nil, err
-	}
-	v, err := r.readUint32(index)
-	if err != nil {
-		return nil, err
-	}
-	return &v, nil
-}
-
 func (r *rmV6TaggedBlockReader) hasSubBlock(index uint32) (bool, error) {
 	// Matches rmscene has_subblock: explicit end-of-block guard.
 	if r.current != nil {

@@ -28,11 +28,10 @@ type rmV6MainBlockInfo struct {
 	// Size is the length of the block payload in bytes.
 	Size uint32
 
-	BlockType       uint8
-	MinVersion      uint8
-	CurrentVersion  uint8
-	ExtraData       []byte
-	headerReadBytes int64
+	BlockType      uint8
+	MinVersion     uint8
+	CurrentVersion uint8
+	ExtraData      []byte
 }
 
 type rmV6SubBlockInfo struct {
@@ -128,7 +127,7 @@ func (r *rmV6TaggedBlockReader) readHeader() error {
 }
 
 // peekTag reads the next tag varuint and rewinds the stream back to its original position.
-func (r *rmV6TaggedBlockReader) peekTag() (index uint32, tagType rmV6TagType, ok bool, _ error) {
+func (r *rmV6TaggedBlockReader) peekTag() (uint32, rmV6TagType, bool, error) {
 	pos, err := r.tell()
 	if err != nil {
 		return 0, 0, false, err
@@ -168,6 +167,13 @@ func (r *rmV6TaggedBlockReader) skipTaggedValue(tagType rmV6TagType) error {
 		return err
 	case rmV6TagTypeByte8:
 		_, err := r.readBytes(8)
+		return err
+	case rmV6TagTypeLength4:
+		size, err := r.readUint32LE()
+		if err != nil {
+			return err
+		}
+		_, err = r.rs.Seek(int64(size), io.SeekCurrent)
 		return err
 	case rmV6TagTypeID:
 		// Matches rmscene DataStream.read_crdt_id:

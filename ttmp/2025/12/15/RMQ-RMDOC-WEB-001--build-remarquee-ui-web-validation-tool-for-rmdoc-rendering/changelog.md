@@ -42,3 +42,12 @@ UI improvements: 3-column desktop layout, validation guidance panel, enhanced in
 
 Added internal structure display: expandable sections show .rm files (with V3/V5/V6 detection), .content/.metadata JSON, and full file list (commit 32606b6)
 
+
+## 2026-01-12
+
+Add validation tooling tasks moved from RMQ-0004/RMQ-0006
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/15/RMQ-RMDOC-WEB-001--build-remarquee-ui-web-validation-tool-for-rmdoc-rendering/tasks.md — Added migrated tasks
+

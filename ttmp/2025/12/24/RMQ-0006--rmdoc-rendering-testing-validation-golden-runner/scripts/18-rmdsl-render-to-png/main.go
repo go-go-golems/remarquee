@@ -24,16 +24,6 @@ import (
 	"github.com/go-go-golems/remarquee/pkg/rmdsl"
 )
 
-func clampInt(v, lo, hi int) int {
-	if v < lo {
-		return lo
-	}
-	if v > hi {
-		return hi
-	}
-	return v
-}
-
 func drawPoint(img *image.RGBA, x, y int, c color.Color) {
 	b := img.Bounds()
 	if x < b.Min.X || x >= b.Max.X || y < b.Min.Y || y >= b.Max.Y {
@@ -69,23 +59,6 @@ func drawLine(img *image.RGBA, x0, y0, x1, y1 int, c color.Color) {
 			y0 += sy
 		}
 	}
-}
-
-func drawRectOutline(img *image.RGBA, x0, y0, x1, y1 int, c color.Color) {
-	if x0 > x1 {
-		x0, x1 = x1, x0
-	}
-	if y0 > y1 {
-		y0, y1 = y1, y0
-	}
-	x0 = clampInt(x0, 0, img.Bounds().Dx()-1)
-	x1 = clampInt(x1, 0, img.Bounds().Dx()-1)
-	y0 = clampInt(y0, 0, img.Bounds().Dy()-1)
-	y1 = clampInt(y1, 0, img.Bounds().Dy()-1)
-	drawLine(img, x0, y0, x1, y0, c)
-	drawLine(img, x1, y0, x1, y1, c)
-	drawLine(img, x1, y1, x0, y1, c)
-	drawLine(img, x0, y1, x0, y0, c)
 }
 
 func fillBackground(img *image.RGBA, c color.Color) {
@@ -275,5 +248,3 @@ func main() {
 	_ = errors.New // keep placeholder for future strict validation
 	fmt.Printf("ok: rendered %d page(s) to %s\n", len(doc.Document.Pages), *out)
 }
-
-

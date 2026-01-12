@@ -132,4 +132,3 @@ func formatValidationMarkdown(session ValidationSession, sessionID string) strin
 
 	return md
 }
-

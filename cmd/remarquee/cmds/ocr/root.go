@@ -136,7 +136,7 @@ func (c *OcrCommand) RunIntoWriter(ctx context.Context, parsedLayers *layers.Par
 
 	mediaType := strings.TrimSpace(s.MediaType)
 	if mediaType == "" {
-		sniffLen := min(512, len(img))
+		sniffLen := minInt(512, len(img))
 		mediaType = http.DetectContentType(img[:sniffLen])
 		// Fallback for generic octet-stream: infer from extension.
 		if mediaType == "application/octet-stream" {
@@ -272,11 +272,9 @@ func NewOCRCommand() *cobra.Command {
 	return cmd
 }
 
-func min(a, b int) int {
+func minInt(a, b int) int {
 	if a < b {
 		return a
 	}
 	return b
 }
-
-

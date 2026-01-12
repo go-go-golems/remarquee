@@ -2,7 +2,7 @@
 
 ## TODO
 
-- [ ] Add tasks here
+- [x] Add tasks here
 
 - [x] Create Go submodule at /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/go.mod with module github.com/go-go-golems/remarquee; add ./remarquee to root go.work
 - [x] Rename remarquee/cmd/XXX -> remarquee/cmd/remarquee and remove/rename all placeholder XXX references
@@ -14,4 +14,4 @@
 - [x] Implement cloud commands: mv, rm (safe defaults, explicit confirmation flag for destructive ops)
 - [x] Implement cloud command: find
 - [x] Implement cloud commands: account, version
-- [ ] Add minimal tests / smoke checks (go test) and document manual validation commands in RMQ-0002 playbook or notes
+- [x] Add minimal tests / smoke checks (go test) and document manual validation commands in RMQ-0002 playbook or notes

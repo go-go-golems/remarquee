@@ -1,7 +1,7 @@
 ---
 Title: Add rmapi-backed search to remarquee
 Ticket: MO-001-ADD-SEARCH
-Status: done
+Status: complete
 Topics:
     - backend
 DocType: index
@@ -10,10 +10,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-10T18:20:07.221070153-05:00
+LastUpdated: 2026-01-12T16:16:50.477876928-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Add rmapi-backed search to remarquee
@@ -29,7 +30,7 @@ WhenToUse: ""
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

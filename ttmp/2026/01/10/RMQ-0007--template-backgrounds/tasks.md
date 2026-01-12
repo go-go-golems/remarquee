@@ -64,3 +64,10 @@ LastUpdated: 2026-01-10
 - [ ] Update changelog and diary as decisions are made.
 
 
+- [ ] Define rmdoc rendering scope/acceptance criteria (outputs, fidelity, inputs, perf, validation workflow) [moved from RMQ-0004/0006]
+- [ ] Implement legacy V3/V5 pipeline adapter + merge logic (page order, background PDF payload) [moved from RMQ-0004]
+- [ ] Implement V6 typed text rendering (RootTextBlock) and layout outputs [moved from RMQ-0004/0006]
+- [ ] Decide notebook/blank-page sizing correctness (remarks vs desktop export) and update merge sizing [moved from RMQ-0006]
+- [ ] Investigate annotation bbox vs full-page sizing (wSvg/wBg, buildAnnotationOnlyPage) and align with remarks [moved from RMQ-0006]
+- [ ] Investigate highlighter stroke misalignment vs highlight rectangles (highlightsXTranslation, coordinate transforms) [moved from RMQ-0006]
+- [ ] Add editable notebook validation path (compile RMDoc-DSL to .rmdoc + upload) in coordination with RMQ-0009 [moved from RMQ-0006]

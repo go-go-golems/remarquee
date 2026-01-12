@@ -29,7 +29,9 @@ func buildTestPDFLine(x2 float64) ([]byte, error) {
 	cc.Add_S()
 	cc.Add_Q()
 
-	page.SetContentStreams([]string{cc.Operations().String()}, core.NewFlateEncoder())
+	if err := page.SetContentStreams([]string{cc.Operations().String()}, core.NewFlateEncoder()); err != nil {
+		return nil, err
+	}
 
 	w := pdf.NewPdfWriter()
 	if err := w.AddPage(page); err != nil {
@@ -103,5 +105,3 @@ func TestCompareBytesStructural_Identical(t *testing.T) {
 		t.Fatalf("expected match, got mismatch: %+v", res.PageResults)
 	}
 }
-
-

@@ -71,5 +71,3 @@ func TestRenderLegacyGolden_Rmapi_Backend_LegacyPdfA4(t *testing.T) {
 		t.Fatalf("pages=%d want=%d", n, len(doc.Pages))
 	}
 }
-
-

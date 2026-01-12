@@ -10,6 +10,8 @@ const (
 
 func (s ArchiveSchema) String() string {
 	switch s {
+	case SchemaUnknown:
+		return "unknown"
 	case SchemaLegacy:
 		return "legacy"
 	case SchemaCPages:
@@ -30,6 +32,8 @@ const (
 
 func (t DocumentType) String() string {
 	switch t {
+	case DocTypeUnknown:
+		return "Unknown"
 	case DocTypeNotebook:
 		return "Notebook"
 	case DocTypePDF:

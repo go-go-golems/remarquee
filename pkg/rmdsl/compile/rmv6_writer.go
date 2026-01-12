@@ -199,24 +199,6 @@ func (w *rmv6Writer) writeLWWBool(index uint32, ts rmdoc.RMV6CrdtID, value bool)
 	})
 }
 
-func (w *rmv6Writer) writeLWWByte(index uint32, ts rmdoc.RMV6CrdtID, value uint8) error {
-	return w.writeSubBlock(index, func(sw *rmv6Writer) error {
-		if err := sw.writeID(1, ts); err != nil {
-			return err
-		}
-		return sw.writeByte(2, value)
-	})
-}
-
-func (w *rmv6Writer) writeLWWFloat(index uint32, ts rmdoc.RMV6CrdtID, value float32) error {
-	return w.writeSubBlock(index, func(sw *rmv6Writer) error {
-		if err := sw.writeID(1, ts); err != nil {
-			return err
-		}
-		return sw.writeFloat32(2, value)
-	})
-}
-
 func (w *rmv6Writer) writeLWWID(index uint32, ts rmdoc.RMV6CrdtID, value rmdoc.RMV6CrdtID) error {
 	return w.writeSubBlock(index, func(sw *rmv6Writer) error {
 		if err := sw.writeID(1, ts); err != nil {

@@ -4,6 +4,8 @@ import pkg_rmdoc "github.com/go-go-golems/remarquee/pkg/rmdoc"
 
 func schemaString(s pkg_rmdoc.ArchiveSchema) string {
 	switch s {
+	case pkg_rmdoc.SchemaUnknown:
+		return "unknown"
 	case pkg_rmdoc.SchemaLegacy:
 		return "legacy"
 	case pkg_rmdoc.SchemaCPages:
@@ -15,6 +17,8 @@ func schemaString(s pkg_rmdoc.ArchiveSchema) string {
 
 func docTypeString(t pkg_rmdoc.DocumentType) string {
 	switch t {
+	case pkg_rmdoc.DocTypeUnknown:
+		return "unknown"
 	case pkg_rmdoc.DocTypeNotebook:
 		return "notebook"
 	case pkg_rmdoc.DocTypePDF:
@@ -25,5 +29,3 @@ func docTypeString(t pkg_rmdoc.DocumentType) string {
 		return "unknown"
 	}
 }
-
-

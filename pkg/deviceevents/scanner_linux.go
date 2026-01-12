@@ -26,7 +26,9 @@ func NewEventScanner() (*EventScanner, error) {
 	}
 	touch, err := os.OpenFile(touchInputDevice, os.O_RDONLY, 0o644)
 	if err != nil {
-		pen.Close()
+		if cerr := pen.Close(); cerr != nil {
+			return nil, fmt.Errorf("failed to read touch input: %w (close pen: %v)", err, cerr)
+		}
 		return nil, fmt.Errorf("failed to read touch input: %w", err)
 	}
 	return &EventScanner{pen: pen, touch: touch}, nil

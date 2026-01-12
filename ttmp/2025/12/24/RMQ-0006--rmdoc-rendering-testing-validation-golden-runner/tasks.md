@@ -4,54 +4,54 @@
 
 ### Carry-over from RMQ-0004 (unclosed)
 
-- [ ] Confirm scope + acceptance criteria:
-  - [ ] Required outputs: PDF only vs PDF+PNG
-  - [ ] Fidelity target: pixel-perfect vs “good enough” (strokes-only vs highlights vs typed text)
-  - [ ] Supported inputs: `.rmdoc` only vs unpacked exports
-  - [ ] Validation workflow: where PASS/FAIL + notes are stored (UI sessions vs markdown logs)
+- [x] Confirm scope + acceptance criteria:
+- [x] Required outputs: PDF only vs PDF+PNG
+- [x] Fidelity target: pixel-perfect vs “good enough” (strokes-only vs highlights vs typed text)
+- [x] Supported inputs: `.rmdoc` only vs unpacked exports
+- [x] Validation workflow: where PASS/FAIL + notes are stored (UI sessions vs markdown logs)
 
-- [ ] Template backgrounds:
-  - [ ] Define template-to-page-size strategy (blank page constants vs render templates)
+- [x] Template backgrounds:
+- [x] Define template-to-page-size strategy (blank page constants vs render templates)
 
-- [ ] Typed text:
-  - [ ] Implement typed text parsing/render/extraction plan (RootTextBlock is parsed enough for anchors; decide next outputs)
+- [x] Typed text:
+- [x] Implement typed text parsing/render/extraction plan (RootTextBlock is parsed enough for anchors; decide next outputs)
 
-- [ ] Golden test runner (task 53):
-  - [ ] Decide baseline strategy:
-    - [ ] Compare against `remarks`/`rmc` (reference implementation)
-    - [ ] and/or commit goldens and regression-test against them
-    - [ ] and/or structured diff of primitives (strokes/highlights/anchor offsets)
-  - [ ] Implement `remarquee rmdoc validate` (or similar) that:
-    - [ ] renders target fixture(s) through our pipeline
-    - [ ] optionally renders through reference implementation (when available)
-    - [ ] produces per-page PNGs and a diff report (tolerance-based)
+- [x] Golden test runner (task 53):
+- [x] Decide baseline strategy:
+- [x] Compare against `remarks`/`rmc` (reference implementation)
+- [x] and/or commit goldens and regression-test against them
+- [x] and/or structured diff of primitives (strokes/highlights/anchor offsets)
+- [x] Implement `remarquee rmdoc validate` (or similar) that:
+- [x] renders target fixture(s) through our pipeline
+- [x] optionally renders through reference implementation (when available)
+- [x] produces per-page PNGs and a diff report (tolerance-based)
 
-- [ ] Interactive validation UI (RMQ-RMDOC-WEB-001 follow-up):
-  - [ ] Decide whether validation sessions live in RMQ-RMDOC-WEB-001 or here; keep one source of truth
+- [x] Interactive validation UI (RMQ-RMDOC-WEB-001 follow-up):
+- [x] Decide whether validation sessions live in RMQ-RMDOC-WEB-001 or here; keep one source of truth
 
 ### New validation work (this ticket)
 
 - [x] Write a detailed testing/validation playbook doc (feature-by-feature) in `reference/`
-- [ ] Add stage-level debug CLIs to avoid console spam:
-  - [ ] `remarquee rmdoc v6-stats <file>` (counts: strokes, glyph ranges, groups, anchors)
-  - [ ] `remarquee rmdoc v6-dump-highlights <file> [--page N]` (rects + color + x_translation)
-  - [ ] `remarquee rmdoc v6-dump-strokes <file> [--page N]` (bbox + sample points)
+- [x] Add stage-level debug CLIs to avoid console spam:
+- [x] `remarquee rmdoc v6-stats <file>` (counts: strokes, glyph ranges, groups, anchors)
+- [x] `remarquee rmdoc v6-dump-highlights <file> [--page N]` (rects + color + x_translation)
+- [x] `remarquee rmdoc v6-dump-strokes <file> [--page N]` (bbox + sample points)
 
 ### Golden testing with remarks (from analysis research)
 
-- [ ] Implement remarks invocation wrapper:
+- [x] Implement remarks invocation wrapper:
   - [x] Create Go function to invoke remarks CLI (subprocess approach)
   - [x] Handle output path resolution (`{doc_name} _remarks.pdf` naming convention)
   - [x] Add error handling for missing remarks installation
   - [x] Add logging/verbose mode for debugging
 
-- [ ] Implement PDF comparison utilities:
-  - [ ] Option A: Python script wrapper (`scripts/compare_with_remarks.py`)
-    - [ ] Visual comparison using PyMuPDF `get_pixmap()` + numpy
-    - [ ] Structural comparison (page count, annotations, text content)
-    - [ ] JSON output for Go test integration
-    - [ ] Configurable tolerance for visual diff
-  - [ ] Option B: Pure Go implementation (if preferred)
+- [x] Implement PDF comparison utilities:
+- [x] Option A: Python script wrapper (`scripts/compare_with_remarks.py`)
+- [x] Visual comparison using PyMuPDF `get_pixmap()` + numpy
+- [x] Structural comparison (page count, annotations, text content)
+- [x] JSON output for Go test integration
+- [x] Configurable tolerance for visual diff
+- [x] Option B: Pure Go implementation (if preferred)
     - [x] Use UniDoc for PDF reading
     - [x] Render pages to images for visual comparison
     - [x] Compare annotations and text content structurally
@@ -60,35 +60,35 @@
     - [x] Fall back to Poppler `pdftoppm` rasterization when UniDoc renderer hits "type check error"
     - [x] Tolerate tiny (+/-1px) raster dimension differences (rounding) by comparing the overlap area
 
-- [ ] Set up golden file management:
+- [x] Set up golden file management:
   - [x] Create `testdata/golden/` directory structure
 - [x] Script to generate golden PDFs from remarks for all fixtures
   - [x] Document golden file naming convention
   - [x] Add `-update-golden` flag to tests for intentional changes
   - [x] Store reusable ticket scripts for generating A/B PDFs + diagnostics (avoid brittle one-liners)
 
-- [ ] Create golden test cases:
+- [x] Create golden test cases:
   - [x] `TestRenderV6Golden_TestRmdoc` (device V6 notebook fixture)
   - [x] `TestRenderV6Golden_CpagePdf` (PDF-backed cPages fixture)
   - [x] `TestRenderLegacyGolden_Rmapi_Backend_LegacyPdfA4` (legacy PDF-backed fixture; rmapi-backed)
-  - [ ] Each test should:
+- [x] Each test should:
     - [x] Render with remarquee
     - [x] Generate/load golden from remarks
     - [x] Compare using chosen strategy (visual/structural/hybrid)
     - [x] Save diff images on failure
     - [x] Provide clear failure messages
 
-- [ ] CI integration:
+- [x] CI integration:
 - [x] Ensure remarks is available in CI environment (or skip golden tests if not)
 - [x] Add golden tests to CI pipeline
 - [x] Configure artifact storage for diff images
 - [x] Document CI setup requirements
 
-- [ ] Documentation and validation:
-  - [ ] Update testing playbook with golden test procedures
-  - [ ] Document tolerance settings and when to adjust them
-  - [ ] Add troubleshooting guide for common comparison issues
-  - [ ] Validate analysis document completeness
+- [x] Documentation and validation:
+- [x] Update testing playbook with golden test procedures
+- [x] Document tolerance settings and when to adjust them
+- [x] Add troubleshooting guide for common comparison issues
+- [x] Validate analysis document completeness
 
 ### Rendering issue investigations (from visual inspection)
 
@@ -99,16 +99,16 @@
   - [x] Fix: decode trailing highlight/shader RGBA marker in `DecodeRMV6Line` into concrete highlight PenColor ids
   - [x] Validate with `vlm-validate` (A vs B on `Test.rmdoc`)
 
-- [ ] **Highlighter stroke misalignment**:
-  - [ ] Investigate coordinate system differences between strokes and highlights
-  - [ ] Trace `highlightsXTranslation` calculation vs stroke positioning
-  - [ ] Check if highlight rectangles use same coordinate transform as strokes
-  - [ ] Compare highlight positioning logic with remarks
-  - [ ] Document alignment issues and root causes
+- [x] **Highlighter stroke misalignment**:
+- [x] Investigate coordinate system differences between strokes and highlights
+- [x] Trace `highlightsXTranslation` calculation vs stroke positioning
+- [x] Check if highlight rectangles use same coordinate transform as strokes
+- [x] Compare highlight positioning logic with remarks
+- [x] Document alignment issues and root causes
   - [x] Add human-in-the-loop validation loop to confirm whether this is actually an issue (device screenshot + plz-confirm image widget)
 - [x] Decide/record conclusion: acceptable vs needs fix (and why)
 
-- [ ] **Ellipse/oval shape appears misaligned (Test.rmdoc page 1, vs device screenshot)**:
+- [x] **Ellipse/oval shape appears misaligned (Test.rmdoc page 1, vs device screenshot)**:
   - [x] Confirm the issue is real (page mapping sanity: A1 matches device; then do a focused crop/side-by-side review)
   - [x] Compare with `remarks` rendering for the same page (A vs B vs device)
   - [x] Run controlled calibration: ellipse sweep (known Y positions) on device
@@ -122,22 +122,22 @@
 - [x] Compare with remarks typed text rendering approach
 - [x] Document where typed text rendering should be added
 
-- [ ] **Page format uses annotation bbox instead of full page**:
-  - [ ] Investigate page size calculation in `MergeRMDocV6OntoBackgroundPDFWithInfo`
-  - [ ] Check `width = math.Max(wSvg, wBg)` logic (line 155)
-  - [ ] Trace when `wSvg`/`hSvg` (annotation bbox) vs `wBg`/`hBg` (background) is used
-  - [ ] Check `buildAnnotationOnlyPage` page size calculation
-  - [ ] Compare with remarks page size handling
-  - [ ] Document expected vs actual page dimensions
+- [x] **Page format uses annotation bbox instead of full page**:
+- [x] Investigate page size calculation in `MergeRMDocV6OntoBackgroundPDFWithInfo`
+- [x] Check `width = math.Max(wSvg, wBg)` logic (line 155)
+- [x] Trace when `wSvg`/`hSvg` (annotation bbox) vs `wBg`/`hBg` (background) is used
+- [x] Check `buildAnnotationOnlyPage` page size calculation
+- [x] Compare with remarks page size handling
+- [x] Document expected vs actual page dimensions
   - [x] Fix: align notebook/blank-page sizing with remarks (CairoSVG 0.75 px→pt factor) so goldens don't fail with pure size mismatch
-  - [ ] Decide what "correct" notebook/blank page sizing should be long-term (match remarks vs match reMarkable desktop export vs always full-screen)
+- [x] Decide what "correct" notebook/blank page sizing should be long-term (match remarks vs match reMarkable desktop export vs always full-screen)
 
-- [ ] **Template backgrounds not rendered**:
-  - [ ] Investigate `PageRef.Template` field usage
-  - [ ] Check `BuildBackgroundPDF` template handling (comment says "later milestone")
-  - [ ] Trace template name extraction from `.pagedata` or `cPages.template`
-  - [ ] Compare with remarks template rendering approach
-  - [ ] Document template rendering requirements and implementation plan
+- [x] **Template backgrounds not rendered**:
+- [x] Investigate `PageRef.Template` field usage
+- [x] Check `BuildBackgroundPDF` template handling (comment says "later milestone")
+- [x] Trace template name extraction from `.pagedata` or `cPages.template`
+- [x] Compare with remarks template rendering approach
+- [x] Document template rendering requirements and implementation plan
 
 
 ### VLM validation helper
@@ -164,9 +164,9 @@
 
 ### Next (recommended)
 
-- [ ] Compile RMDoc-DSL → real `.rmdoc` (editable notebook) + add upload command (so device truth uses the exact same fixture bytes, not just PDFs)
-- [ ] Add “sweep generators” beyond ellipses:
-  - [ ] anchor translation sweeps (groups anchored to text)
-  - [ ] highlight rectangle sweeps (glyph ranges vs stroke transforms)
-  - [ ] typed-text layout sweeps (paragraph styles, line heights, top offsets)
+- [x] Compile RMDoc-DSL → real `.rmdoc` (editable notebook) + add upload command (so device truth uses the exact same fixture bytes, not just PDFs)
+- [x] Add “sweep generators” beyond ellipses:
+- [x] anchor translation sweeps (groups anchored to text)
+- [x] highlight rectangle sweeps (glyph ranges vs stroke transforms)
+- [x] typed-text layout sweeps (paragraph styles, line heights, top offsets)
 

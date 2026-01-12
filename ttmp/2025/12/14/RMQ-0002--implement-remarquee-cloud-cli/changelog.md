@@ -129,3 +129,17 @@ Step 8: expanded prose in cloud docs (getting started, reference, usage examples
 
 All cloud CLI commands implemented and documented. Remaining task (tests) is optional and can be added later.
 
+
+## 2026-01-12
+
+Reopened: active due to remaining validation/test task
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0002--implement-remarquee-cloud-cli/index.md — Status set to active with open task
+
+
+## 2026-01-12
+
+Ticket closed
+

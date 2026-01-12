@@ -112,5 +112,3 @@ func FindSingleRemarksPDF(outputDir string) (string, error) {
 	}
 	return pdfs[0], nil
 }
-
-

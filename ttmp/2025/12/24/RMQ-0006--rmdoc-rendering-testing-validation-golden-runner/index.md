@@ -1,7 +1,7 @@
 ---
 Title: 'RMDOC rendering: testing + validation + golden runner'
 Ticket: RMQ-0006
-Status: active
+Status: complete
 Topics:
     - go
     - remarkable
@@ -26,10 +26,11 @@ RelatedFiles:
       Note: Debug tool/color counts for Test.rmdoc
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-24T10:45:40.570801121-05:00
+LastUpdated: 2026-01-12T16:38:38.274519712-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # RMDOC rendering: testing + validation + golden runner
@@ -45,7 +46,7 @@ WhenToUse: ""
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

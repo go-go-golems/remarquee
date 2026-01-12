@@ -263,3 +263,27 @@ Step 20: add legacy PDF-backed fixture (rmapi) for V3/V5 rendering (task 51) (co
 
 Closed: implementation complete; moved remaining validation/golden-runner work to RMQ-0006
 
+
+## 2026-01-12
+
+Reopened: active due to remaining scope/legacy/V6/render UI tasks
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/index.md — Status set to active with open tasks
+
+
+## 2026-01-12
+
+Close ticket; moved remaining work into RMQ-0007 (rendering/templates) and RMQ-RMDOC-WEB-001 (validation/UI tooling)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/15/RMQ-RMDOC-WEB-001--build-remarquee-ui-web-validation-tool-for-rmdoc-rendering/tasks.md — Backlog now includes remaining RMQ-0004 items
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/RMQ-0007--template-backgrounds/tasks.md — Backlog now includes remaining RMQ-0004 items
+
+
+## 2026-01-12
+
+Ticket closed
+

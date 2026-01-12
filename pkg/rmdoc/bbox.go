@@ -116,16 +116,16 @@ func BBoxForStroke(s Stroke, pad float64) (BBox, bool) {
 
 func BBoxForStrokes(strokes []Stroke, pad float64) (BBox, bool) {
 	out := NewEmptyBBox()
-	any := false
+	hasAny := false
 	for _, s := range strokes {
 		b, ok := BBoxForStroke(s, pad)
 		if !ok {
 			continue
 		}
 		out = out.Union(b)
-		any = true
+		hasAny = true
 	}
-	if !any {
+	if !hasAny {
 		return BBox{}, false
 	}
 	return out, true
@@ -204,7 +204,7 @@ func BBoxForRMV6SceneTreeWithAnchors(tree *RMV6SceneTree, pad float64) (BBox, er
 		}
 
 		out := NewEmptyBBox()
-		any := false
+		hasAny := false
 
 		for _, it := range items {
 			switch it.Value.Kind {
@@ -221,7 +221,7 @@ func BBoxForRMV6SceneTreeWithAnchors(tree *RMV6SceneTree, pad float64) (BBox, er
 					continue
 				}
 				out = out.Union(b.Translate(gx, gy))
-				any = true
+				hasAny = true
 
 			case RMV6SceneItemGroup:
 				if it.Value.Group == nil {
@@ -233,14 +233,16 @@ func BBoxForRMV6SceneTreeWithAnchors(tree *RMV6SceneTree, pad float64) (BBox, er
 				}
 				if ok {
 					out = out.Union(b)
-					any = true
+					hasAny = true
 				}
+			case RMV6SceneItemGlyph, RMV6SceneItemText, RMV6SceneItemTombstone, RMV6SceneItemUnknown:
+				continue
 			default:
 				continue
 			}
 		}
 
-		if !any {
+		if !hasAny {
 			return BBox{}, false, nil
 		}
 		return out, true, nil

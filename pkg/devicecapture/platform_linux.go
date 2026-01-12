@@ -21,7 +21,9 @@ func getFileAndPointer() (readAtCloser, int64, ScreenInfo, error) {
 	}
 	pointerAddr, err := getFramePointer(pid)
 	if err != nil {
-		file.Close()
+		if cerr := file.Close(); cerr != nil {
+			return nil, 0, ScreenInfo{}, fmt.Errorf("get frame pointer: %w (close mem: %v)", err, cerr)
+		}
 		return nil, 0, ScreenInfo{}, err
 	}
 	info := deviceScreenInfo()

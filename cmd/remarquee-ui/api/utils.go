@@ -29,4 +29,3 @@ func readJSON(path string) (interface{}, error) {
 
 	return result, nil
 }
-

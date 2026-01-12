@@ -73,7 +73,11 @@ func runStream(cmd *cobra.Command, s *streamSettings) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "warning: close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
 		return perrors.Errorf("request failed: %s (%s)", resp.Status, string(body))
@@ -86,16 +90,20 @@ func runStream(cmd *cobra.Command, s *streamSettings) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() {
+		if err := out.Close(); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "warning: close output: %v\n", err)
+		}
+	}()
 
 	written, err := io.Copy(out, resp.Body)
 	if err != nil && ctx.Err() != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(ctx.Err(), context.Canceled) {
-			_, _ = cmd.OutOrStdout().Write([]byte(fmt.Sprintf("OK: wrote %s (%d bytes, timeout)\n", s.OutPath, written)))
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "OK: wrote %s (%d bytes, timeout)\n", s.OutPath, written)
 			return nil
 		}
 		return err
 	}
-	_, _ = cmd.OutOrStdout().Write([]byte(fmt.Sprintf("OK: wrote %s (%d bytes)\n", s.OutPath, written)))
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "OK: wrote %s (%d bytes)\n", s.OutPath, written)
 	return nil
 }

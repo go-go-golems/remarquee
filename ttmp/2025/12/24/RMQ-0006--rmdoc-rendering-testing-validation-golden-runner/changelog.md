@@ -235,3 +235,18 @@ Render V6 typed text (RootTextBlock) and match highlighter/shader stroke opacity
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_text_document.go — Build minimal per-paragraph text document for rendering
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/rmv6_text_layout.go — Shared text top-y + line-height constants
 
+
+## 2026-01-12
+
+Close ticket; moved remaining work into RMQ-0007 (rendering/templates) and RMQ-RMDOC-WEB-001 (validation/UI tooling)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/15/RMQ-RMDOC-WEB-001--build-remarquee-ui-web-validation-tool-for-rmdoc-rendering/tasks.md — Backlog now includes remaining RMQ-0006 items
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/10/RMQ-0007--template-backgrounds/tasks.md — Backlog now includes remaining RMQ-0006 items
+
+
+## 2026-01-12
+
+Ticket closed
+

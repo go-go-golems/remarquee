@@ -57,3 +57,8 @@ Docs/tests: added embedded help docs for `upload bundle` + `upload src`, updated
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0005--remarquee-upload-next-features-bundle-toc-preserve-dirs-upload-src/scripts/02-smoke-test-upload-md-preserve-dirs.sh — Preserve-dirs smoke test
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0005--remarquee-upload-next-features-bundle-toc-preserve-dirs-upload-src/scripts/03-smoke-test-upload-src.sh — Src smoke test
 
+
+## 2026-01-12
+
+Ticket closed
+

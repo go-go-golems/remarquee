@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	DSLVersionV0   = "v0"
-	CanvasSpaceV6  = "rm_screen_v6"
-	DefaultWidthV6 = 1404
+	DSLVersionV0    = "v0"
+	CanvasSpaceV6   = "rm_screen_v6"
+	DefaultWidthV6  = 1404
 	DefaultHeightV6 = 1872
 )
 
@@ -50,5 +50,3 @@ func Normalize(d *Doc) error {
 	}
 	return nil
 }
-
-

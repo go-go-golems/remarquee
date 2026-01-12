@@ -65,5 +65,3 @@ func TestBuildBackgroundPDF_CPagesFixture_PageCountAndReadable(t *testing.T) {
 		t.Fatalf("page count mismatch: got %d, want %d", n, len(doc.Pages))
 	}
 }
-
-

@@ -135,5 +135,3 @@ func main() {
 
 	fmt.Printf("ok: wrote %s (pages=%d)\n", *out, len(outDoc.Document.Pages))
 }
-
-

@@ -66,6 +66,8 @@ func ExtractRMV6GlyphRangesWithAnchors(tree *RMV6SceneTree) ([]RMV6GlyphRange, e
 				if err := walk(it.Value.Group, gx, gy); err != nil {
 					return err
 				}
+			case RMV6SceneItemLine, RMV6SceneItemText, RMV6SceneItemTombstone, RMV6SceneItemUnknown:
+				continue
 			default:
 				continue
 			}

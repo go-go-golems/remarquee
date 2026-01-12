@@ -1,7 +1,7 @@
 ---
 Title: remarquee upload next features (bundle/ToC, preserve dirs, upload src)
 Ticket: RMQ-0005
-Status: active
+Status: complete
 Topics:
     - backend
 DocType: index
@@ -16,8 +16,11 @@ RelatedFiles:
       Note: Remote mkdir -p used for preserve-dirs
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-14T21:22:36.117437784-05:00
+LastUpdated: 2026-01-12T16:16:35.149737712-05:00
+WhatFor: ""
+WhenToUse: ""
 ---
+
 
 
 # remarquee upload next features (bundle/ToC, preserve dirs, upload src)
@@ -33,7 +36,7 @@ LastUpdated: 2025-12-14T21:22:36.117437784-05:00
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

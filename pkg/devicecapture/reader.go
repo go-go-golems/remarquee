@@ -66,7 +66,12 @@ func CaptureRaw() ([]byte, ScreenInfo, error) {
 	if err != nil {
 		return nil, ScreenInfo{}, err
 	}
-	defer r.Close()
+	defer func() {
+		if err := r.Close(); err != nil {
+			// Best-effort cleanup; capture already happened.
+			_ = err
+		}
+	}()
 
 	info := r.ScreenInfo()
 	buf := make([]byte, info.ScreenSizeBytes)

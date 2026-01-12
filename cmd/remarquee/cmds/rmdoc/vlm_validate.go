@@ -301,7 +301,11 @@ func renderRMDocPagesToPNGs(ctx context.Context, s *VLMValidateSettings, rmdocPa
 	if err != nil {
 		return nil, errors.Wrap(err, "create temp pdf")
 	}
-	defer pdfFile.Close()
+	defer func() {
+		if err := pdfFile.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: close pdf temp file: %v\n", err)
+		}
+	}()
 
 	if _, err := pdfFile.Write(res.PDF); err != nil {
 		return nil, errors.Wrap(err, "write temp pdf")

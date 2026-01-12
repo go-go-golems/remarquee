@@ -99,7 +99,7 @@ func ensureRemarksReferencePDF(
 	t *testing.T,
 	workspaceDir string,
 	fixture string,
-) (refPath string) {
+) string {
 	t.Helper()
 
 	root := repoRootFromThisFile(t)
@@ -133,7 +133,7 @@ func ensureRemarksReferencePDF(
 			t.Fatalf("run remarks: %v", err)
 		}
 
-		refPath, err = remarksref.FindSingleRemarksPDF(refOutDir)
+		refPath, err := remarksref.FindSingleRemarksPDF(refOutDir)
 		if err != nil {
 			t.Fatalf("FindSingleRemarksPDF: %v", err)
 		}
@@ -161,7 +161,7 @@ func ensureRemarksReferencePDF(
 			t.Fatalf("run remarks: %v", err)
 		}
 
-		refPath, err = remarksref.FindSingleRemarksPDF(refOutDir)
+		refPath, err := remarksref.FindSingleRemarksPDF(refOutDir)
 		if err != nil {
 			t.Fatalf("FindSingleRemarksPDF: %v", err)
 		}

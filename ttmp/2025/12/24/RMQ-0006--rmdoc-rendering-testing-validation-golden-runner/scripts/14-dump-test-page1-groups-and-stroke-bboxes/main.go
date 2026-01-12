@@ -163,6 +163,8 @@ func main() {
 				if err := walk(it.Value.Group, gx, gy, indent+1); err != nil {
 					return err
 				}
+			case rmdoc.RMV6SceneItemGlyph, rmdoc.RMV6SceneItemText, rmdoc.RMV6SceneItemTombstone, rmdoc.RMV6SceneItemUnknown:
+				continue
 			default:
 				continue
 			}

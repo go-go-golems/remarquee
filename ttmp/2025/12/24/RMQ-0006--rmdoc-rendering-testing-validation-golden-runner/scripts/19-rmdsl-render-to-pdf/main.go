@@ -26,7 +26,7 @@ import (
 	"github.com/unidoc/unipdf/v3/creator"
 )
 
-func parseColor(name string) (r, g, b float64) {
+func parseColor(name string) (float64, float64, float64) {
 	switch strings.ToLower(strings.TrimSpace(name)) {
 	case "black":
 		return 0, 0, 0
@@ -186,7 +186,10 @@ func main() {
 		}
 
 		cc.Add_Q()
-		page.SetContentStreams([]string{cc.Operations().String()}, core.NewFlateEncoder())
+		if err := page.SetContentStreams([]string{cc.Operations().String()}, core.NewFlateEncoder()); err != nil {
+			fmt.Fprintln(os.Stderr, errors.Wrap(err, "set page content streams"))
+			os.Exit(1)
+		}
 	}
 
 	// Ensure parent dir exists (we do not mkdir here; caller should choose an existing dir).
@@ -209,5 +212,3 @@ func main() {
 
 	fmt.Printf("ok: wrote %s\n", *out)
 }
-
-

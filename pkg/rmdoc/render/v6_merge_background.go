@@ -68,6 +68,27 @@ func strokeAlphaFromColorID(color uint32) (float64, bool) {
 		return 115.0 / 255.0, true
 	case rmdoc.PenColorShaderCyan:
 		return 102.0 / 255.0, true
+	case rmdoc.PenColorBlack,
+		rmdoc.PenColorGray,
+		rmdoc.PenColorWhite,
+		rmdoc.PenColorYellow,
+		rmdoc.PenColorGreen,
+		rmdoc.PenColorPink,
+		rmdoc.PenColorBlue,
+		rmdoc.PenColorRed,
+		rmdoc.PenColorGrayOverlap,
+		rmdoc.PenColorHighlight,
+		rmdoc.PenColorGreen2,
+		rmdoc.PenColorCyan,
+		rmdoc.PenColorMagenta,
+		rmdoc.PenColorYellow2,
+		rmdoc.PenColorHighlightYellow,
+		rmdoc.PenColorHighlightBlue,
+		rmdoc.PenColorHighlightPink,
+		rmdoc.PenColorHighlightOrange,
+		rmdoc.PenColorHighlightGreen,
+		rmdoc.PenColorHighlightGray:
+		return 0, false
 	default:
 		return 0, false
 	}
@@ -699,81 +720,30 @@ func MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx context.Context, rmdocPat
 	}, nil
 }
 
-func pageBoxDims(p *pdf.PdfPage) (w, h float64, rotation int64, err error) {
+func pageBoxDims(p *pdf.PdfPage) (float64, float64, int64, error) {
 	box := p.CropBox
 	if box == nil {
+		var err error
 		box, err = p.GetMediaBox()
 		if err != nil {
 			return 0, 0, 0, err
 		}
 	}
-	w = box.Urx - box.Llx
-	h = box.Ury - box.Lly
+	w := box.Urx - box.Llx
+	h := box.Ury - box.Lly
+	var rotation int64
 	if p.Rotate != nil {
 		rotation = *p.Rotate
 	}
 	return w, h, rotation, nil
 }
 
-func displayDims(w0, h0 float64, rotation int64) (w, h float64) {
-	w, h = w0, h0
+func displayDims(w0, h0 float64, rotation int64) (float64, float64) {
+	w, h := w0, h0
 	if rotation == 90 || rotation == 270 {
 		w, h = h, w
 	}
 	return w, h
-}
-
-func buildAnnotationOnlyPage(width, height float64, strokes []rmdoc.Stroke, bbox rmdoc.BBox, wSvg, hSvg float64, opts V6MergeOptions) (*pdf.PdfPage, error) {
-	page := pdf.NewPdfPage()
-	page.MediaBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
-	page.CropBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
-	page.Resources = pdf.NewPdfPageResources()
-
-	if err := ensureStrokeGStates(page.Resources, strokes); err != nil {
-		return nil, err
-	}
-
-	overlayOps := buildOverlayOps(strokes, nil, nil, bbox, 0, 0, wSvg, hSvg, opts)
-	page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder())
-	return page, nil
-}
-
-func buildOverlayOnlyPage(width, height float64, strokes []rmdoc.Stroke, bbox rmdoc.BBox, xSvg, ySvg, wSvg, hSvg float64, opts V6MergeOptions) (*pdf.PdfPage, error) {
-	page := pdf.NewPdfPage()
-	page.MediaBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
-	page.CropBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
-	page.Resources = pdf.NewPdfPageResources()
-
-	if err := ensureStrokeGStates(page.Resources, strokes); err != nil {
-		return nil, err
-	}
-
-	overlayOps := buildOverlayOps(strokes, nil, nil, bbox, xSvg, ySvg, wSvg, hSvg, opts)
-	page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder())
-	return page, nil
-}
-
-func buildOverlayOnlyPageFullScreen(width, height float64, strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, paragraphs []rmdoc.RMV6TextParagraph, scale float64, opts V6MergeOptions) (*pdf.PdfPage, error) {
-	page := pdf.NewPdfPage()
-	page.MediaBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
-	page.CropBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
-	page.Resources = pdf.NewPdfPageResources()
-
-	var fonts typedTextFontNames
-	if rt != nil && rmdoc.HasNonEmptyRMV6Text(paragraphs) {
-		var err error
-		fonts, err = ensureTypedTextFonts(page.Resources)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if err := ensureStrokeGStates(page.Resources, strokes); err != nil {
-		return nil, err
-	}
-
-	overlayOps := buildOverlayOpsScreen(strokes, rt, paragraphs, width, height, scale, fonts, opts)
-	page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder())
-	return page, nil
 }
 
 func buildOverlayOnlyPageBBoxScaled(width, height float64, strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, paragraphs []rmdoc.RMV6TextParagraph, bbox rmdoc.BBox, scale float64, opts V6MergeOptions) (*pdf.PdfPage, error) {
@@ -795,67 +765,10 @@ func buildOverlayOnlyPageBBoxScaled(width, height float64, strokes []rmdoc.Strok
 	}
 
 	overlayOps := buildOverlayOpsBBoxScaled(strokes, rt, paragraphs, bbox, 0, 0, width, height, scale, opts, fonts)
-	page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder())
-	return page, nil
-}
-
-func buildOverlayOpsScreen(strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, paragraphs []rmdoc.RMV6TextParagraph, pageWidth, pageHeight, scale float64, fonts typedTextFontNames, opts V6MergeOptions) string {
-	cc := contentstream.NewContentCreator()
-	cc.Add_q()
-	cc.Add_w(opts.StrokeWidthPt)
-	cc.Add_gs(alphaGStateName(1.0))
-	setLineCap(cc, 1)
-	cc.Add_RG(0, 0, 0)
-	lastColor := uint32(0)
-	lastColorSet := false
-	lastAlpha := alphaKey(1.0)
-	lastLineCap := int64(1)
-	lastWidthPt := opts.StrokeWidthPt
-
-	xShift := pageWidth / 2.0
-
-	for _, s := range strokes {
-		if len(s.Points) == 0 {
-			continue
-		}
-
-		st := strokeStyleForTool(s.Tool, s.ThicknessScale, s.Color)
-		widthPt := st.WidthScreenUnits * scale
-		if widthPt <= 0 {
-			widthPt = opts.StrokeWidthPt
-		}
-		if math.Abs(widthPt-lastWidthPt) > 1e-9 {
-			cc.Add_w(widthPt)
-			lastWidthPt = widthPt
-		}
-		if ak := alphaKey(st.Opacity); ak != lastAlpha {
-			cc.Add_gs(alphaGStateName(st.Opacity))
-			lastAlpha = ak
-		}
-		if st.LineCap != lastLineCap {
-			setLineCap(cc, st.LineCap)
-			lastLineCap = st.LineCap
-		}
-
-		if !lastColorSet || s.Color != lastColor {
-			r, g, b := rmdoc.PenColorToRGBForStroke(rmdoc.PenColor(s.Color))
-			cc.Add_RG(r, g, b)
-			lastColor = s.Color
-			lastColorSet = true
-		}
-		path := draw.NewPath()
-		for _, p := range s.Points {
-			x := float64(p.X)*scale + xShift
-			y := pageHeight - (float64(p.Y) * scale)
-			path = path.AppendPoint(draw.NewPoint(x, y))
-		}
-		draw.DrawPathWithCreator(path, cc)
-		cc.Add_S()
+	if err := page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder()); err != nil {
+		return nil, err
 	}
-
-	cc.Add_Q()
-	appendTypedTextOpsScreen(cc, rt, paragraphs, pageWidth, pageHeight, scale, xShift, fonts)
-	return "% rmv6-overlay\n" + cc.Operations().String()
+	return page, nil
 }
 
 func buildOverlayOpsBBoxScaled(strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, paragraphs []rmdoc.RMV6TextParagraph, bbox rmdoc.BBox, xSvg, ySvg, wSvg, hSvg, scale float64, opts V6MergeOptions, fonts typedTextFontNames) string {
@@ -982,38 +895,6 @@ func buildOverlayOps(strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, paragraphs 
 	return "% rmv6-overlay\n" + cc.Operations().String()
 }
 
-func appendTypedTextOpsScreen(cc *contentstream.ContentCreator, rt *rmdoc.RMV6RootText, paragraphs []rmdoc.RMV6TextParagraph, pageWidth, pageHeight, scale, xShift float64, fonts typedTextFontNames) {
-	if rt == nil || !rmdoc.HasNonEmptyRMV6Text(paragraphs) {
-		return
-	}
-	// If fonts weren't set, do nothing (invalid content stream).
-	if fonts.Plain == "" {
-		return
-	}
-
-	yOffset := rmdoc.RMV6TextTopY
-
-	cc.Add_BT()
-	for _, p := range paragraphs {
-		yOffset += rmdoc.RMV6ParagraphLineHeight(p.Style)
-
-		text := strings.TrimSpace(p.Text)
-		if text == "" {
-			continue
-		}
-
-		fontName, fontSize := typedTextFontForStyle(p.Style, fonts)
-		x := rt.PosX*scale + xShift
-		yScreen := rt.PosY + yOffset
-		y := pageHeight - (yScreen * scale)
-
-		cc.Add_Tf(fontName, fontSize)
-		cc.Add_Tm(1, 0, 0, 1, x, y)
-		cc.Add_Tj(*core.MakeString(text))
-	}
-	cc.Add_ET()
-}
-
 func appendTypedTextOpsBBox(cc *contentstream.ContentCreator, rt *rmdoc.RMV6RootText, paragraphs []rmdoc.RMV6TextParagraph, bbox rmdoc.BBox, xSvg, ySvg, wSvg, hSvg float64, _ V6MergeOptions, fonts typedTextFontNames) {
 	if rt == nil || !rmdoc.HasNonEmptyRMV6Text(paragraphs) {
 		return
@@ -1094,7 +975,7 @@ func normalizeRot(rot int64) int64 {
 // that places the background page content (in its unrotated coordinate system
 // with size w0 x h0) into the merged canvas at (xBg,yBg) with rotate=-page_rotation
 // semantics (mirroring PyMuPDF show_pdf_page rotate=-page_rotation).
-func backgroundTransform(pageRotation int64, w0, h0, xBg, yBg float64) (a, b, c, d, e, f float64) {
+func backgroundTransform(pageRotation int64, w0, h0, xBg, yBg float64) (float64, float64, float64, float64, float64, float64) {
 	rot := normalizeRot(-pageRotation)
 	switch rot {
 	case 0:
@@ -1173,7 +1054,9 @@ func buildMergedPage(width, height, xBg, yBg, xSvg, ySvg float64, bgPage *pdf.Pd
 	overlayOps := buildOverlayOps(strokes, rt, paragraphs, bbox, xSvg, ySvg, wSvg, hSvg, opts)
 	content := cc.Operations().String() + "\n" + overlayOps
 
-	merged.SetContentStreams([]string{content}, core.NewFlateEncoder())
+	if err := merged.SetContentStreams([]string{content}, core.NewFlateEncoder()); err != nil {
+		return nil, err
+	}
 	return merged, nil
 }
 
@@ -1188,7 +1071,7 @@ func applySmartHighlightsScaled(page *pdf.PdfPage, glyphRanges []rmdoc.RMV6Glyph
 
 		quadArr := core.MakeArray()
 		union := rmdoc.NewEmptyBBox()
-		any := false
+		hasAny := false
 
 		for _, rect := range gr.Rectangles {
 			x1 := xxScaled(rect.X, scale) + highlightsXTranslation
@@ -1208,10 +1091,10 @@ func applySmartHighlightsScaled(page *pdf.PdfPage, glyphRanges []rmdoc.RMV6Glyph
 			quadArr.Append(core.MakeFloat(yBottom))
 
 			union = union.Union(rmdoc.BBox{MinX: x1, MinY: yBottom, MaxX: x2, MaxY: yTop})
-			any = true
+			hasAny = true
 		}
 
-		if !any || union.IsEmpty() {
+		if !hasAny || union.IsEmpty() {
 			continue
 		}
 

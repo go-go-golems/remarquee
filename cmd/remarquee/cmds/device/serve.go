@@ -41,7 +41,11 @@ func runServe(cmd *cobra.Command, s *serveSettings) error {
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			log.Printf("warning: close framebuffer reader: %v", err)
+		}
+	}()
 
 	var eventBus *deviceevents.PubSub
 	if scanner, err := deviceevents.NewEventScanner(); err == nil {
@@ -71,7 +75,9 @@ func runServe(cmd *cobra.Command, s *serveSettings) error {
 		w.Header().Set("X-Screen-Width", fmt.Sprintf("%d", info.Width))
 		w.Header().Set("X-Screen-Height", fmt.Sprintf("%d", info.Height))
 		w.Header().Set("X-Bytes-Per-Pixel", fmt.Sprintf("%d", info.BytesPerPixel))
-		_, _ = w.Write(buf)
+		if _, err := w.Write(buf); err != nil {
+			http.Error(w, "failed to write response", http.StatusInternalServerError)
+		}
 	})
 
 	mux.HandleFunc("/api/v1/screenshot.png", func(w http.ResponseWriter, r *http.Request) {

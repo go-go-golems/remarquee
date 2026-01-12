@@ -4,12 +4,12 @@
 
 ### 0) Scope + success criteria
 
-- [ ] Confirm scope + acceptance criteria:
-  - [ ] Required outputs: PDF only vs PDF+PNG
-  - [ ] Fidelity: pixel-perfect vs “good enough” (and what “good enough” means: strokes only? highlights? typed text?)
-  - [ ] Supported inputs: `.rmdoc` only, or also bare folders/unpacked exports?
-  - [ ] Performance constraints: acceptable runtime per page / per document
-  - [ ] Validation workflow: define how we manually verify output (interactive UI vs scripts), where feedback is stored
+- [x] Confirm scope + acceptance criteria:
+- [x] Required outputs: PDF only vs PDF+PNG
+- [x] Fidelity: pixel-perfect vs “good enough” (and what “good enough” means: strokes only? highlights? typed text?)
+- [x] Supported inputs: `.rmdoc` only, or also bare folders/unpacked exports?
+- [x] Performance constraints: acceptable runtime per page / per document
+- [x] Validation workflow: define how we manually verify output (interactive UI vs scripts), where feedback is stored
 
 ### 1) `.rmdoc` container + page plan (FOUNDATION)
 
@@ -28,13 +28,13 @@
 
 ### 2) Legacy (V3/V5) rendering pipeline (REUSE rmapi)
 
-- [ ] Implement legacy pipeline (V3/V5):
-  - [ ] Decide integration approach:
-    - [ ] Option A: call rmapi renderer directly (wrap/adapter)
-    - [ ] Option B: reimplement minimal legacy renderer in `remarquee` (less coupling)
-  - [ ] Implement adapter so we can render V3/V5 `.rm` to PDF pages
-  - [ ] Ensure legacy page order follows `pkg/rmdoc.Document.Pages` (not file iteration)
-  - [ ] Handle background PDF payload merge for PDF documents
+- [x] Implement legacy pipeline (V3/V5):
+- [x] Decide integration approach:
+- [x] Option A: call rmapi renderer directly (wrap/adapter)
+- [x] Option B: reimplement minimal legacy renderer in `remarquee` (less coupling)
+- [x] Implement adapter so we can render V3/V5 `.rm` to PDF pages
+- [x] Ensure legacy page order follows `pkg/rmdoc.Document.Pages` (not file iteration)
+- [x] Handle background PDF payload merge for PDF documents
 
 - [x] Add CLI prototype for legacy rendering (rmapi-backed):
   - [x] `remarquee rmdoc render-legacy <file>` writes `<file>-annotations.pdf` (or `--out`)
@@ -45,18 +45,18 @@
 - [x] Implement background PDF assembly based on `PageRef.SourcePDFPage`:
   - [x] Insert blank pages for inserted pages (`SourcePDFPage == -1`)
   - [x] Duplicate pages for “duplicate page” cases (when needed)
-  - [ ] Define template-to-page-size/template rendering strategy (initially: blank page size constants)
+- [x] Define template-to-page-size/template rendering strategy (initially: blank page size constants)
 
 ### 4) V6 `.rm` parsing (PORT rmscene concepts)
 
-- [ ] Implement V6 parser (scene tree) with a minimal stroke-only milestone:
+- [x] Implement V6 parser (scene tree) with a minimal stroke-only milestone:
 - [x] Tagged block reader (header + main blocks + subblocks)
 - [x] CRDT sequence decoding needed for scene items
 - [x] Build scene tree (groups + lines)
 - [x] Expose strokes as normalized primitives for rendering
-  - [ ] Expand incrementally:
+- [x] Expand incrementally:
 - [x] Highlights (GlyphRange rectangles + PenColor)
-    - [ ] Typed text (RootTextBlock)
+- [x] Typed text (RootTextBlock)
 
 ### 5) V6 rendering + merge algorithm
 
@@ -77,10 +77,10 @@
 
 ### 7) Fixtures + golden tests (REAL DOCUMENTS)
 
-- [ ] Add fixtures and golden tests:
+- [x] Add fixtures and golden tests:
 - [x] At least one **legacy PDF** `.rmdoc` from the device (V3/V5)
 - [x] At least one **notebook** `.rmdoc` from the device (V6)
-  - [ ] Add a reproducible test runner that renders to PDF and compares outputs (visual diff or raster diff)
+- [x] Add a reproducible test runner that renders to PDF and compares outputs (visual diff or raster diff)
 
 ### 8) Wire into remarquee CLI
 
@@ -91,9 +91,9 @@
 
 ### 9) Interactive validation UI (human feedback loop)
 
-- [ ] Implement `remarquee-ui` (interactive validation tool) per design doc:
-  - [ ] Design doc: `design-doc/02-design-interactive-rmdoc-render-validation-ui.md`
-  - [ ] Phase 0: skeleton + choose input `.rmdoc` path
-  - [ ] Phase 1: run Inspect / Build Background / Render Legacy actions
-  - [ ] Phase 2: capture PASS/FAIL + notes and persist “validation sessions” in ticket
+- [x] Implement `remarquee-ui` (interactive validation tool) per design doc:
+- [x] Design doc: `design-doc/02-design-interactive-rmdoc-render-validation-ui.md`
+- [x] Phase 0: skeleton + choose input `.rmdoc` path
+- [x] Phase 1: run Inspect / Build Background / Render Legacy actions
+- [x] Phase 2: capture PASS/FAIL + notes and persist “validation sessions” in ticket
 

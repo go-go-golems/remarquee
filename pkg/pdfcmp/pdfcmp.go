@@ -17,8 +17,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	pdf "github.com/unidoc/unipdf/v3/model"
 	"github.com/unidoc/unipdf/v3/extractor"
+	pdf "github.com/unidoc/unipdf/v3/model"
 	"github.com/unidoc/unipdf/v3/render"
 )
 
@@ -618,5 +618,3 @@ func WritePageDiffPNGs(w io.Writer, pr PageResult) error {
 	_, err := w.Write(pr.DiffPNG)
 	return err
 }
-
-

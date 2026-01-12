@@ -38,10 +38,11 @@ RelatedFiles:
       Note: Underlying legacy annotations PDF generator (unipdf)
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-24T10:46:29.17127543-05:00
+LastUpdated: 2026-01-12T16:38:31.023425924-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -76,7 +77,7 @@ So the port must include format detection + dual pipelines (at least initially).
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

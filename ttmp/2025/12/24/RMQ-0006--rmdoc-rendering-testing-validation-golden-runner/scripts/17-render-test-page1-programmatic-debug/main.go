@@ -282,5 +282,3 @@ func main() {
 	jb, _ := json.MarshalIndent(dumps, "", "  ")
 	must(struct{}{}, os.WriteFile(outJSON, jb, 0o644))
 }
-
-

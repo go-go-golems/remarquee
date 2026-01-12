@@ -125,7 +125,9 @@ func BuildBackgroundPDFForPages(ctx context.Context, doc *rmdoc.Document, opts B
 			w := mbox.Urx - mbox.Llx
 			h := mbox.Ury - mbox.Lly
 			c.SetPageSize(creator.PageSize{w, h})
-			c.AddPage(dupPage)
+			if err := c.AddPage(dupPage); err != nil {
+				return nil, errors.Wrapf(err, "add payload page %d", pageNum)
+			}
 			continue
 		}
 

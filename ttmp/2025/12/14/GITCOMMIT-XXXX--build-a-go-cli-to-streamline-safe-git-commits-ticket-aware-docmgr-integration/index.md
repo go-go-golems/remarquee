@@ -1,7 +1,7 @@
 ---
 Title: Build a Go CLI to streamline safe git commits (ticket-aware + docmgr integration)
 Ticket: GITCOMMIT-XXXX
-Status: active
+Status: complete
 Topics:
     - devtools
     - go
@@ -23,8 +23,11 @@ RelatedFiles:
       Note: Recent workflow example where unrelated staged files can slip into commits
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-14T23:10:48.588217262-05:00
+LastUpdated: 2026-01-12T16:44:21.846549345-05:00
+WhatFor: ""
+WhenToUse: ""
 ---
+
 
 
 
@@ -44,7 +47,7 @@ The detailed project description lives in:
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

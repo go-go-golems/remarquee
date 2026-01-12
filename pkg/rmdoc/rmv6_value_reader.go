@@ -154,7 +154,7 @@ func (r *rmV6ValueReader) readTag() (uint32, rmV6TagType, error) {
 	}
 }
 
-func (r *rmV6ValueReader) peekTag() (index uint32, tagType rmV6TagType, ok bool, _ error) {
+func (r *rmV6ValueReader) peekTag() (uint32, rmV6TagType, bool, error) {
 	pos, err := r.tell()
 	if err != nil {
 		return 0, 0, false, err

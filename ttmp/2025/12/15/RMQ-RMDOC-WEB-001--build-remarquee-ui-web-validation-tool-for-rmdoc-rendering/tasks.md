@@ -86,3 +86,57 @@ Build `remarquee-ui`: an interactive web UI for validating `.rmdoc` parsing and 
 - [x] Visual highlighting for duplicates and inserted pages
 - [x] Internal structure inspection (shows .rm files, versions, JSON content)
 
+- [ ] Define validation runner strategy (remarks vs goldens vs structural) and implement 
+  # rmdoc - Inspect and render .rmdoc archives                                
+                                                                              
+  For more help, run: remarquee help rmdoc                                    
+                                                                              
+  Run remarquee help --ui to open the interactive help TUI.                   
+                                                                              
+  ## Usage:                                                                   
+                                                                              
+  remarquee rmdoc [command]                                                   
+                                                                              
+  ## Available Commands:                                                      
+                                                                              
+  • **build-background** Build a UI-ordered background PDF using PageRef.     
+  SourcePDFPage (debug utility)                                               
+  • **inspect**          Inspect a local .rmdoc and print detected schema +   
+  page plan                                                                   
+  • **render-legacy**    Render a legacy (V3/V5) .rmdoc/.zip to an annotated  
+  PDF (rmapi-backed)                                                          
+  • **render-v6**        Render a V6 (cPages) .rmdoc to an annotated PDF      
+  (strokes + smart highlights)                                                
+  • **vlm-validate**     Render PDF pages to PNG and ask pinocchio (VLM) to   
+  validate/compare                                                            
+                                                                              
+  ## Flags:                                                                   
+                                                                              
+        -h, --help    help for rmdoc                                          
+       --long-help    Show long help                                          
+                                                                              
+  ## Global flags:                                                            
+                                                                              
+        --log-file    Log file (default: stderr)                              
+       --log-format    Log format (json, text) (default "text")               
+       --log-level    Log level (trace, debug, info, warn, error, fatal)      
+  (default "info")                                                            
+       --log-to-stdout    Log to stdout even when log-file is set             
+       --logstash-app-name    Application name for Logstash logs (default     
+  "remarquee")                                                                
+       --logstash-enabled    Enable logging to Logstash                       
+       --logstash-environment    Environment name for Logstash logs           
+  (development, staging, production) (default "development")                  
+       --logstash-host    Logstash host (default "logstash")                  
+       --logstash-port    Logstash port (default 5044)                        
+       --logstash-protocol    Logstash protocol (tcp, udp) (default "tcp")    
+       --with-caller    Log caller information                                
+                                                                              
+  Use remarquee rmdoc [command] --help for more information about a command.  
+  Use                                                                         
+  remarquee rmdoc --help --long-help for information about all flags.          with PNG diffs [moved from RMQ-0006/0004]
+- [ ] Implement debug CLIs: v6-stats, v6-dump-highlights, v6-dump-strokes [moved from RMQ-0006]
+- [ ] Implement PDF comparison utilities (python or Go), tolerance config, JSON output for diffs [moved from RMQ-0006]
+- [ ] Define validation sweeps (ellipse/rect/tool/highlight/anchor/typed text) + CI subset + artifact storage [moved from RMQ-0006/0008]
+- [ ] Document validation procedures, tolerance settings, troubleshooting guidance [moved from RMQ-0006]
+- [ ] Decide validation session storage ownership (WEB vs other) to keep single source of truth [moved from RMQ-0006/0004]

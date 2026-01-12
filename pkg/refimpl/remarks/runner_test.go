@@ -38,5 +38,3 @@ func TestFindRemarksPDFs(t *testing.T) {
 		t.Fatalf("expected 2 pdfs, got %d: %v", len(pdfs), pdfs)
 	}
 }
-
-

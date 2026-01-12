@@ -64,7 +64,7 @@ var HardcodedColorMap = map[RGBA]PenColor{
 
 // PenColorToRGB converts PenColor to normalized RGB for PDF annotations.
 // Returns values in range [0.0, 1.0].
-func PenColorToRGB(color PenColor) (r, g, b float64) {
+func PenColorToRGB(color PenColor) (float64, float64, float64) {
 	switch color {
 	case PenColorBlack:
 		return 0.0, 0.0, 0.0
@@ -145,7 +145,7 @@ func PenColorToRGB(color PenColor) (r, g, b float64) {
 // This differs from PenColorToRGB in one important way: if the color is unknown,
 // strokes should default to black (not highlight yellow), because "unknown pen color"
 // should not paint the document yellow.
-func PenColorToRGBForStroke(color PenColor) (r, g, b float64) {
+func PenColorToRGBForStroke(color PenColor) (float64, float64, float64) {
 	switch color {
 	case PenColorBlack,
 		PenColorGray,

@@ -75,7 +75,9 @@ func RenderRMV6StrokesToPDF(ctx context.Context, strokes []rmdoc.Stroke, out io.
 
 	cc.Add_Q()
 
-	page.SetContentStreams([]string{cc.Operations().String()}, core.NewFlateEncoder())
+	if err := page.SetContentStreams([]string{cc.Operations().String()}, core.NewFlateEncoder()); err != nil {
+		return errors.Wrap(err, "set page content streams")
+	}
 
 	return c.Write(out)
 }

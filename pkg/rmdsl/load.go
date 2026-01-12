@@ -45,5 +45,3 @@ func loadYAML(path string) (*Doc, error) {
 	}
 	return &d, nil
 }
-
-

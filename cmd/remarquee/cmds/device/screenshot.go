@@ -1,6 +1,7 @@
 package device
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -51,7 +52,11 @@ func runScreenshot(cmd *cobra.Command, s *screenshotSettings) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "warning: close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
 		return errors.Errorf("request failed: %s (%s)", resp.Status, string(body))
@@ -64,7 +69,11 @@ func runScreenshot(cmd *cobra.Command, s *screenshotSettings) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() {
+		if err := out.Close(); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "warning: close output: %v\n", err)
+		}
+	}()
 	if _, err := io.Copy(out, resp.Body); err != nil {
 		return err
 	}

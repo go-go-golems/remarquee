@@ -86,5 +86,3 @@ func TestParseRMV6SceneTree_StrokeColorsPresent_TestRmdoc(t *testing.T) {
 			PenColorHighlightYellow, PenColorHighlightGray, colors)
 	}
 }
-
-

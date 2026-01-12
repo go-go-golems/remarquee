@@ -114,6 +114,7 @@ func ParseRMV6RootTextBlock(tr *rmV6TaggedBlockReader) (*RMV6RootText, error) {
 	// rmscene asserts (0,0)
 	if blockID != RMV6EndMarker {
 		// tolerate for now, but still parse
+		_ = blockID
 	}
 
 	sb2, err := tr.readSubBlock(2)

@@ -20,10 +20,11 @@ RelatedFiles:
       Note: Implementation diary for RMQ-0002
 ExternalSources: []
 Summary: Implement remarquee cloud-only CLI (rmapi-backed) using Glazed+Cobra, one file per command; REPL deferred.
-LastUpdated: 2025-12-24T08:16:37.029591532-05:00
+LastUpdated: 2026-01-12T16:40:58.583220851-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -56,7 +57,7 @@ This ticket implements the **cloud-only CLI** part of remarquee: `remarquee clou
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

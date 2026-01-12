@@ -10,10 +10,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-11T18:54:33.716149461-05:00
+LastUpdated: 2026-01-12T16:16:49.933800598-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # rmapi reauth investigation
@@ -29,7 +30,7 @@ WhenToUse: ""
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 
