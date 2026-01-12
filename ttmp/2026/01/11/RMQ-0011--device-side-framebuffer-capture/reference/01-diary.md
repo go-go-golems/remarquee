@@ -10,16 +10,25 @@ Owners: []
 RelatedFiles:
     - Path: goMarkableStream/internal/remarkable/fb_rm.go
       Note: Root of framebuffer pointer access
+    - Path: remarquee/cmd/remarquee/cmds/device/serve.go
+      Note: REST server endpoints
+    - Path: remarquee/cmd/remarquee/main.go
+      Note: Registers device command
+    - Path: remarquee/pkg/devicecapture/pointer_arm64.go
+      Note: Paper Pro pointer discovery
+    - Path: remarquee/pkg/devicecapture/reader.go
+      Note: Core framebuffer capture API
     - Path: remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/analysis/01-gomarkablestream-framebuffer-streaming-analysis.md
       Note: Detailed analysis
     - Path: remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/design-doc/01-remarquee-device-capture-api-cli-design.md
       Note: Integration design
 ExternalSources: []
 Summary: Diary for device-side framebuffer capture work
-LastUpdated: 2026-01-11T19:27:01-05:00
+LastUpdated: 2026-01-11T20:09:37-05:00
 WhatFor: Track progress on RMQ-0011 analysis and design
 WhenToUse: Use while implementing device capture features
 ---
+
 
 
 # Diary
@@ -140,3 +149,44 @@ I uploaded the analysis and design docs to the reMarkable so you can review them
 
 ### Technical details
 - Command: `go run ./cmd/remarquee upload md ... --remote-dir /remarquee/rmq-0011`
+
+## Step 4: Add device capture package and CLI scaffolding
+
+I added a new device capture package that mirrors goMarkableStream's framebuffer access and wired a `remarquee device` command group with server and client subcommands. The package includes build-tagged pointer discovery for arm and arm64, a raw/PNG capture API, and a portable stub for non-device builds.
+
+**Commit (code):** N/A
+
+### What I did
+- Created `pkg/devicecapture` with framebuffer reader, raw/PNG capture helpers, and raw-to-RGBA conversion.
+- Ported pointer discovery logic for rM2 (`pointer_arm.go`) and Paper Pro (`pointer_arm64.go`), with a linux/amd64 stub.
+- Added `remarquee device` CLI group with `serve`, `info`, `screenshot`, and `raw` commands.
+- Registered the device command in `cmd/remarquee/main.go`.
+- Ran `go test ./pkg/devicecapture -count=1`.
+
+### Why
+- Establish the core capture logic and CLI surface before moving to on-device validation.
+
+### What worked
+- Package compiles on the host after adding a linux/amd64 stub.
+
+### What didn't work
+- Initial build failed on linux/amd64 due to missing arm-only symbols; fixed by adding a stub.
+
+### What I learned
+- Build tags are required to keep pointer discovery isolated to device architectures.
+
+### What was tricky to build
+- Mapping raw framebuffer bytes to a reasonable PNG representation across 2-byte and 4-byte formats.
+
+### What warrants a second pair of eyes
+- Verify the grayscale mapping for rM2 and confirm the pointer logic remains valid on current firmware.
+
+### What should be done in the future
+- Revisit the raw-to-PNG conversion if the on-device results look inverted or washed out.
+
+### Code review instructions
+- Start in `remarquee/pkg/devicecapture/reader.go` and `remarquee/pkg/devicecapture/platform_linux.go`.
+- Review `remarquee/cmd/remarquee/cmds/device/serve.go` and `remarquee/cmd/remarquee/cmds/device/screenshot.go`.
+
+### Technical details
+- Command: `go test ./pkg/devicecapture -count=1`

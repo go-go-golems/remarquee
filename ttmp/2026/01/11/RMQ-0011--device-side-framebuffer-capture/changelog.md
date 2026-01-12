@@ -22,3 +22,12 @@ Step 3: upload analysis/design PDFs + add implementation tasks
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/tasks.md — Implementation task list
 
+
+## 2026-01-11
+
+Step 4: add device capture package + CLI scaffolding
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/devicecapture/reader.go — New framebuffer capture API
+
