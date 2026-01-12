@@ -8,6 +8,7 @@ import (
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
 	"github.com/go-go-golems/remarquee/cmd/remarquee/cmds"
 	"github.com/go-go-golems/remarquee/cmd/remarquee/cmds/cloud"
+	device_cmd "github.com/go-go-golems/remarquee/cmd/remarquee/cmds/device"
 	ocr_cmd "github.com/go-go-golems/remarquee/cmd/remarquee/cmds/ocr"
 	rmdoc_cmd "github.com/go-go-golems/remarquee/cmd/remarquee/cmds/rmdoc"
 	rmdsl_cmd "github.com/go-go-golems/remarquee/cmd/remarquee/cmds/rmdsl"
@@ -39,6 +40,7 @@ func main() {
 
 	rootCmd.AddCommand(cmds.NewStatusCommand())
 	rootCmd.AddCommand(cloud.NewCloudCommand())
+	rootCmd.AddCommand(device_cmd.NewDeviceCommand())
 	rootCmd.AddCommand(ocr_cmd.NewOCRCommand())
 	rootCmd.AddCommand(rmdsl_cmd.NewRmdslCommand())
 	rootCmd.AddCommand(rmdoc_cmd.NewRmdocCommand())
