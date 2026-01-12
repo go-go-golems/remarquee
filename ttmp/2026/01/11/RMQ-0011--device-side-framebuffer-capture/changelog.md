@@ -49,3 +49,12 @@ Step 6: cross-compile + validate device capture endpoints
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/reference/01-diary.md — Record device validation commands
 
+
+## 2026-01-11
+
+Step 7: confirm screenshot matches device via plz-confirm
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/reference/01-diary.md — Record user validation
+

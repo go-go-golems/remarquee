@@ -24,7 +24,7 @@ RelatedFiles:
       Note: Integration design
 ExternalSources: []
 Summary: Diary for device-side framebuffer capture work
-LastUpdated: 2026-01-11T20:16:38-05:00
+LastUpdated: 2026-01-11T20:21:30-05:00
 WhatFor: Track progress on RMQ-0011 analysis and design
 WhenToUse: Use while implementing device capture features
 ---
@@ -276,3 +276,41 @@ I cross-compiled the arm64 Linux binary, deployed it to the tablet, started the 
 - Client info: `go run ./cmd/remarquee device info --url http://10.11.99.1:2718 --username admin --password password`
 - Client screenshot: `go run ./cmd/remarquee device screenshot --url http://10.11.99.1:2718 --username admin --password password --out /tmp/rmq-0011-screenshot.png`
 - Client raw: `go run ./cmd/remarquee device raw --url http://10.11.99.1:2718 --username admin --password password --out /tmp/rmq-0011-raw.bin`
+
+## Step 7: Validate screenshot output with plz-confirm
+
+I used the plz-confirm image + form widgets to confirm the screenshot matches the device display. The user confirmed the screenshot matched perfectly, with no artifacts, and noted the capture was taken from a notebook view.
+
+**Commit (code):** N/A
+
+### What I did
+- Ran `plz-confirm image` with `/tmp/rmq-0011-screenshot.png` to request a visual confirmation.
+- Ran `plz-confirm form` to collect the screen context and artifact notes.
+
+### Why
+- Ensure the new capture flow is visually correct before moving to streaming or docs.
+
+### What worked
+- User confirmed `selected_json: true` and reported `match_quality=perfect` with no artifacts.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The PNG output matches the Paper Pro display for a notebook view.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- If we later see device firmware changes, re-validate screenshot mapping.
+
+### What should be done in the future
+- Consider adding a built-in validation command that captures and opens the PNG for quick checks.
+
+### Code review instructions
+- N/A (validation-only step).
+
+### Technical details
+- Command: `plz-confirm image --title \"RMQ-0011 screenshot validation\" --message \"Does this screenshot match the tablet display?\" --mode confirm --image /tmp/rmq-0011-screenshot.png`
+- Command: `plz-confirm form --title \"RMQ-0011 screenshot details\" --schema /tmp/rmq-0011-screenshot-review-schema.json`
