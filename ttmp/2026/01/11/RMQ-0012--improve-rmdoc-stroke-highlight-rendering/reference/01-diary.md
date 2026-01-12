@@ -10,16 +10,21 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: remarquee/cmd/remarquee/cmds/rmdoc/render_v6_png.go
+      Note: PNG render command
+    - Path: remarquee/cmd/remarquee/cmds/rmdoc/root.go
+      Note: Register render-v6-png
     - Path: remarquee/ttmp/2026/01/11/RMQ-0012--improve-rmdoc-stroke-highlight-rendering/analysis/01-stroke-highlight-and-color-rendering-analysis.md
       Note: Detailed rendering analysis
     - Path: remarquee/ttmp/2026/01/11/RMQ-0012--improve-rmdoc-stroke-highlight-rendering/playbook/01-iterative-rendering-debug-loop.md
       Note: Iterative debug loop playbook
 ExternalSources: []
 Summary: Diary for RMQ-0012 rendering fidelity improvements.
-LastUpdated: 2026-01-11T21:32:22-05:00
+LastUpdated: 2026-01-12T12:30:12-05:00
 WhatFor: Track RMQ-0012 work to improve stroke/highlight rendering fidelity and validation loops.
 WhenToUse: Update after each rendering comparison iteration or tooling change.
 ---
+
 
 
 
@@ -108,3 +113,47 @@ This gives us a concrete map of which functions to adjust when we start improvin
 
 ### Technical details
 - N/A
+
+## Step 3: Add PNG render command and export Journal pages
+
+I added a new `render-v6-png` command that renders a V6 .rmdoc to a merged PDF and rasterizes selected pages to PNGs via Poppler. I then used this command to export the last two pages of `/Journal` into PNG files for review.
+
+This provides the missing PNG extraction workflow the ticket needs and gives us concrete artifacts for comparing stroke and highlight fidelity.
+
+**Commit (code):** 1c64d16 — "RMQ-0012: add rmdoc render-v6-png"
+
+### What I did
+- Implemented `remarquee rmdoc render-v6-png` with page selection, output directory, and overwrite control.
+- Wired the new command into the rmdoc root command.
+- Downloaded `/Journal` and rendered the last two pages to PNGs.
+
+### Why
+- We need a CLI verb that produces PNGs directly from a .rmdoc to support fast visual comparisons.
+
+### What worked
+- The new command rendered pages 76 and 77 to `/tmp/rmq-0012-journal/png/Journal-v6-page-076.png` and `...077.png`.
+
+### What didn't work
+- N/A
+
+### What I learned
+- `render-v6-png` can reuse the existing Poppler rasterization flow from `vlm-validate`.
+
+### What was tricky to build
+- Ensuring overwrite checks for both the generated PDF and per-page PNG outputs.
+
+### What warrants a second pair of eyes
+- Confirm that the output naming convention and overwrite behavior match expected CLI ergonomics.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Start in `remarquee/cmd/remarquee/cmds/rmdoc/render_v6_png.go`.
+- Check `remarquee/cmd/remarquee/cmds/rmdoc/root.go` for the new command wiring.
+- Validate by running `go run ./cmd/remarquee rmdoc render-v6-png <file.rmdoc> --pages 1 --out-dir /tmp/out --force`.
+
+### Technical details
+- Download: `go run ./cmd/remarquee cloud get /Journal --out-dir /tmp/rmq-0012-journal`
+- Inspect: `go run ./cmd/remarquee rmdoc inspect /tmp/rmq-0012-journal/Journal.rmdoc`
+- Render: `go run ./cmd/remarquee rmdoc render-v6-png /tmp/rmq-0012-journal/Journal.rmdoc --pages 76,77 --out-dir /tmp/rmq-0012-journal/png --force`

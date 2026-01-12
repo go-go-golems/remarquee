@@ -22,3 +22,12 @@ Step 2: document stroke/highlight/color rendering analysis
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/11/RMQ-0012--improve-rmdoc-stroke-highlight-rendering/analysis/01-stroke-highlight-and-color-rendering-analysis.md — Rendering analysis
 
+
+## 2026-01-12
+
+Step 3: add render-v6-png and export Journal pages (commit 1c64d16)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/render_v6_png.go — PNG rendering command
+
