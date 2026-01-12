@@ -11,19 +11,26 @@ Intent: long-term
 Owners: []
 RelatedFiles:
     - Path: remarquee/cmd/remarquee/cmds/rmdoc/render_v6_png.go
-      Note: PNG render command
+      Note: |-
+        PNG render command
+        Subset PNG rendering workflow
     - Path: remarquee/cmd/remarquee/cmds/rmdoc/root.go
       Note: Register render-v6-png
+    - Path: remarquee/pkg/rmdoc/render/background.go
+      Note: Subset background PDF builder
+    - Path: remarquee/pkg/rmdoc/render/v6_merge_background.go
+      Note: Subset V6 merge function
     - Path: remarquee/ttmp/2026/01/11/RMQ-0012--improve-rmdoc-stroke-highlight-rendering/analysis/01-stroke-highlight-and-color-rendering-analysis.md
       Note: Detailed rendering analysis
     - Path: remarquee/ttmp/2026/01/11/RMQ-0012--improve-rmdoc-stroke-highlight-rendering/playbook/01-iterative-rendering-debug-loop.md
       Note: Iterative debug loop playbook
 ExternalSources: []
 Summary: Diary for RMQ-0012 rendering fidelity improvements.
-LastUpdated: 2026-01-12T12:30:12-05:00
+LastUpdated: 2026-01-12T12:39:38-05:00
 WhatFor: Track RMQ-0012 work to improve stroke/highlight rendering fidelity and validation loops.
 WhenToUse: Update after each rendering comparison iteration or tooling change.
 ---
+
 
 
 
@@ -156,4 +163,47 @@ This provides the missing PNG extraction workflow the ticket needs and gives us 
 ### Technical details
 - Download: `go run ./cmd/remarquee cloud get /Journal --out-dir /tmp/rmq-0012-journal`
 - Inspect: `go run ./cmd/remarquee rmdoc inspect /tmp/rmq-0012-journal/Journal.rmdoc`
+- Render: `go run ./cmd/remarquee rmdoc render-v6-png /tmp/rmq-0012-journal/Journal.rmdoc --pages 76,77 --out-dir /tmp/rmq-0012-journal/png --force`
+
+## Step 4: Render only requested pages before PNG rasterization
+
+I updated the PNG renderer to build a merged PDF containing only the requested pages, instead of rendering the entire document. This avoids unnecessary work for large notebooks and makes the PNG extraction substantially faster for tail pages.
+
+The command now maps original page numbers to the subset PDF pages so output file names still reflect the original page numbers.
+
+**Commit (code):** ef203d8 — "RMQ-0012: render subset pages for PNG"
+
+### What I did
+- Added a background builder that accepts a subset of UI pages.
+- Added a merge helper that renders only selected pages.
+- Updated `render-v6-png` to use the subset merge and custom page-to-output mapping.
+- Re-ran the `/Journal` export to verify the new flow.
+
+### Why
+- Rendering the full PDF for large notebooks is wasteful when extracting only a few pages.
+
+### What worked
+- The PNG export now completes in a few seconds for pages 76–77.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The biggest cost was building the merged PDF across all pages; trimming that yields immediate speedups.
+
+### What was tricky to build
+- Keeping output file names aligned with the original page numbers while rendering a smaller PDF.
+
+### What warrants a second pair of eyes
+- Validate that subset rendering preserves the same layout as full-document rendering for the same page.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review `remarquee/pkg/rmdoc/render/background.go` (`BuildBackgroundPDFForPages`).
+- Review `remarquee/pkg/rmdoc/render/v6_merge_background.go` (`MergeRMDocV6OntoBackgroundPDFWithInfoForPages`).
+- Review `remarquee/cmd/remarquee/cmds/rmdoc/render_v6_png.go` (subset rendering + rasterization mapping).
+
+### Technical details
 - Render: `go run ./cmd/remarquee rmdoc render-v6-png /tmp/rmq-0012-journal/Journal.rmdoc --pages 76,77 --out-dir /tmp/rmq-0012-journal/png --force`

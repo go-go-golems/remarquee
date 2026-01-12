@@ -31,3 +31,11 @@ Step 3: add render-v6-png and export Journal pages (commit 1c64d16)
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/render_v6_png.go — PNG rendering command
 
+
+## 2026-01-12
+
+Step 4: render only requested pages for PNG exports (commit ef203d8)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Subset merge helper
