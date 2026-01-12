@@ -49,3 +49,12 @@ Step 5: implement unified vlm-validate inputs (commit cdf96b4)
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/rmdoc/vlm_validate.go — Unified input handling
 
+
+## 2026-01-12
+
+Step 6: capture device screenshot and VLM compare page 65
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/reference/01-diary.md — Recorded validation
+

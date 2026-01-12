@@ -17,7 +17,7 @@ RelatedFiles:
       Note: Preliminary questions and VLM loop
 ExternalSources: []
 Summary: Diary for RMQ-0013 right-edge PDF crop investigation.
-LastUpdated: 2026-01-12T13:19:54-05:00
+LastUpdated: 2026-01-12T13:30:21-05:00
 WhatFor: Track progress and validation steps for the RMQ-0013 right-edge PDF crop bug.
 WhenToUse: Update after each investigation or validation step.
 ---
@@ -193,3 +193,45 @@ I also refreshed the analysis docs to reflect the new unified flow and updated t
 
 ### Technical details
 - Command: `go test ./cmd/remarquee -count=1`
+
+## Step 5: Capture device screenshot and run VLM comparison on page 65
+
+I rendered page 65 to PNG, captured a device screenshot (per your note that the page was already open), and ran the new `vlm-validate` image-to-image comparison. The VLM reported more noticeable right-edge clipping in the rendered PNG than in the device screenshot.
+
+This gives us a concrete cross-check on a real page and confirms the cropping issue is visible in the renderer output.
+
+**Commit (code):** N/A
+
+### What I did
+- Rendered `/Journal` page 65 to PNG with `render-v6-png`.
+- Captured a device screenshot for page 65.
+- Ran `vlm-validate` with `--image-a` and `--image-b` to compare right-edge alignment.
+
+### Why
+- Validate the crop issue against a live device screenshot and confirm the VLM can flag it.
+
+### What worked
+- The VLM reported right-edge clipping in the rendered PNG and better alignment in the device screenshot.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The image-to-image VLM path is usable for detecting right-edge cropping.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- Confirm the device was truly on page 65 at capture time (per human confirmation).
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- N/A (validation-only step).
+
+### Technical details
+- Render: `go run ./cmd/remarquee rmdoc render-v6-png /tmp/rmq-0012-journal/Journal.rmdoc --pages 65 --out-dir /tmp/rmq-0013-crop --force`
+- Screenshot: `go run ./cmd/remarquee device screenshot --url http://10.11.99.1:2718 --username admin --password password --out /tmp/rmq-0013-crop/device-page-065.png`
+- VLM: `go run ./cmd/remarquee rmdoc vlm-validate --image-a /tmp/rmq-0013-crop/Journal-v6-page-065.png --image-b /tmp/rmq-0013-crop/device-page-065.png --prompt "Compare right-edge alignment. Is any content clipped on the right? Describe where."`
