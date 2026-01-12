@@ -76,3 +76,12 @@ Step 8: rerun page 65 capture in ticket log directory
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/01-vlm-comparison-runs.md — Rerun output
 
+
+## 2026-01-12
+
+Step 8: balance notebook margins and log VLM comparisons (commit 578ab36)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/render/v6_merge_background.go — Adjust blank-page bbox padding + margin balance
+

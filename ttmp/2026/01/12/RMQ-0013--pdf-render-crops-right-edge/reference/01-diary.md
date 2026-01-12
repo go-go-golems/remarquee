@@ -9,18 +9,31 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: remarquee/cmd/remarquee/cmds/rmdoc/vlm_validate.go
+    - Path: cmd/remarquee/cmds/rmdoc/vlm_validate.go
       Note: Unified inputs and rmdoc rendering
-    - Path: remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/analysis/01-debug-strategy-right-edge-crop-in-pdf-render.md
+    - Path: pkg/rmdoc/render/v6_merge_background.go
+      Note: Blank-page bbox padding + margin balancing logic
+    - Path: ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/analysis/01-debug-strategy-right-edge-crop-in-pdf-render.md
       Note: Debug strategy analysis
-    - Path: remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/analysis/02-preliminary-questions-cropping-checks-vlm-loop.md
+    - Path: ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/analysis/02-preliminary-questions-cropping-checks-vlm-loop.md
       Note: Preliminary questions and VLM loop
+    - Path: ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/01-baseline/README.md
+      Note: Baseline comparison writeup
+    - Path: ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/02-bbox-expand/README.md
+      Note: BBox expansion comparison writeup
+    - Path: ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/03-stroke-pad/README.md
+      Note: Stroke-pad comparison writeup
+    - Path: ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/04-margin-balance/README.md
+      Note: Margin-balance comparison writeup
+    - Path: ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/scripts/compute_bbox.go
+      Note: BBox helper for inspecting stroke extents
 ExternalSources: []
 Summary: Diary for RMQ-0013 right-edge PDF crop investigation.
 LastUpdated: 2026-01-12T13:34:17-05:00
 WhatFor: Track progress and validation steps for the RMQ-0013 right-edge PDF crop bug.
 WhenToUse: Update after each investigation or validation step.
 ---
+
 
 
 
@@ -317,3 +330,49 @@ I reran the page 65 render and device screenshot using only the ticket log direc
 - Render: `go run ./cmd/remarquee rmdoc render-v6-png /tmp/rmq-0012-journal/Journal.rmdoc --pages 65 --out-dir ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log --force`
 - Screenshot: `go run ./cmd/remarquee device screenshot --url http://10.11.99.1:2718 --username admin --password password --out ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/device-page-065.png`
 - VLM: `go run ./cmd/remarquee rmdoc vlm-validate --image-a ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/Journal-v6-page-065.png --image-b ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/device-page-065.png --out-dir ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/vlm-20260112-133346 --prompt "Compare right-edge alignment. Is any content clipped on the right? Describe where."`
+
+## Step 8: Balance notebook margins for blank-page renders
+
+I iterated on blank-background (notebook) rendering to address the right-edge crop. After switching to bbox-sized pages, I added stroke-width padding and then introduced a margin-balancing step that extends the tighter side when the stroke bbox overflows the default screen width.
+
+I re-rendered page 65 for each case (bbox-only, stroke-pad, margin-balance), ran VLM comparisons, and captured each run in per-case log folders with writeups. The margin-balanced output now yields symmetric left/right margins, though the VLM still reports right-edge clipping against the device screenshot.
+
+**Commit (code):** 578ab36 — "RMQ-0013: balance notebook margins for blank pages"
+
+### What I did
+- Added `maxStrokeWidthScreenUnits` and blank-page bbox padding/margin-balancing logic in `v6_merge_background.go`.
+- Verified rendering via `go test ./pkg/rmdoc/render -run TestMergeRMDocV6OntoBackgroundPDF_Smoke -count=1`.
+- Rendered page 65 to PNG for each iteration and ran `vlm-validate` comparisons.
+- Created per-case log folders (`01-baseline`, `02-bbox-expand`, `03-stroke-pad`, `04-margin-balance`) with writeups.
+- Saved the bbox helper script to the ticket scripts folder.
+
+### Why
+- The crop appears when notebook pages exceed the default screen width; we need a margin strategy that preserves content without shifting PDF-backed pages.
+
+### What worked
+- Margin balancing yields symmetric left/right margins in the rendered PNGs, eliminating the zero-margin right edge seen in earlier attempts.
+
+### What didn't work
+- VLM still reports right-edge clipping against the device screenshot after the margin-balance iteration.
+
+### What I learned
+- The page 65 stroke bbox exceeds the default screen width, so bbox-based sizing alone still leaves the right edge tight.
+
+### What was tricky to build
+- Adjusting notebook-only layout math without perturbing background-aligned pages.
+
+### What warrants a second pair of eyes
+- Validate the margin-balancing logic against device expectations (and confirm it does not regress PDF-backed documents).
+
+### What should be done in the future
+- Re-check the margin-balanced output with a human-confirmed device screenshot (optionally crop toolbar for a more direct comparison).
+
+### Code review instructions
+- Start at `remarquee/pkg/rmdoc/render/v6_merge_background.go` (blank-background branches + `maxStrokeWidthScreenUnits`).
+- Review the case writeups under `remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/`.
+
+### Technical details
+- Commands:
+  - `go test ./pkg/rmdoc/render -run TestMergeRMDocV6OntoBackgroundPDF_Smoke -count=1`
+  - `go run ./cmd/remarquee rmdoc render-v6-png /tmp/rmq-0012-journal/Journal.rmdoc --pages 65 --out-dir ...`
+  - `go run ./cmd/remarquee rmdoc vlm-validate --image-a ... --image-b ... --prompt "Compare right-edge alignment..."`
