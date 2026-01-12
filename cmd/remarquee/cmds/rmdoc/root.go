@@ -60,6 +60,19 @@ func NewRmdocCommand() *cobra.Command {
 		cmd.AddCommand(renderV6Cmd)
 	}
 
+	renderV6PNGCmd, err := NewRenderV6PNGCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "render-v6-png",
+			Short: "Render a V6 (cPages) .rmdoc to PNG (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(renderV6PNGCmd)
+	}
+
 	vlmCmd, err := NewVLMValidateCobraCommand()
 	if err != nil {
 		cmd.AddCommand(&cobra.Command{
