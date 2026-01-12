@@ -9,6 +9,10 @@ DocType: log
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/Journal-v6-page-065.png
+      Note: Rendered page 65 PNG (rerun)
+    - Path: remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/Journal-v6.pdf
+      Note: Subset PDF for page 65
     - Path: remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/device-page-065.png
       Note: Device screenshot page 65
     - Path: remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/render-page-065.png
@@ -21,6 +25,7 @@ LastUpdated: 2026-01-12T13:34:17-05:00
 WhatFor: Track VLM prompts, commands, and outputs alongside the images used.
 WhenToUse: Update after each OCR/VLM comparison run.
 ---
+
 
 
 # VLM comparison runs
