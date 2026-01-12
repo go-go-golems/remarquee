@@ -82,6 +82,8 @@ func runServe(cmd *cobra.Command, s *serveSettings) error {
 		}
 	})
 
+	mux.Handle("/api/v1/stream", newStreamHandler(reader))
+
 	handler := http.Handler(mux)
 	if !s.Unsafe {
 		handler = basicAuthMiddleware(handler, s.Username, s.Password)

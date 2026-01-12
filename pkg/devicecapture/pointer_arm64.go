@@ -11,13 +11,13 @@ import (
 )
 
 const (
-	deviceModel       = "RemarkablePaperPro"
-	screenWidth       = 1632
-	screenHeight      = 2154
-	bytesPerPixel     = 4
-	screenSizeBytes   = screenWidth * screenHeight * bytesPerPixel
-	penInputDevice    = "/dev/input/event2"
-	touchInputDevice  = "/dev/input/event3"
+	deviceModel      = "RemarkablePaperPro"
+	screenWidth      = 1632
+	screenHeight     = 2154
+	bytesPerPixel    = 4
+	screenSizeBytes  = screenWidth * screenHeight * bytesPerPixel
+	penInputDevice   = "/dev/input/event2"
+	touchInputDevice = "/dev/input/event3"
 )
 
 func deviceScreenInfo() ScreenInfo {
