@@ -17,7 +17,7 @@ RelatedFiles:
       Note: Preliminary questions and VLM loop
 ExternalSources: []
 Summary: Diary for RMQ-0013 right-edge PDF crop investigation.
-LastUpdated: 2026-01-12T13:30:21-05:00
+LastUpdated: 2026-01-12T13:32:26-05:00
 WhatFor: Track progress and validation steps for the RMQ-0013 right-edge PDF crop bug.
 WhenToUse: Update after each investigation or validation step.
 ---
@@ -235,3 +235,44 @@ This gives us a concrete cross-check on a real page and confirms the cropping is
 - Render: `go run ./cmd/remarquee rmdoc render-v6-png /tmp/rmq-0012-journal/Journal.rmdoc --pages 65 --out-dir /tmp/rmq-0013-crop --force`
 - Screenshot: `go run ./cmd/remarquee device screenshot --url http://10.11.99.1:2718 --username admin --password password --out /tmp/rmq-0013-crop/device-page-065.png`
 - VLM: `go run ./cmd/remarquee rmdoc vlm-validate --image-a /tmp/rmq-0013-crop/Journal-v6-page-065.png --image-b /tmp/rmq-0013-crop/device-page-065.png --prompt "Compare right-edge alignment. Is any content clipped on the right? Describe where."`
+
+## Step 6: Store VLM artifacts in ticket log
+
+I created a log document for VLM comparison runs and copied the rendered/device images into the ticket log directory alongside the exact commands and OCR/VLM outputs. This preserves the evidence needed to reproduce the crop analysis.
+
+**Commit (code):** N/A
+
+### What I did
+- Added a log doc for VLM runs.
+- Copied the PNGs used in VLM comparisons into the ticket log directory.
+- Recorded the command lines and outputs for pages 76 and 65.
+
+### Why
+- The investigation needs a permanent, ticket-local record of inputs and outputs for each VLM run.
+
+### What worked
+- Images and outputs are now stored under `ttmp/.../log`.
+
+### What didn't work
+- N/A
+
+### What I learned
+- N/A
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review `remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/01-vlm-comparison-runs.md`.
+
+### Technical details
+- Copies:
+  - `/tmp/remarquee-vlm-validate-3080623130/A-page-076.png` -> `remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/vlm-A-page-076.png`
+  - `/tmp/rmq-0013-crop/Journal-v6-page-065.png` -> `remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/render-page-065.png`
+  - `/tmp/rmq-0013-crop/device-page-065.png` -> `remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/device-page-065.png`

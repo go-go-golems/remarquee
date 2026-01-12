@@ -58,3 +58,12 @@ Step 6: capture device screenshot and VLM compare page 65
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/reference/01-diary.md — Recorded validation
 
+
+## 2026-01-12
+
+Step 7: store VLM artifacts in ticket log
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/01-vlm-comparison-runs.md — VLM runs + images
+
