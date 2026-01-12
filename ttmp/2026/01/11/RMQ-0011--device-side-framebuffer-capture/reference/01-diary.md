@@ -12,22 +12,31 @@ RelatedFiles:
       Note: Root of framebuffer pointer access
     - Path: remarquee/cmd/remarquee/cmds/device/serve.go
       Note: REST server endpoints
+    - Path: remarquee/cmd/remarquee/cmds/device/stream.go
+      Note: CLI stream client
+    - Path: remarquee/cmd/remarquee/cmds/device/stream_handler.go
+      Note: Stream endpoint implementation
     - Path: remarquee/cmd/remarquee/main.go
       Note: Registers device command
     - Path: remarquee/pkg/devicecapture/pointer_arm64.go
       Note: Paper Pro pointer discovery
     - Path: remarquee/pkg/devicecapture/reader.go
       Note: Core framebuffer capture API
+    - Path: remarquee/pkg/doc/topics/device-capture.md
+      Note: Device capture guide
     - Path: remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/analysis/01-gomarkablestream-framebuffer-streaming-analysis.md
       Note: Detailed analysis
     - Path: remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/design-doc/01-remarquee-device-capture-api-cli-design.md
       Note: Integration design
+    - Path: remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/playbook/01-device-capture-validation.md
+      Note: Validation playbook
 ExternalSources: []
 Summary: Diary for device-side framebuffer capture work
-LastUpdated: 2026-01-11T20:21:30-05:00
+LastUpdated: 2026-01-11T20:27:48-05:00
 WhatFor: Track progress on RMQ-0011 analysis and design
 WhenToUse: Use while implementing device capture features
 ---
+
 
 
 
@@ -314,3 +323,82 @@ I used the plz-confirm image + form widgets to confirm the screenshot matches th
 ### Technical details
 - Command: `plz-confirm image --title \"RMQ-0011 screenshot validation\" --message \"Does this screenshot match the tablet display?\" --mode confirm --image /tmp/rmq-0011-screenshot.png`
 - Command: `plz-confirm form --title \"RMQ-0011 screenshot details\" --schema /tmp/rmq-0011-screenshot-review-schema.json`
+
+## Step 8: Add raw streaming endpoint and CLI
+
+I added a `/api/v1/stream` endpoint that streams raw framebuffer bytes at a configurable rate, along with a `remarquee device stream` CLI command that writes the stream to a file for a fixed duration. This brings the basic streaming flow online without introducing compression or event streams yet.
+
+**Commit (code):** N/A
+
+### What I did
+- Added a stream handler with rate validation and a single-connection limiter.
+- Exposed `/api/v1/stream` in the device server.
+- Added `remarquee device stream` with `--rate` and `--duration` flags.
+- Ran `go test ./cmd/remarquee -count=1`.
+
+### Why
+- Streaming support is needed for live capture workflows and future UI mirroring.
+
+### What worked
+- The stream endpoint compiles and is wired into the server.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The stream handler needs a concurrency limiter to avoid saturating the device.
+
+### What was tricky to build
+- Handling stream timeouts cleanly while still writing a partial output file.
+
+### What warrants a second pair of eyes
+- Confirm the raw stream rate behavior and file size growth match expectations.
+
+### What should be done in the future
+- Add compression (RLE/zstd) and event streaming endpoints.
+
+### Code review instructions
+- Review `remarquee/cmd/remarquee/cmds/device/stream_handler.go` and `.../stream.go`.
+- Validate with `remarquee device stream --duration 5s --rate 200`.
+
+### Technical details
+- Command: `go test ./cmd/remarquee -count=1`
+
+## Step 9: Document device capture API and add validation playbook
+
+I wrote a guide-style device capture doc in `pkg/doc/topics` and added a ticket playbook for validation. This makes the feature discoverable via `remarquee help` and provides repeatable validation steps.
+
+**Commit (code):** N/A
+
+### What I did
+- Added `remarquee/pkg/doc/topics/device-capture.md` with API + CLI usage.
+- Created the playbook `playbook/01-device-capture-validation.md`.
+- Updated RMQ-0011 tasks to split streaming vs events.
+
+### Why
+- The doc makes the workflow self-service and helps future contributors validate changes.
+
+### What worked
+- The documentation follows the Glazed style guide and includes runnable examples.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The help system can expose device capture docs without extra wiring.
+
+### What was tricky to build
+- Balancing reference material with step-by-step guidance in a single doc.
+
+### What warrants a second pair of eyes
+- Confirm the doc examples match the actual CLI defaults and port numbers.
+
+### What should be done in the future
+- Add event endpoint documentation once those handlers land.
+
+### Code review instructions
+- Read `remarquee/pkg/doc/topics/device-capture.md`.
+- Read `remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/playbook/01-device-capture-validation.md`.
+
+### Technical details
+- N/A
