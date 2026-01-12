@@ -15,6 +15,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	rmdocrender "github.com/go-go-golems/remarquee/pkg/rmdoc/render"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -26,6 +27,12 @@ type VLMValidateCommand struct {
 type VLMValidateSettings struct {
 	PDFA string `glazed.parameter:"pdf-a"`
 	PDFB string `glazed.parameter:"pdf-b"`
+
+	ImageA string `glazed.parameter:"image-a"`
+	ImageB string `glazed.parameter:"image-b"`
+
+	RMDocA string `glazed.parameter:"rmdoc-a"`
+	RMDocB string `glazed.parameter:"rmdoc-b"`
 
 	Pages string `glazed.parameter:"pages"`
 
@@ -64,13 +71,13 @@ Typical use:
 Notes:
 - This is intended as an optional validation helper (manual/interactive workflow).
 - PNG rasterization defaults to Poppler (pdftoppm) because UniDoc's renderer can fail with "type check error" on some PDFs.
+- Inputs can be provided as PDFs, PNGs, or .rmdoc files. For .rmdoc inputs, pages are rendered to PNGs using the V6 merge pipeline.
 `),
 		glazecmds.WithFlags(
 			parameters.NewParameterDefinition(
 				"pdf-a",
 				parameters.ParameterTypeString,
 				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
 				parameters.WithHelp("Path to PDF A (e.g. remarquee output)"),
 			),
 			parameters.NewParameterDefinition(
@@ -80,10 +87,34 @@ Notes:
 				parameters.WithHelp("Optional path to PDF B (e.g. reference output)"),
 			),
 			parameters.NewParameterDefinition(
+				"image-a",
+				parameters.ParameterTypeString,
+				parameters.WithDefault(""),
+				parameters.WithHelp("Path to PNG A (skip PDF rendering)"),
+			),
+			parameters.NewParameterDefinition(
+				"image-b",
+				parameters.ParameterTypeString,
+				parameters.WithDefault(""),
+				parameters.WithHelp("Path to PNG B (skip PDF rendering)"),
+			),
+			parameters.NewParameterDefinition(
+				"rmdoc-a",
+				parameters.ParameterTypeString,
+				parameters.WithDefault(""),
+				parameters.WithHelp("Path to .rmdoc A (render V6 pages to PNGs)"),
+			),
+			parameters.NewParameterDefinition(
+				"rmdoc-b",
+				parameters.ParameterTypeString,
+				parameters.WithDefault(""),
+				parameters.WithHelp("Path to .rmdoc B (render V6 pages to PNGs)"),
+			),
+			parameters.NewParameterDefinition(
 				"pages",
 				parameters.ParameterTypeString,
 				parameters.WithDefault("1"),
-				parameters.WithHelp("Comma-separated 1-based page numbers to render (e.g. '1,2,5')"),
+				parameters.WithHelp("Comma-separated 1-based page numbers to render (for PDF or .rmdoc inputs)"),
 			),
 			parameters.NewParameterDefinition(
 				"out-dir",
@@ -150,13 +181,22 @@ func (c *VLMValidateCommand) Run(ctx context.Context, parsedLayers *layers.Parse
 		return errors.Wrap(err, "ensure out dir")
 	}
 
-	imgsA, err := renderPDFPagesToPNGs(ctx, s, s.PDFA, outDir, "A", pages)
+	srcA, err := resolveVLMSource("A", s.PDFA, s.ImageA, s.RMDocA, true)
+	if err != nil {
+		return err
+	}
+	srcB, err := resolveVLMSource("B", s.PDFB, s.ImageB, s.RMDocB, false)
+	if err != nil {
+		return err
+	}
+
+	imgsA, err := renderVLMSource(ctx, s, srcA, outDir, "A", pages)
 	if err != nil {
 		return err
 	}
 	var imgsB []string
-	if strings.TrimSpace(s.PDFB) != "" {
-		imgsB, err = renderPDFPagesToPNGs(ctx, s, s.PDFB, outDir, "B", pages)
+	if srcB.Kind != "" {
+		imgsB, err = renderVLMSource(ctx, s, srcB, outDir, "B", pages)
 		if err != nil {
 			return err
 		}
@@ -179,6 +219,103 @@ func (c *VLMValidateCommand) Run(ctx context.Context, parsedLayers *layers.Parse
 	fmt.Printf("ok: wrote images to %s\n", outDir)
 	fmt.Printf("ok: running: %s\n", strings.Join(cmd.Args, " "))
 	return cmd.Run()
+}
+
+type vlmSourceKind string
+
+const (
+	vlmSourcePDF   vlmSourceKind = "pdf"
+	vlmSourceImage vlmSourceKind = "image"
+	vlmSourceRMDoc vlmSourceKind = "rmdoc"
+)
+
+type vlmSource struct {
+	Kind vlmSourceKind
+	Path string
+}
+
+func resolveVLMSource(label, pdf, image, rmdoc string, required bool) (vlmSource, error) {
+	pdf = strings.TrimSpace(pdf)
+	image = strings.TrimSpace(image)
+	rmdoc = strings.TrimSpace(rmdoc)
+
+	count := 0
+	if pdf != "" {
+		count++
+	}
+	if image != "" {
+		count++
+	}
+	if rmdoc != "" {
+		count++
+	}
+
+	if count == 0 {
+		if required {
+			return vlmSource{}, errors.Errorf("missing input for %s (provide --pdf-%s, --image-%s, or --rmdoc-%s)", label, strings.ToLower(label), strings.ToLower(label), strings.ToLower(label))
+		}
+		return vlmSource{}, nil
+	}
+	if count > 1 {
+		return vlmSource{}, errors.Errorf("multiple inputs for %s; choose only one of --pdf-%s, --image-%s, or --rmdoc-%s", label, strings.ToLower(label), strings.ToLower(label), strings.ToLower(label))
+	}
+
+	switch {
+	case pdf != "":
+		return vlmSource{Kind: vlmSourcePDF, Path: pdf}, nil
+	case image != "":
+		return vlmSource{Kind: vlmSourceImage, Path: image}, nil
+	default:
+		return vlmSource{Kind: vlmSourceRMDoc, Path: rmdoc}, nil
+	}
+}
+
+func renderVLMSource(ctx context.Context, s *VLMValidateSettings, src vlmSource, outDir, prefix string, pages []int) ([]string, error) {
+	switch src.Kind {
+	case vlmSourceImage:
+		if _, err := os.Stat(src.Path); err != nil {
+			return nil, errors.Wrapf(err, "image not found: %s", src.Path)
+		}
+		return []string{src.Path}, nil
+	case vlmSourcePDF:
+		return renderPDFPagesToPNGs(ctx, s, src.Path, outDir, prefix, pages)
+	case vlmSourceRMDoc:
+		return renderRMDocPagesToPNGs(ctx, s, src.Path, outDir, prefix, pages)
+	default:
+		return nil, errors.New("unknown input source")
+	}
+}
+
+func renderRMDocPagesToPNGs(ctx context.Context, s *VLMValidateSettings, rmdocPath, outDir, prefix string, pages []int) ([]string, error) {
+	pageIndices := make([]int, 0, len(pages))
+	for _, p := range pages {
+		pageIndices = append(pageIndices, p-1)
+	}
+
+	res, err := rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx, rmdocPath, rmdocrender.V6MergeOptions{}, pageIndices)
+	if err != nil {
+		return nil, err
+	}
+
+	pdfFile, err := os.CreateTemp(outDir, fmt.Sprintf("%s-v6-*.pdf", strings.ToLower(prefix)))
+	if err != nil {
+		return nil, errors.Wrap(err, "create temp pdf")
+	}
+	defer pdfFile.Close()
+
+	if _, err := pdfFile.Write(res.PDF); err != nil {
+		return nil, errors.Wrap(err, "write temp pdf")
+	}
+
+	renderPages := make([]pageRenderSpec, 0, len(pages))
+	for i, label := range pages {
+		renderPages = append(renderPages, pageRenderSpec{
+			PDFPage: i + 1,
+			Label:   label,
+		})
+	}
+
+	return renderPDFPagesToPNGsWithPopplerMapped(ctx, s.PDFToPPM, s.DPI, pdfFile.Name(), outDir, prefix, renderPages)
 }
 
 func NewVLMValidateCobraCommand() (*cobra.Command, error) {
@@ -280,5 +417,3 @@ func renderPDFPagesToPNGsWithPoppler(ctx context.Context, pdftoppm string, dpi i
 	}
 	return out, nil
 }
-
-
