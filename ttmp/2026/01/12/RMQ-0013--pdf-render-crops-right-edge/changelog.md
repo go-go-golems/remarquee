@@ -67,3 +67,12 @@ Step 7: store VLM artifacts in ticket log
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/01-vlm-comparison-runs.md — VLM runs + images
 
+
+## 2026-01-12
+
+Step 8: rerun page 65 capture in ticket log directory
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/01-vlm-comparison-runs.md — Rerun output
+

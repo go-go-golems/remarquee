@@ -17,7 +17,7 @@ RelatedFiles:
       Note: Preliminary questions and VLM loop
 ExternalSources: []
 Summary: Diary for RMQ-0013 right-edge PDF crop investigation.
-LastUpdated: 2026-01-12T13:32:26-05:00
+LastUpdated: 2026-01-12T13:34:17-05:00
 WhatFor: Track progress and validation steps for the RMQ-0013 right-edge PDF crop bug.
 WhenToUse: Update after each investigation or validation step.
 ---
@@ -276,3 +276,44 @@ I created a log document for VLM comparison runs and copied the rendered/device 
   - `/tmp/remarquee-vlm-validate-3080623130/A-page-076.png` -> `remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/vlm-A-page-076.png`
   - `/tmp/rmq-0013-crop/Journal-v6-page-065.png` -> `remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/render-page-065.png`
   - `/tmp/rmq-0013-crop/device-page-065.png` -> `remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/device-page-065.png`
+
+## Step 7: Re-capture page 65 artifacts in ticket log directory
+
+I reran the page 65 render and device screenshot using only the ticket log directory (no `/tmp`) and recorded the fresh VLM output. This ensures the canonical artifacts live inside the ticket and match the confirmed device page.
+
+**Commit (code):** N/A
+
+### What I did
+- Rendered page 65 directly into `ttmp/.../log`.
+- Captured the device screenshot to the same log directory.
+- Ran `vlm-validate` with `--out-dir` inside the log folder.
+- Updated the VLM log entry with the new run output.
+
+### Why
+- The ticket should store all artifacts in one place and avoid `/tmp`.
+
+### What worked
+- The VLM again flagged right-edge clipping in the render vs device screenshot.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The log directory workflow is sufficient for repeatable runs without `/tmp`.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review `remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/01-vlm-comparison-runs.md`.
+
+### Technical details
+- Render: `go run ./cmd/remarquee rmdoc render-v6-png /tmp/rmq-0012-journal/Journal.rmdoc --pages 65 --out-dir ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log --force`
+- Screenshot: `go run ./cmd/remarquee device screenshot --url http://10.11.99.1:2718 --username admin --password password --out ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/device-page-065.png`
+- VLM: `go run ./cmd/remarquee rmdoc vlm-validate --image-a ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/Journal-v6-page-065.png --image-b ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/device-page-065.png --out-dir ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/log/vlm-20260112-133346 --prompt "Compare right-edge alignment. Is any content clipped on the right? Describe where."`
