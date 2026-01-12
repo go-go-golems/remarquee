@@ -133,6 +133,17 @@ func ensureStrokeGStates(res *pdf.PdfPageResources, strokes []rmdoc.Stroke) erro
 	return nil
 }
 
+func maxStrokeWidthScreenUnits(strokes []rmdoc.Stroke) float64 {
+	maxWidth := 0.0
+	for _, s := range strokes {
+		st := strokeStyleForTool(s.Tool, s.ThicknessScale, s.Color)
+		if st.WidthScreenUnits > maxWidth {
+			maxWidth = st.WidthScreenUnits
+		}
+	}
+	return maxWidth
+}
+
 func setLineCap(cc *contentstream.ContentCreator, lineCap int64) {
 	ops := cc.Operations()
 	*ops = append(*ops, &contentstream.ContentStreamOperation{
@@ -372,17 +383,39 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 			// implicit 0.75 px->pt scale factor (72/96).
 			//
 			// To match remarks across both notebooks and inserted blank pages in PDF-backed docs,
-			// render onto a fixed "rm screen" canvas using the CairoSVG-effective scale.
+			// render using the bbox-derived page size (so strokes outside the default canvas are kept),
+			// with the CairoSVG-effective scale.
 			scale := rmv6Scale * cairoSVGScale
-			pageW := float64(rmv6ScreenWidth) * scale
-			pageH := float64(rmv6ScreenHeight) * scale
+			pad := maxStrokeWidthScreenUnits(strokes) / 2.0
+			if pad < 1.0 {
+				pad = 1.0
+			}
+			bboxWithPad := bbox.Expand(pad)
+			if ok && !stBBox.IsEmpty() {
+				defaultMinX := -float64(rmv6ScreenWidth) / 2.0
+				defaultMaxX := float64(rmv6ScreenWidth) / 2.0
+				leftMargin := stBBox.MinX - defaultMinX
+				rightMargin := defaultMaxX - stBBox.MaxX
+				if leftMargin < 0 {
+					leftMargin = 0
+				}
+				if rightMargin < 0 {
+					rightMargin = 0
+				}
+				if leftMargin > rightMargin {
+					bboxWithPad.MaxX += leftMargin - rightMargin
+				} else if rightMargin > leftMargin {
+					bboxWithPad.MinX -= rightMargin - leftMargin
+				}
+			}
+			pageW := xxScaled((bboxWithPad.MaxX-bboxWithPad.MinX)+1, scale)
+			pageH := yyScaled((bboxWithPad.MaxY-bboxWithPad.MinY)+1, scale)
 
-			mergedPage, err := buildOverlayOnlyPageFullScreen(pageW, pageH, strokes, tree.RootText, textParagraphs, scale, opts)
+			mergedPage, err := buildOverlayOnlyPageBBoxScaled(pageW, pageH, strokes, tree.RootText, textParagraphs, bboxWithPad, scale, opts)
 			if err != nil {
 				return nil, err
 			}
-			// remarks keeps highlights_x_translation = 0 in this branch.
-			highlightsXTranslation[i] = 0
+			highlightsXTranslation[i] = -xxScaled(bboxWithPad.MinX, scale)
 			if err := applySmartHighlightsScaled(mergedPage, glyphRanges, highlightsXTranslation[i], pageH, scale); err != nil {
 				return nil, err
 			}
@@ -577,14 +610,36 @@ func MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx context.Context, rmdocPat
 		bgContent, _ := bgPage.GetAllContentStreams()
 		if strings.TrimSpace(bgContent) == "" {
 			scale := rmv6Scale * cairoSVGScale
-			pageW := float64(rmv6ScreenWidth) * scale
-			pageH := float64(rmv6ScreenHeight) * scale
+			pad := maxStrokeWidthScreenUnits(strokes) / 2.0
+			if pad < 1.0 {
+				pad = 1.0
+			}
+			bboxWithPad := bbox.Expand(pad)
+			if ok && !stBBox.IsEmpty() {
+				defaultMinX := -float64(rmv6ScreenWidth) / 2.0
+				defaultMaxX := float64(rmv6ScreenWidth) / 2.0
+				leftMargin := stBBox.MinX - defaultMinX
+				rightMargin := defaultMaxX - stBBox.MaxX
+				if leftMargin < 0 {
+					leftMargin = 0
+				}
+				if rightMargin < 0 {
+					rightMargin = 0
+				}
+				if leftMargin > rightMargin {
+					bboxWithPad.MaxX += leftMargin - rightMargin
+				} else if rightMargin > leftMargin {
+					bboxWithPad.MinX -= rightMargin - leftMargin
+				}
+			}
+			pageW := xxScaled((bboxWithPad.MaxX-bboxWithPad.MinX)+1, scale)
+			pageH := yyScaled((bboxWithPad.MaxY-bboxWithPad.MinY)+1, scale)
 
-			mergedPage, err := buildOverlayOnlyPageFullScreen(pageW, pageH, strokes, tree.RootText, textParagraphs, scale, opts)
+			mergedPage, err := buildOverlayOnlyPageBBoxScaled(pageW, pageH, strokes, tree.RootText, textParagraphs, bboxWithPad, scale, opts)
 			if err != nil {
 				return nil, err
 			}
-			highlightsXTranslation[i] = 0
+			highlightsXTranslation[i] = -xxScaled(bboxWithPad.MinX, scale)
 			if err := applySmartHighlightsScaled(mergedPage, glyphRanges, highlightsXTranslation[i], pageH, scale); err != nil {
 				return nil, err
 			}
@@ -721,6 +776,29 @@ func buildOverlayOnlyPageFullScreen(width, height float64, strokes []rmdoc.Strok
 	return page, nil
 }
 
+func buildOverlayOnlyPageBBoxScaled(width, height float64, strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, paragraphs []rmdoc.RMV6TextParagraph, bbox rmdoc.BBox, scale float64, opts V6MergeOptions) (*pdf.PdfPage, error) {
+	page := pdf.NewPdfPage()
+	page.MediaBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
+	page.CropBox = &pdf.PdfRectangle{Llx: 0, Lly: 0, Urx: width, Ury: height}
+	page.Resources = pdf.NewPdfPageResources()
+
+	var fonts typedTextFontNames
+	if rt != nil && rmdoc.HasNonEmptyRMV6Text(paragraphs) {
+		var err error
+		fonts, err = ensureTypedTextFonts(page.Resources)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := ensureStrokeGStates(page.Resources, strokes); err != nil {
+		return nil, err
+	}
+
+	overlayOps := buildOverlayOpsBBoxScaled(strokes, rt, paragraphs, bbox, 0, 0, width, height, scale, opts, fonts)
+	page.SetContentStreams([]string{overlayOps}, core.NewFlateEncoder())
+	return page, nil
+}
+
 func buildOverlayOpsScreen(strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, paragraphs []rmdoc.RMV6TextParagraph, pageWidth, pageHeight, scale float64, fonts typedTextFontNames, opts V6MergeOptions) string {
 	cc := contentstream.NewContentCreator()
 	cc.Add_q()
@@ -777,6 +855,65 @@ func buildOverlayOpsScreen(strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, parag
 
 	cc.Add_Q()
 	appendTypedTextOpsScreen(cc, rt, paragraphs, pageWidth, pageHeight, scale, xShift, fonts)
+	return "% rmv6-overlay\n" + cc.Operations().String()
+}
+
+func buildOverlayOpsBBoxScaled(strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, paragraphs []rmdoc.RMV6TextParagraph, bbox rmdoc.BBox, xSvg, ySvg, wSvg, hSvg, scale float64, opts V6MergeOptions, fonts typedTextFontNames) string {
+	cc := contentstream.NewContentCreator()
+	cc.Add_q()
+
+	cc.Add_w(opts.StrokeWidthPt)
+	cc.Add_gs(alphaGStateName(1.0))
+	setLineCap(cc, 1)
+	cc.Add_RG(0, 0, 0)
+	lastColor := uint32(0)
+	lastColorSet := false
+	lastAlpha := alphaKey(1.0)
+	lastLineCap := int64(1)
+	lastWidthPt := opts.StrokeWidthPt
+
+	for _, s := range strokes {
+		if len(s.Points) == 0 {
+			continue
+		}
+
+		st := strokeStyleForTool(s.Tool, s.ThicknessScale, s.Color)
+		widthPt := st.WidthScreenUnits * scale
+		if widthPt <= 0 {
+			widthPt = opts.StrokeWidthPt
+		}
+		if math.Abs(widthPt-lastWidthPt) > 1e-9 {
+			cc.Add_w(widthPt)
+			lastWidthPt = widthPt
+		}
+		if ak := alphaKey(st.Opacity); ak != lastAlpha {
+			cc.Add_gs(alphaGStateName(st.Opacity))
+			lastAlpha = ak
+		}
+		if st.LineCap != lastLineCap {
+			setLineCap(cc, st.LineCap)
+			lastLineCap = st.LineCap
+		}
+
+		if !lastColorSet || s.Color != lastColor {
+			r, g, b := rmdoc.PenColorToRGBForStroke(rmdoc.PenColor(s.Color))
+			cc.Add_RG(r, g, b)
+			lastColor = s.Color
+			lastColorSet = true
+		}
+
+		path := draw.NewPath()
+		for _, p := range s.Points {
+			x := xSvg + xxScaled(float64(p.X)-bbox.MinX, scale)
+			y := ySvg + (hSvg - yyScaled(float64(p.Y)-bbox.MinY, scale))
+			path = path.AppendPoint(draw.NewPoint(x, y))
+		}
+		draw.DrawPathWithCreator(path, cc)
+		cc.Add_S()
+	}
+
+	cc.Add_Q()
+	appendTypedTextOpsBBoxScaled(cc, rt, paragraphs, bbox, xSvg, ySvg, wSvg, hSvg, scale, opts, fonts)
 	return "% rmv6-overlay\n" + cc.Operations().String()
 }
 
@@ -903,6 +1040,40 @@ func appendTypedTextOpsBBox(cc *contentstream.ContentCreator, rt *rmdoc.RMV6Root
 
 		x := xSvg + xx(xScreen-bbox.MinX)
 		y := ySvg + (hSvg - yy(yScreen-bbox.MinY))
+
+		cc.Add_Tf(fontName, fontSize)
+		cc.Add_Tm(1, 0, 0, 1, x, y)
+		cc.Add_Tj(*core.MakeString(text))
+	}
+	cc.Add_ET()
+}
+
+func appendTypedTextOpsBBoxScaled(cc *contentstream.ContentCreator, rt *rmdoc.RMV6RootText, paragraphs []rmdoc.RMV6TextParagraph, bbox rmdoc.BBox, xSvg, ySvg, wSvg, hSvg, scale float64, _ V6MergeOptions, fonts typedTextFontNames) {
+	if rt == nil || !rmdoc.HasNonEmptyRMV6Text(paragraphs) {
+		return
+	}
+	if fonts.Plain == "" {
+		return
+	}
+
+	yOffset := rmdoc.RMV6TextTopY
+
+	cc.Add_BT()
+	for _, p := range paragraphs {
+		yOffset += rmdoc.RMV6ParagraphLineHeight(p.Style)
+
+		text := strings.TrimSpace(p.Text)
+		if text == "" {
+			continue
+		}
+
+		fontName, fontSize := typedTextFontForStyle(p.Style, fonts)
+
+		xScreen := rt.PosX
+		yScreen := rt.PosY + yOffset
+
+		x := xSvg + xxScaled(xScreen-bbox.MinX, scale)
+		y := ySvg + (hSvg - yyScaled(yScreen-bbox.MinY, scale))
 
 		cc.Add_Tf(fontName, fontSize)
 		cc.Add_Tm(1, 0, 0, 1, x, y)
