@@ -37,12 +37,27 @@ func (o BackgroundOptions) withDefaults() BackgroundOptions {
 // For notebook documents (no payload PDF), it currently creates blank pages for each UI page
 // using opts.DefaultPageSize. Template backgrounds are a later milestone.
 func BuildBackgroundPDF(ctx context.Context, doc *rmdoc.Document, opts BackgroundOptions) ([]byte, error) {
+	if doc == nil {
+		return nil, errors.New("doc is nil")
+	}
+	indices := make([]int, len(doc.Pages))
+	for i := range doc.Pages {
+		indices[i] = i
+	}
+	return BuildBackgroundPDFForPages(ctx, doc, opts, indices)
+}
+
+// BuildBackgroundPDFForPages assembles a UI-ordered background PDF for a subset of pages.
+func BuildBackgroundPDFForPages(ctx context.Context, doc *rmdoc.Document, opts BackgroundOptions, pageIndices []int) ([]byte, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 
 	if doc == nil {
 		return nil, errors.New("doc is nil")
+	}
+	if len(pageIndices) == 0 {
+		return nil, errors.New("pageIndices is empty")
 	}
 	opts = opts.withDefaults()
 
@@ -77,16 +92,19 @@ func BuildBackgroundPDF(ctx context.Context, doc *rmdoc.Document, opts Backgroun
 		return nil, err
 	}
 
-	for i, page := range doc.Pages {
+	for i, idx := range pageIndices {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
+		if idx < 0 || idx >= len(doc.Pages) {
+			return nil, errors.Errorf("pageIndices[%d]=%d out of range (pages=%d)", i, idx, len(doc.Pages))
+		}
 
-		// Copy the relevant payload page.
+		page := doc.Pages[idx]
 		if payloadReader != nil && page.SourcePDFPage != rmdoc.InsertedPage {
 			pageNum := page.SourcePDFPage + 1 // unipdf is 1-based
 			if pageNum <= 0 {
-				return nil, errors.Errorf("page[%d]: invalid SourcePDFPage=%d", i, page.SourcePDFPage)
+				return nil, errors.Errorf("page[%d]: invalid SourcePDFPage=%d", idx, page.SourcePDFPage)
 			}
 
 			srcPage, err := payloadReader.GetPage(pageNum)
@@ -111,13 +129,11 @@ func BuildBackgroundPDF(ctx context.Context, doc *rmdoc.Document, opts Backgroun
 			continue
 		}
 
-		// Otherwise: inserted page (PDF docs) or notebook page (no payload).
 		c.SetPageSize(payloadPageSize)
 		_ = c.NewPage()
 	}
 
 	var buf bytes.Buffer
-	// Note: creator supports writing to an io.Writer; we keep this in-memory for downstream merge/raster.
 	if err := c.Write(&buf); err != nil {
 		return nil, errors.Wrap(err, "write background PDF")
 	}

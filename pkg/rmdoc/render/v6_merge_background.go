@@ -444,6 +444,206 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 	}, nil
 }
 
+// MergeRMDocV6OntoBackgroundPDFWithInfoForPages merges only the selected UI pages into a PDF.
+// pageIndices are 0-based indexes into doc.Pages.
+func MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx context.Context, rmdocPath string, opts V6MergeOptions, pageIndices []int) (*V6MergeResult, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if len(pageIndices) == 0 {
+		return nil, errors.New("pageIndices is empty")
+	}
+	opts = opts.withDefaults()
+
+	doc, err := rmdoc.OpenFile(ctx, rmdocPath)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, idx := range pageIndices {
+		if idx < 0 || idx >= len(doc.Pages) {
+			return nil, errors.Errorf("pageIndices[%d]=%d out of range (pages=%d)", i, idx, len(doc.Pages))
+		}
+	}
+
+	isNotebook := len(doc.PayloadPDF) == 0
+	bgPageScale := rmv6Scale
+	if isNotebook {
+		bgPageScale = rmv6Scale * cairoSVGScale
+	}
+
+	bgBytes, err := BuildBackgroundPDFForPages(ctx, doc, BackgroundOptions{
+		DefaultPageSize: creator.PageSize{
+			float64(rmv6ScreenWidth) * bgPageScale,
+			float64(rmv6ScreenHeight) * bgPageScale,
+		},
+	}, pageIndices)
+	if err != nil {
+		return nil, err
+	}
+
+	bgReader, err := pdf.NewPdfReader(bytes.NewReader(bgBytes))
+	if err != nil {
+		return nil, errors.Wrap(err, "open background pdf reader")
+	}
+
+	numPages, err := bgReader.GetNumPages()
+	if err != nil {
+		return nil, errors.Wrap(err, "get background num pages")
+	}
+	if numPages != len(pageIndices) {
+		return nil, errors.Errorf("background pages=%d does not match requested pages=%d", numPages, len(pageIndices))
+	}
+
+	w := pdf.NewPdfWriter()
+	highlightsXTranslation := make([]float64, len(pageIndices))
+
+	for i, pageIdx := range pageIndices {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		pageNum := i + 1
+
+		bgPage, err := bgReader.GetPage(pageNum)
+		if err != nil {
+			return nil, errors.Wrapf(err, "get background page %d (ui idx=%d)", pageNum, pageIdx)
+		}
+
+		var rm *rmdoc.RMFile
+		if pageIdx < len(doc.Pages) && doc.Pages[pageIdx].PageID != "" {
+			f, ok, err := rmdoc.ReadRMFileFromArchive(ctx, rmdocPath, doc.Pages[pageIdx].PageID)
+			if err != nil {
+				return nil, err
+			}
+			if ok && f.Version == "V6" {
+				rm = f
+			}
+		}
+
+		if rm == nil || len(rm.Bytes) == 0 {
+			if err := w.AddPage(bgPage); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		tree, err := rmdoc.ParseRMV6SceneTree(bytes.NewReader(rm.Bytes))
+		if err != nil {
+			return nil, errors.Wrapf(err, "parse v6 scene tree (page=%d pageID=%s)", pageIdx, rm.PageID)
+		}
+
+		strokes, err := rmdoc.ExtractRMV6StrokesWithAnchors(tree)
+		if err != nil {
+			return nil, errors.Wrapf(err, "extract v6 strokes (page=%d pageID=%s)", pageIdx, rm.PageID)
+		}
+
+		glyphRanges, err := rmdoc.ExtractRMV6GlyphRangesWithAnchors(tree)
+		if err != nil {
+			return nil, errors.Wrapf(err, "extract v6 glyph ranges (page=%d pageID=%s)", pageIdx, rm.PageID)
+		}
+
+		textParagraphs, err := rmdoc.BuildRMV6TextDocument(tree.RootText)
+		if err != nil {
+			return nil, errors.Wrapf(err, "build v6 text document (page=%d pageID=%s)", pageIdx, rm.PageID)
+		}
+		hasTypedText := tree.RootText != nil && rmdoc.HasNonEmptyRMV6Text(textParagraphs)
+
+		if len(strokes) == 0 && len(glyphRanges) == 0 && !hasTypedText {
+			if err := w.AddPage(bgPage); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		defaultBBox := rmdoc.BBox{
+			MinX: -float64(rmv6ScreenWidth) / 2.0,
+			MaxX: float64(rmv6ScreenWidth) / 2.0,
+			MinY: 0,
+			MaxY: float64(rmv6ScreenHeight),
+		}
+		stBBox, ok := rmdoc.BBoxForStrokes(strokes, 0)
+		bbox := defaultBBox
+		if ok && !stBBox.IsEmpty() {
+			bbox = bbox.Union(stBBox)
+		}
+
+		w0, h0, rot, err := pageBoxDims(bgPage)
+		if err != nil {
+			return nil, errors.Wrapf(err, "background page dims (page=%d ui idx=%d)", pageNum, pageIdx)
+		}
+
+		wBg, hBg := displayDims(w0, h0, rot)
+
+		bgContent, _ := bgPage.GetAllContentStreams()
+		if strings.TrimSpace(bgContent) == "" {
+			scale := rmv6Scale * cairoSVGScale
+			pageW := float64(rmv6ScreenWidth) * scale
+			pageH := float64(rmv6ScreenHeight) * scale
+
+			mergedPage, err := buildOverlayOnlyPageFullScreen(pageW, pageH, strokes, tree.RootText, textParagraphs, scale, opts)
+			if err != nil {
+				return nil, err
+			}
+			highlightsXTranslation[i] = 0
+			if err := applySmartHighlightsScaled(mergedPage, glyphRanges, highlightsXTranslation[i], pageH, scale); err != nil {
+				return nil, err
+			}
+			if err := w.AddPage(mergedPage); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		xMin, xMax := bbox.MinX, bbox.MaxX
+		yMin, yMax := bbox.MinY, bbox.MaxY
+
+		xShift := xx(xMin)
+		yShift := yy(yMin)
+		wSvg := xx((xMax - xMin) + 1)
+		hSvg := yy((yMax - yMin) + 1)
+
+		width := math.Max(wSvg, wBg)
+		height := math.Max(hSvg, hBg)
+
+		var xSvg, ySvg, xBg, yBg float64
+		highlightsX := wBg / 2.0
+		if wSvg > wBg {
+			xBg = width/2 - wBg/2 - (wSvg/2 + xShift)
+			highlightsX = xBg + wBg/2
+		} else if wSvg < wBg {
+			xSvg = width/2 - wSvg/2 + (wSvg/2 + xShift)
+		}
+		highlightsXTranslation[i] = highlightsX
+
+		if hSvg > hBg {
+			yBg = -yShift
+		} else if hSvg < hBg {
+			ySvg = yShift
+		}
+
+		mergedPage, err := buildMergedPage(width, height, xBg, yBg, xSvg, ySvg, bgPage, bgContent, rot, w0, h0, strokes, tree.RootText, textParagraphs, bbox, wSvg, hSvg, opts)
+		if err != nil {
+			return nil, err
+		}
+		if err := applySmartHighlightsScaled(mergedPage, glyphRanges, highlightsXTranslation[i], height, rmv6Scale); err != nil {
+			return nil, err
+		}
+
+		if err := w.AddPage(mergedPage); err != nil {
+			return nil, err
+		}
+	}
+
+	var buf bytes.Buffer
+	if err := w.Write(&buf); err != nil {
+		return nil, errors.Wrap(err, "write merged pdf")
+	}
+	return &V6MergeResult{
+		PDF:                    buf.Bytes(),
+		HighlightsXTranslation: highlightsXTranslation,
+	}, nil
+}
+
 func pageBoxDims(p *pdf.PdfPage) (w, h float64, rotation int64, err error) {
 	box := p.CropBox
 	if box == nil {

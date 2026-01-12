@@ -1,10 +1,13 @@
 package rmdoc
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
@@ -119,6 +122,11 @@ func (c *RenderV6PNGCommand) Run(ctx context.Context, parsedLayers *layers.Parse
 		return err
 	}
 
+	pageIndices := make([]int, 0, len(pages))
+	for _, p := range pages {
+		pageIndices = append(pageIndices, p-1)
+	}
+
 	doc, err := pkg_rmdoc.OpenFile(ctx, s.File)
 	if err != nil {
 		return err
@@ -162,7 +170,7 @@ func (c *RenderV6PNGCommand) Run(ctx context.Context, parsedLayers *layers.Parse
 		}
 	}
 
-	res, err := rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfo(ctx, s.File, rmdocrender.V6MergeOptions{})
+	res, err := rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx, s.File, rmdocrender.V6MergeOptions{}, pageIndices)
 	if err != nil {
 		return err
 	}
@@ -170,7 +178,14 @@ func (c *RenderV6PNGCommand) Run(ctx context.Context, parsedLayers *layers.Parse
 		return errors.Wrap(err, "write output pdf")
 	}
 
-	imgs, err := renderPDFPagesToPNGsWithPoppler(ctx, s.PDFToPPM, s.DPI, pdfOut, outDir, prefix, pages)
+	renderPages := make([]pageRenderSpec, 0, len(pages))
+	for i, label := range pages {
+		renderPages = append(renderPages, pageRenderSpec{
+			PDFPage: i + 1,
+			Label:   label,
+		})
+	}
+	imgs, err := renderPDFPagesToPNGsWithPopplerMapped(ctx, s.PDFToPPM, s.DPI, pdfOut, outDir, prefix, renderPages)
 	if err != nil {
 		return err
 	}
@@ -180,6 +195,52 @@ func (c *RenderV6PNGCommand) Run(ctx context.Context, parsedLayers *layers.Parse
 		fmt.Printf("ok: wrote %s\n", img)
 	}
 	return nil
+}
+
+type pageRenderSpec struct {
+	PDFPage int
+	Label   int
+}
+
+func renderPDFPagesToPNGsWithPopplerMapped(ctx context.Context, pdftoppm string, dpi int, pdfPath, outDir, prefix string, pages []pageRenderSpec) ([]string, error) {
+	if dpi <= 0 {
+		dpi = 200
+	}
+	if _, err := exec.LookPath(pdftoppm); err != nil {
+		return nil, errors.Wrap(err, "pdftoppm not found on PATH")
+	}
+
+	var out []string
+	for _, page := range pages {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		outBase := filepath.Join(outDir, fmt.Sprintf("%s-page-%03d", prefix, page.Label))
+		outFile := outBase + ".png"
+
+		cmd := exec.CommandContext(ctx,
+			pdftoppm,
+			"-png",
+			"-r", strconv.Itoa(dpi),
+			"-f", strconv.Itoa(page.PDFPage),
+			"-l", strconv.Itoa(page.PDFPage),
+			"-singlefile",
+			pdfPath,
+			outBase,
+		)
+
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			return nil, errors.Wrapf(err, "pdftoppm page %d failed: %s", page.PDFPage, strings.TrimSpace(stderr.String()))
+		}
+
+		if _, err := os.Stat(outFile); err != nil {
+			return nil, errors.Wrapf(err, "pdftoppm did not produce expected output: %s", outFile)
+		}
+		out = append(out, outFile)
+	}
+	return out, nil
 }
 
 func NewRenderV6PNGCobraCommand() (*cobra.Command, error) {
