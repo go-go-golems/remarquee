@@ -76,3 +76,22 @@ Step 10: validate stream endpoint on device
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/reference/01-diary.md — Record stream validation
 
+
+## 2026-01-11
+
+Step 11: add input event streaming endpoints and validate on device (commit 486db83)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/device/events_handler.go — SSE events endpoint
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/deviceevents/scanner_linux.go — Input event scanner
+
+
+## 2026-01-11
+
+Step 12: document events/gestures usage (commit 7b14403)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/topics/device-capture.md — Documented events/gestures endpoints
+

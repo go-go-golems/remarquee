@@ -10,10 +10,22 @@ Owners: []
 RelatedFiles:
     - Path: goMarkableStream/internal/remarkable/fb_rm.go
       Note: Root of framebuffer pointer access
+    - Path: remarquee/cmd/remarquee/cmds/device/events.go
+      Note: CLI client for SSE pen events
+    - Path: remarquee/cmd/remarquee/cmds/device/events_handler.go
+      Note: SSE endpoint for pen events
+    - Path: remarquee/cmd/remarquee/cmds/device/gestures.go
+      Note: CLI client for gesture summaries
+    - Path: remarquee/cmd/remarquee/cmds/device/gestures_handler.go
+      Note: Gesture summary endpoint
+    - Path: remarquee/cmd/remarquee/cmds/device/root.go
+      Note: Register events/gestures commands
     - Path: remarquee/cmd/remarquee/cmds/device/serve.go
       Note: REST server endpoints
     - Path: remarquee/cmd/remarquee/cmds/device/stream.go
-      Note: CLI stream client
+      Note: |-
+        CLI stream client
+        Stream timeout handling
     - Path: remarquee/cmd/remarquee/cmds/device/stream_handler.go
       Note: Stream endpoint implementation
     - Path: remarquee/cmd/remarquee/main.go
@@ -22,6 +34,20 @@ RelatedFiles:
       Note: Paper Pro pointer discovery
     - Path: remarquee/pkg/devicecapture/reader.go
       Note: Core framebuffer capture API
+    - Path: remarquee/pkg/deviceevents/events.go
+      Note: Input event structs and constants
+    - Path: remarquee/pkg/deviceevents/input_devices_arm.go
+      Note: rM2 input device mapping
+    - Path: remarquee/pkg/deviceevents/input_devices_arm64.go
+      Note: Paper Pro input device mapping
+    - Path: remarquee/pkg/deviceevents/input_devices_stub.go
+      Note: Fallback input device mapping
+    - Path: remarquee/pkg/deviceevents/pubsub.go
+      Note: Fan-out pubsub for event streaming
+    - Path: remarquee/pkg/deviceevents/scanner_linux.go
+      Note: Device input scanner for pen/touch
+    - Path: remarquee/pkg/deviceevents/scanner_stub.go
+      Note: Non-linux scanner stub
     - Path: remarquee/pkg/doc/topics/device-capture.md
       Note: Device capture guide
     - Path: remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/analysis/01-gomarkablestream-framebuffer-streaming-analysis.md
@@ -32,10 +58,12 @@ RelatedFiles:
       Note: Validation playbook
 ExternalSources: []
 Summary: Diary for device-side framebuffer capture work
-LastUpdated: 2026-01-11T20:31:06-05:00
+LastUpdated: 2026-01-11T20:54:13-05:00
 WhatFor: Track progress on RMQ-0011 analysis and design
 WhenToUse: Use while implementing device capture features
 ---
+
+
 
 
 
@@ -443,3 +471,93 @@ I rebuilt and redeployed the device binary, restarted the capture server, and ex
 - Deploy: `scp /tmp/remarquee-arm64 root@10.11.99.1:/home/root/remarquee.new && ssh root@10.11.99.1 'mv /home/root/remarquee.new /home/root/remarquee'`
 - Server: `ssh root@10.11.99.1 'nohup /home/root/remarquee device serve --bind :2718 --username admin --password password > /tmp/remarquee-device.log 2>&1 &'`
 - Stream: `go run ./cmd/remarquee device stream --url http://10.11.99.1:2718 --username admin --password password --rate 200 --duration 3s --out /tmp/rmq-0011-stream.raw`
+
+## Step 11: Add input event streaming endpoints and validate on device
+
+I added a device input event pipeline that reads pen/touch events from `/dev/input`, publishes them to subscribers, and exposes `/api/v1/events` (SSE) and `/api/v1/gestures` (NDJSON). The handlers now flush headers immediately and the gesture summarizer tracks deltas without treating coordinate 0 as "unset," which makes the streams usable from CLI clients.
+
+I rebuilt and deployed the arm64 binary, restarted the device server, and captured both event and gesture streams from the workstation. The pen event SSE file contained data; the gesture output was empty because no touch gestures were performed during the capture window.
+
+**Commit (code):** 486db83 — "RMQ-0011: add device input event streaming"
+
+### What I did
+- Added `pkg/deviceevents` for input event structs, pubsub, and Linux scanners with arm/arm64 mappings.
+- Wired the event scanner into `device serve` and exposed `/api/v1/events` and `/api/v1/gestures`.
+- Added `remarquee device events` and `remarquee device gestures` client commands with duration-aware timeouts.
+- Ensured event/gesture handlers flush headers immediately and reset gesture state correctly.
+- Cross-compiled, deployed, restarted the device server, and captured event/gesture outputs.
+
+### Why
+- Device-side input streams are required to pair framebuffer capture with pen/touch context and enable future UI automation.
+
+### What worked
+- `/api/v1/events` returned non-empty SSE data (`/tmp/rmq-0011-events.sse` was ~35KB).
+- `/api/v1/gestures` responded and produced an output file (empty while idle).
+
+### What didn't work
+- Initial request hung until timeout because the SSE handler did not flush headers: `go run ./cmd/remarquee device events --url http://10.11.99.1:2718 --username admin --password password --duration 3s --out /tmp/rmq-0011-events.sse` -> `Get "http://10.11.99.1:2718/api/v1/events": context deadline exceeded`.
+
+### What I learned
+- SSE clients will time out if the server does not write/flush headers immediately.
+- Gesture output can be empty unless the device receives touch input during the capture window.
+
+### What was tricky to build
+- Avoiding false "unset" detection for gesture deltas when coordinates legitimately hit 0.
+
+### What warrants a second pair of eyes
+- Validate that input device mappings (`event2`, `event3`) and X/Y codes (54/53) match current firmware on both rM2 and Paper Pro.
+
+### What should be done in the future
+- Re-run gesture capture while actively swiping to confirm output deltas.
+
+### Code review instructions
+- Start in `remarquee/pkg/deviceevents/scanner_linux.go` and `remarquee/pkg/deviceevents/pubsub.go`.
+- Review `remarquee/cmd/remarquee/cmds/device/events_handler.go` and `remarquee/cmd/remarquee/cmds/device/gestures_handler.go`.
+- Validate with the commands listed below.
+
+### Technical details
+- Build: `GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o /tmp/remarquee-arm64 ./cmd/remarquee`
+- Deploy: `scp /tmp/remarquee-arm64 root@10.11.99.1:/home/root/remarquee.new && ssh root@10.11.99.1 'mv /home/root/remarquee.new /home/root/remarquee'`
+- Server: `ssh root@10.11.99.1 'nohup /home/root/remarquee device serve --bind :2718 --username admin --password password > /tmp/remarquee-device.log 2>&1 &'`
+- Events: `go run ./cmd/remarquee device events --url http://10.11.99.1:2718 --username admin --password password --duration 3s --out /tmp/rmq-0011-events.sse`
+- Gestures: `go run ./cmd/remarquee device gestures --url http://10.11.99.1:2718 --username admin --password password --duration 3s --out /tmp/rmq-0011-gestures.ndjson`
+
+## Step 12: Document events/gestures usage and update playbook
+
+I updated the device capture guide and validation playbook to include the new events/gestures endpoints, CLI examples, and idle output expectations. This keeps the user-facing documentation aligned with the new streaming capabilities.
+
+**Commit (code):** 7b14403 — "Docs: update device capture guide for events"
+
+### What I did
+- Documented the events/gestures endpoints and CLI examples in `pkg/doc/topics/device-capture.md`.
+- Added notes about idle output and `--duration 0`.
+- Updated the RMQ-0011 validation playbook to include optional events/gestures checks.
+- Marked task 5 complete via docmgr.
+
+### Why
+- Users need a guide and repeatable validation steps for the new input streams.
+
+### What worked
+- The guide and playbook now reflect the updated API surface.
+
+### What didn't work
+- N/A
+
+### What I learned
+- N/A
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- Confirm the docs match CLI defaults and endpoints exactly.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review `remarquee/pkg/doc/topics/device-capture.md`.
+- Review `remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/playbook/01-device-capture-validation.md`.
+
+### Technical details
+- N/A
