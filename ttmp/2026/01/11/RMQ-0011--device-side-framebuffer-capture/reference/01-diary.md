@@ -32,7 +32,7 @@ RelatedFiles:
       Note: Validation playbook
 ExternalSources: []
 Summary: Diary for device-side framebuffer capture work
-LastUpdated: 2026-01-11T20:27:48-05:00
+LastUpdated: 2026-01-11T20:31:06-05:00
 WhatFor: Track progress on RMQ-0011 analysis and design
 WhenToUse: Use while implementing device capture features
 ---
@@ -402,3 +402,44 @@ I wrote a guide-style device capture doc in `pkg/doc/topics` and added a ticket 
 
 ### Technical details
 - N/A
+
+## Step 10: Validate streaming on device
+
+I rebuilt and redeployed the device binary, restarted the capture server, and exercised the `/api/v1/stream` endpoint via `remarquee device stream`. The stream produced a 58MB raw file over ~3 seconds, which confirms the endpoint is active and returning data.
+
+**Commit (code):** N/A
+
+### What I did
+- Rebuilt the arm64 binary and copied it to `/home/root/remarquee` (via a `.new` swap to avoid overwriting a running binary).
+- Restarted the device server.
+- Pulled a 3-second raw stream to `/tmp/rmq-0011-stream.raw`.
+
+### Why
+- Validate the new streaming endpoint early on real hardware.
+
+### What worked
+- `remarquee device stream` returned a non-empty raw capture file (58MB).
+
+### What didn't work
+- Direct `scp` overwrote failed while the binary was running; resolved by stopping the process and swapping via `.new`.
+
+### What I learned
+- The device shell lacks `pkill`, so process management must use `ps` + `kill`.
+
+### What was tricky to build
+- Coordinating a safe update workflow for a running device binary.
+
+### What warrants a second pair of eyes
+- Confirm the stream file looks sane if decoded (future tool) and does not include repeated blank frames.
+
+### What should be done in the future
+- Add a small admin endpoint or PID file to simplify server restarts.
+
+### Code review instructions
+- N/A (validation-only step).
+
+### Technical details
+- Build: `GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o /tmp/remarquee-arm64 ./cmd/remarquee`
+- Deploy: `scp /tmp/remarquee-arm64 root@10.11.99.1:/home/root/remarquee.new && ssh root@10.11.99.1 'mv /home/root/remarquee.new /home/root/remarquee'`
+- Server: `ssh root@10.11.99.1 'nohup /home/root/remarquee device serve --bind :2718 --username admin --password password > /tmp/remarquee-device.log 2>&1 &'`
+- Stream: `go run ./cmd/remarquee device stream --url http://10.11.99.1:2718 --username admin --password password --rate 200 --duration 3s --out /tmp/rmq-0011-stream.raw`

@@ -67,3 +67,12 @@ Step 8-9: add stream endpoint + write device capture docs/playbook
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/device/stream_handler.go — Raw stream handler
 
+
+## 2026-01-11
+
+Step 10: validate stream endpoint on device
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/reference/01-diary.md — Record stream validation
+
