@@ -104,3 +104,8 @@ Step 13: validate gestures output during device swipe (no code change)
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/playbook/01-device-capture-validation.md — Gestures validation reference
 
+
+## 2026-01-11
+
+Ticket closed
+

@@ -1,7 +1,7 @@
 ---
 Title: Device-side framebuffer capture
 Ticket: RMQ-0011
-Status: active
+Status: complete
 Topics:
     - backend
 DocType: index
@@ -10,10 +10,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-11T19:13:56.934459033-05:00
+LastUpdated: 2026-01-11T21:20:55.968336528-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Device-side framebuffer capture
 
