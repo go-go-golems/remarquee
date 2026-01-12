@@ -24,7 +24,7 @@ RelatedFiles:
       Note: Integration design
 ExternalSources: []
 Summary: Diary for device-side framebuffer capture work
-LastUpdated: 2026-01-11T20:09:37-05:00
+LastUpdated: 2026-01-11T20:16:38-05:00
 WhatFor: Track progress on RMQ-0011 analysis and design
 WhenToUse: Use while implementing device capture features
 ---
@@ -190,3 +190,89 @@ I added a new device capture package that mirrors goMarkableStream's framebuffer
 
 ### Technical details
 - Command: `go test ./pkg/devicecapture -count=1`
+
+## Step 5: Fix device build failure due to sqlite help store
+
+The first arm64 build failed on-device because the help system initializes a sqlite store that requires cgo. I added a cgo-gated help setup so the device build skips the sqlite-backed help system and falls back to Cobra default help when cgo is disabled.
+
+**Commit (code):** 9b14099 — "Fix: skip help store when cgo disabled"
+
+### What I did
+- Split help setup into cgo and !cgo variants under `cmd/remarquee/help_setup*.go`.
+- Updated `cmd/remarquee/main.go` to call `setupHelpSystem` rather than constructing the help system directly.
+- Ran `go test ./cmd/remarquee -count=1`.
+
+### Why
+- The device build runs with `CGO_ENABLED=0` and cannot use `go-sqlite3` for help storage.
+
+### What worked
+- The CLI compiles without the sqlite dependency when cgo is disabled.
+
+### What didn't work
+- Initial device run failed with `Binary was compiled with 'CGO_ENABLED=0', go-sqlite3 requires cgo to work. This is a stub`.
+
+### What I learned
+- Help system initialization is a hidden dependency on sqlite that needs a no-cgo fallback for device builds.
+
+### What was tricky to build
+- Ensuring the help setup remains unchanged for cgo builds while avoiding sqlite at runtime on device.
+
+### What warrants a second pair of eyes
+- Confirm that help output is acceptable on device when using Cobra defaults.
+
+### What should be done in the future
+- Consider a pure-Go sqlite backend if we need full help features on device.
+
+### Code review instructions
+- Review `cmd/remarquee/help_setup.go` and `cmd/remarquee/help_setup_nocgo.go`.
+- Validate with `go test ./cmd/remarquee -count=1`.
+
+### Technical details
+- Error log: `failed to create sections table: Binary was compiled with 'CGO_ENABLED=0', go-sqlite3 requires cgo to work. This is a stub`
+
+## Step 6: Cross-compile and validate on the device
+
+I cross-compiled the arm64 Linux binary, deployed it to the tablet, started the capture server, and verified the info and screenshot endpoints from the workstation. This confirmed the end-to-end flow on the Paper Pro device.
+
+**Commit (code):** N/A
+
+### What I did
+- Built the arm64 binary with `CGO_ENABLED=0`.
+- Copied it to `/home/root/remarquee` on the device via `scp`.
+- Started the server on port 2718 and fetched `/api/v1/info`, `/api/v1/screenshot.png`, and `/api/v1/screenshot.raw`.
+- Captured outputs into `/tmp` on the workstation.
+
+### Why
+- Validate the capture pipeline early on real hardware.
+
+### What worked
+- `/api/v1/info` returned model/geometry metadata.
+- `device screenshot` produced a PNG file (`/tmp/rmq-0011-screenshot.png`).
+- `device raw` returned a raw framebuffer dump.
+
+### What didn't work
+- N/A (after the help-store fix, the device server started cleanly).
+
+### What I learned
+- The Paper Pro reports `BytesPerPixel=4` and the API returns the expected screen dimensions.
+
+### What was tricky to build
+- Coordinating device-side service startup without `pkill` on the device shell.
+
+### What warrants a second pair of eyes
+- Verify the PNG screenshot visually matches the device display (no inversion or color mismatch).
+
+### What should be done in the future
+- Add a simple status endpoint or PID file to make server lifecycle management easier.
+
+### Code review instructions
+- Review the server handler in `remarquee/cmd/remarquee/cmds/device/serve.go`.
+- Validate with the command sequence below.
+
+### Technical details
+- Build: `GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o /tmp/remarquee-arm64 ./cmd/remarquee`
+- Deploy: `scp /tmp/remarquee-arm64 root@10.11.99.1:/home/root/remarquee`
+- Server: `ssh root@10.11.99.1 'nohup /home/root/remarquee device serve --bind :2718 --username admin --password password > /tmp/remarquee-device.log 2>&1 &'`
+- Client info: `go run ./cmd/remarquee device info --url http://10.11.99.1:2718 --username admin --password password`
+- Client screenshot: `go run ./cmd/remarquee device screenshot --url http://10.11.99.1:2718 --username admin --password password --out /tmp/rmq-0011-screenshot.png`
+- Client raw: `go run ./cmd/remarquee device raw --url http://10.11.99.1:2718 --username admin --password password --out /tmp/rmq-0011-raw.bin`
