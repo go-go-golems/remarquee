@@ -95,3 +95,12 @@ Step 12: document events/gestures usage (commit 7b14403)
 
 - /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/topics/device-capture.md — Documented events/gestures endpoints
 
+
+## 2026-01-11
+
+Step 13: validate gestures output during device swipe (no code change)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2026/01/11/RMQ-0011--device-side-framebuffer-capture/playbook/01-device-capture-validation.md — Gestures validation reference
+

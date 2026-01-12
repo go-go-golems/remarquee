@@ -58,7 +58,7 @@ RelatedFiles:
       Note: Validation playbook
 ExternalSources: []
 Summary: Diary for device-side framebuffer capture work
-LastUpdated: 2026-01-11T20:54:13-05:00
+LastUpdated: 2026-01-11T21:15:31-05:00
 WhatFor: Track progress on RMQ-0011 analysis and design
 WhenToUse: Use while implementing device capture features
 ---
@@ -561,3 +561,41 @@ I updated the device capture guide and validation playbook to include the new ev
 
 ### Technical details
 - N/A
+
+## Step 13: Capture gesture output during device swipe
+
+I ran a focused validation of the gestures endpoint while swiping on the device to ensure the NDJSON stream is populated. The capture produced a non-empty gesture summary line, confirming the handler emits data when touch input is present.
+
+**Commit (code):** N/A
+
+### What I did
+- Ran the gestures client for 5 seconds while swiping on-device.
+- Inspected the output file for a non-empty gesture summary.
+
+### Why
+- Verify that the gestures pipeline emits data under real touch activity.
+
+### What worked
+- `/tmp/rmq-0011-gestures-2.ndjson` contained a JSON line with left/right/up/down totals.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Gestures output stays empty when idle but populates once a swipe occurs.
+
+### What was tricky to build
+- N/A (validation-only step).
+
+### What warrants a second pair of eyes
+- If we see inconsistent gesture totals, re-check X/Y axis codes for the device firmware.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- N/A (validation-only step).
+
+### Technical details
+- Command: `go run ./cmd/remarquee device gestures --url http://10.11.99.1:2718 --username admin --password password --duration 5s --out /tmp/rmq-0011-gestures-2.ndjson`
+- Output: `{"left":515,"right":524,"up":377,"down":540}`
