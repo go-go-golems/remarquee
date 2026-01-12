@@ -52,6 +52,10 @@ remarquee device screenshot --url http://10.11.99.1:2718 --username admin --pass
 
 # Optional: validate stream for 5 seconds
 remarquee device stream --url http://10.11.99.1:2718 --username admin --password password --rate 200 --duration 5s --out ./stream.raw
+
+# Optional: validate events/gestures for 5 seconds
+remarquee device events --url http://10.11.99.1:2718 --username admin --password password --duration 5s --out ./events.sse
+remarquee device gestures --url http://10.11.99.1:2718 --username admin --password password --duration 5s --out ./gestures.ndjson
 ```
 
 ## Exit Criteria
@@ -59,6 +63,7 @@ remarquee device stream --url http://10.11.99.1:2718 --username admin --password
 - `remarquee device info` returns width/height/bytesPerPixel matching the device model.
 - `screenshot.png` visually matches the device display.
 - `stream.raw` is non-empty and grows during the stream duration.
+- `events.sse` and `gestures.ndjson` are created (may be empty if the device is idle).
 
 ## Notes
 

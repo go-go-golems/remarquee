@@ -32,7 +32,9 @@ Key capabilities:
 - Single-shot PNG capture (`/api/v1/screenshot.png`)
 - Single-shot raw capture (`/api/v1/screenshot.raw`)
 - Raw streaming endpoint (`/api/v1/stream`)
-- CLI wrappers (`remarquee device info|screenshot|raw|stream`)
+- Pen event stream (`/api/v1/events`)
+- Gesture summaries (`/api/v1/gestures`)
+- CLI wrappers (`remarquee device info|screenshot|raw|stream|events|gestures`)
 
 ---
 
@@ -118,6 +120,30 @@ This endpoint streams raw framebuffer bytes repeatedly at a fixed rate.
 
 **Response:** `Content-Type: application/octet-stream` (chunked)
 
+### `GET /api/v1/events`
+
+This endpoint streams pen input events as Server-Sent Events (SSE).
+
+**Response:** `Content-Type: text/event-stream`
+
+Each SSE event contains a JSON payload like:
+
+```json
+{"source":1,"type":3,"code":54,"value":12345}
+```
+
+### `GET /api/v1/gestures`
+
+This endpoint streams gesture summaries as newline-delimited JSON (NDJSON).
+
+**Response:** `Content-Type: application/x-ndjson`
+
+Each line contains a JSON object like:
+
+```json
+{"left":120,"right":0,"up":30,"down":0}
+```
+
 ---
 
 ## CLI Reference
@@ -165,6 +191,28 @@ remarquee device stream --url http://10.11.99.1:2718 --username admin --password
   --rate 200 --duration 5s --out ./stream.raw
 ```
 
+### `remarquee device events`
+
+Streams pen events as SSE and writes the raw output to a file or stdout.
+
+```bash
+remarquee device events --url http://10.11.99.1:2718 --username admin --password password \
+  --duration 5s --out ./events.sse
+```
+
+Use `--duration 0` to stream until interrupted. If the device is idle, the output may be empty.
+
+### `remarquee device gestures`
+
+Streams gesture summaries as NDJSON.
+
+```bash
+remarquee device gestures --url http://10.11.99.1:2718 --username admin --password password \
+  --duration 5s --out ./gestures.ndjson
+```
+
+Use `--duration 0` to stream until interrupted. If the device is idle, the output may be empty.
+
 ---
 
 ## Build and Deploy Notes
@@ -204,6 +252,5 @@ Common failure modes and fixes:
 
 Upcoming additions include:
 
-- `/api/v1/events` and `/api/v1/gestures` endpoints for pen/touch events.
 - Optional streaming compression (RLE or zstd) for lower bandwidth.
 - A validation playbook to standardize screenshot comparisons.
