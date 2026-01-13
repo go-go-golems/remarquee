@@ -142,10 +142,6 @@ func (c *RmCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) 
 		}
 	}
 
-	if err := apiCtx.SyncComplete(); err != nil {
-		return err
-	}
-
 	return nil
 }
 

@@ -243,6 +243,7 @@ func NewOcrCobraCommand() (*cobra.Command, error) {
 						defaultProfileFile,
 						profileFile,
 						profile,
+						"default",
 						parameters.WithParseStepSource("profiles"),
 						parameters.WithParseStepMetadata(map[string]any{
 							"profileFile": profileFile,
