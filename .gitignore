@@ -20,3 +20,4 @@ dist/
 .envrc
 .history
 rendering/
+.pr-builder/
