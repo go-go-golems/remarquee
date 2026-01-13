@@ -1,0 +1,59 @@
+# Changelog
+
+## 2025-12-14
+
+- Initial workspace created
+
+
+## 2025-12-14
+
+Created design-doc proposing Go port of remarkable_upload.py into remarquee (upload md): pandoc/xelatex conversion + rmapi-backed upload under /ai/YYYY/MM/DD/; seeded tasks and related key files.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/design-doc/01-port-remarkable-upload-py-to-go-remarquee-upload-docs.md — Design proposal for the port
+
+
+## 2025-12-14
+
+Updated design scope: upload tool is now general-purpose (accepts only markdown files or directories scanned recursively for *.md); removed ticket-specific CLI concepts from the proposal.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/design-doc/01-port-remarkable-upload-py-to-go-remarquee-upload-docs.md — Adjusted CLI spec to remove ticket logic
+
+
+## 2025-12-14
+
+Step 1: Add 'remarquee upload md' (general-purpose markdown uploader) and factor rmapi bootstrap (commit d70169e...)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee/cmds/upload/md.go — New upload command implementation (commit d70169e...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/mdpdf/pandoc.go — Pandoc/xelatex integration (commit d70169e...)
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmcloud/auth.go — Shared rmapi CreateApiCtx helper (commit d70169e...)
+
+
+## 2025-12-14
+
+Step 2: Embed upload help docs + add unit tests (commit 6c57171...)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/doc/upload/01-remarquee-upload-getting-started.md — New embedded help page
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/mdpdf/preprocess_test.go — Tests for preprocessing behavior
+
+
+## 2025-12-14
+
+Step 3: Added reusable end-to-end smoke test script for real uploads to /ai/test/...
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/14/RMQ-0003--port-remarkable-upload-py-to-go-remarquee-upload-docs/scripts/01-smoke-test-upload-md.sh — Smoke test: create fixtures
+
+
+## 2025-12-14
+
+Closed RMQ-0003: upload md shipped + smoke test + next feature batch captured in design-doc/02 (bundle+ToC, preserve-dirs, upload src).
+

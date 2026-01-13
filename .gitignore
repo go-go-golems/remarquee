@@ -19,3 +19,5 @@ dist/
 .env
 .envrc
 .history
+rendering/
+.pr-builder/

@@ -1,0 +1,14 @@
+rm_dsl: v0
+document:
+  name: "rmq-0009-empty-1page"
+  kind: notebook
+  format: v6
+  pages:
+    - id: "p1"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      layers:
+        - name: "layer-1"
+          items: []

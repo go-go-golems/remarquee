@@ -1,0 +1,529 @@
+---
+Title: Diary - Golden testing research and rendering issues analysis
+Ticket: RMQ-0006
+Status: active
+Topics:
+    - go
+    - remarkable
+    - testing
+    - validation
+    - rmdoc
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: Diary of research into using remarks for golden testing and analysis of rendering issues discovered through visual inspection.
+LastUpdated: 2025-12-24T15:00:00Z
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Diary - Golden testing research and rendering issues analysis
+
+## 2025-12-24
+
+### Morning: Golden testing research
+
+Started researching how to use `remarks` as a reference implementation for golden testing of remarquee's PDF rendering output.
+
+**Key findings:**
+- `remarks` is a Python tool that processes `.rmdoc` files and outputs PDFs with naming pattern `{doc_name} _remarks.pdf`
+- Can be invoked via CLI (`remarks <input> <output>`) or programmatically (`run_remarks()`)
+- Uses PyMuPDF (fitz) for PDF manipulation and rendering
+- Has comprehensive test infrastructure in `remarks/test_pdf.py` using pytest fixtures
+
+**Comparison strategies identified:**
+1. Visual pixel comparison (PyMuPDF `get_pixmap()` + numpy)
+2. Structural comparison (page count, annotations, text content)
+3. Hybrid approach (structural for fast feedback, visual for deep validation)
+
+**Integration approaches:**
+- Subprocess invocation (simplest, requires Python/remarks installed)
+- Python script wrapper (more control, JSON output)
+- Pure Go implementation (no Python dependency, but more complex)
+
+Created comprehensive analysis document: `analysis/01-using-remarks-for-golden-testing-and-pdf-comparison.md`
+
+### Afternoon: VLM validation and rendering issues
+
+Added VLM/LLM OCR validation section to analysis document. Can use `pinocchio code professional --images` to validate rendered PDFs semantically.
+
+**Visual inspection findings:**
+After comparing remarquee output with remarks output, identified 5 major rendering issues:
+
+1. **Strokes render without color (all black)**
+   - Traced to `buildOverlayOps()` in `v6_merge_background.go:253` hardcoding `cc.Add_RG(0, 0, 0)`
+   - `Stroke.Color` field exists but is ignored
+   - Need to extract color from stroke and convert to RGB
+
+2. **Highlighter strokes misaligned**
+   - Different coordinate systems: strokes use `xSvg + xx(p.X - bbox.MinX)`, highlights use `xx(rect.X) + highlightsXTranslation`
+   - Y-coordinate transforms also differ
+   - Need consistent coordinate transforms
+
+3. **Typed text not rendered**
+   - `ParseRMV6RootTextBlock` exists but output never used
+   - No rendering function for `RMV6RootText`
+   - Comment says "strokes only" but highlights are implemented, only text missing
+
+4. **Page format uses annotation bbox instead of full page**
+   - `buildAnnotationOnlyPage` uses `wSvg, hSvg` (annotation bbox) instead of full page size
+   - Should use full page dimensions (1404*72/226 x 1872*72/226 for notebooks)
+
+5. **Template backgrounds not rendered**
+   - `PageRef.Template` field exists but `BuildBackgroundPDF` comment says "Template backgrounds are a later milestone"
+   - Creates blank pages instead of rendering templates
+
+**Code analysis:**
+Traced through codebase to understand root causes:
+- `remarquee/pkg/rmdoc/render/v6_merge_background.go`: Main merge logic
+- `remarquee/pkg/rmdoc/render/background.go`: Background PDF construction
+- `remarquee/pkg/rmdoc/strokes.go`: Stroke struct definition
+- `remarquee/pkg/rmdoc/pen_color.go`: Color handling
+- `remarquee/pkg/rmdoc/rmv6_root_text.go`: Typed text parsing
+
+Added detailed code analysis section to analysis document with file paths, line numbers, and code snippets.
+
+**Tasks created:**
+Added comprehensive investigation tasks for each rendering issue:
+- Stroke color rendering investigation
+- Highlighter alignment investigation  
+- Typed text rendering investigation
+- Page format investigation
+- Template rendering investigation
+
+Each task includes specific code locations to check and comparisons with remarks implementation.
+
+### Next steps
+
+1. Implement golden testing infrastructure (comparison utilities, golden file management)
+2. Investigate each rendering issue in depth
+3. Compare with remarks implementation for each issue
+4. Create fixes for identified issues
+5. Add VLM validation to test suite
+
+### Late afternoon: Implemented Option B PDF comparison (pure Go)
+
+Implemented a pure-Go PDF comparison helper package for golden testing:
+
+- **Package**: `remarquee/pkg/pdfcmp`
+- **Visual comparison**: `CompareFilesVisual` / `CompareBytesVisual`
+  - Uses UniDoc renderer (`render.NewImageDevice().Render(page)`) similar to `rmapi/archive/zipdoc.go:makeThumbnail`
+  - Per-page pixel diff with a configurable tolerance
+  - Generates a diff PNG (red-highlighted changes) on mismatch
+- **Structural comparison**: `CompareFilesStructural` / `CompareBytesStructural`
+  - Page count check
+  - Per-page annotation count (`PdfPage.GetAnnotations`)
+  - Per-page extracted text hash via `unipdf/v3/extractor` (whitespace-normalized)
+
+Added self-contained unit tests in `remarquee/pkg/pdfcmp/pdfcmp_test.go` that generate small PDFs and validate:
+- identical PDFs match
+- slightly different PDFs fail and produce a diff image
+
+### Evening: Added a Go wrapper to invoke `remarks` (reference implementation runner)
+
+Added a small helper package to run the Python `remarks` CLI and locate the resulting reference PDF(s):
+
+- **Package**: `remarquee/pkg/refimpl/remarks`
+- **Runner**: `Runner.Run(ctx, inputPath, outputDir)` shells out to `remarks <input> <outputDir> [--log_level ...]`
+- **Missing tool handling**: returns sentinel `ErrNotFound` when `remarks` is not available on `PATH`
+- **Output discovery**: `FindRemarksPDFs(outputDir)` and `FindSingleRemarksPDF(outputDir)` search recursively for `* _remarks.pdf`
+
+This gives us a deterministic way to generate a reference PDF for later golden tests (paired with the pure-Go comparator from commit `a93a0856a49559893dd97d661fd4ca3c71646f0f`).
+
+### Evening: First golden test wired up (remarks reference + Go comparator)
+
+Added the first end-to-end golden test for the device V6 notebook fixture:
+
+- **Test**: `TestRenderV6Golden_RemarksReference_TestRmdoc`
+- **Location**: `remarquee/pkg/rmdoc/render/golden_remarks_test.go`
+- **Behavior**:
+  - renders the fixture via `render.MergeRMDocV6OntoBackgroundPDF`
+  - runs the `remarks` CLI via `pkg/refimpl/remarks.Runner` to produce a reference PDF
+  - compares PDFs via `pkg/pdfcmp.CompareFilesVisual` with a tolerance (currently 1%)
+  - writes diff PNGs to the test temp dir on mismatch
+  - skips if `remarks` is not available on PATH
+
+### Evening: Second golden test wired up (cpage-pdf.rmdoc)
+
+Added a second V6 golden test for the PDF-backed cPages fixture:
+
+- **Test**: `TestRenderV6Golden_RemarksReference_CpagePdf`
+- **Fixture**: `cmd/remarquee-ui/testdata/cpage-pdf.rmdoc`
+- **Location**: `remarquee/pkg/rmdoc/render/golden_remarks_test.go`
+
+### Evening: Legacy golden smoke test (rmapi-backed)
+
+Added a legacy (V3/V5) golden-style smoke test for the legacy PDF-backed fixture:
+
+- **Test**: `TestRenderLegacyGolden_Rmapi_Backend_LegacyPdfA4`
+- **Fixture**: `cmd/remarquee-ui/testdata/legacy-pdf-a4.zip`
+- **Location**: `remarquee/pkg/rmdoc/render/golden_legacy_rmapi_test.go`
+- **Notes**: This does not use `remarks` (which is V6-oriented). Instead it validates the rmapi-backed legacy renderer end-to-end and asserts output PDF page count matches our parsed UI page plan.
+
+### Evening: Golden file management (committed reference PDFs)
+
+Added basic golden file management so the remarks-based golden tests can use a committed reference PDF when available:
+
+- **Golden dir**: `cmd/remarquee-ui/testdata/golden/` (contains a README and naming convention)
+- **Go test flag**: `-update-golden`
+  - updates `*.remarks.pdf` reference files under the golden dir (opt-in)
+  - tests use the committed golden when present; otherwise they fall back to running `remarks` (and skip if neither is available)
+
+### Night: VLM helper CLI (pinocchio)
+
+Wired an optional helper CLI to run a VLM check on rendered PDFs without writing a bunch of custom scripts:
+
+- **Command**: `remarquee rmdoc vlm-validate`
+- **Location**: `cmd/remarquee/cmds/rmdoc/vlm_validate.go` (registered in `cmd/remarquee/cmds/rmdoc/root.go`)
+- **Behavior**:
+  - renders selected pages from PDF A (and optional PDF B) to PNGs using Poppler `pdftoppm` (default)
+  - invokes `pinocchio code professional --images <pngA>,<pngB>,... <prompt>`
+  - prints the temp output dir so you can open the PNGs locally
+
+### Night: First real VLM run (A vs B) + UniDoc renderer failure
+
+We attempted to run `vlm-validate` using UniDoc’s renderer and hit:
+
+- `render page 1: type check error`
+
+Created bug report:
+- `bug-report-vlm-validate-unidoc-render-type-check-error.md`
+
+Then switched `vlm-validate` to Poppler (`pdftoppm`) rasterization and re-ran successfully with:
+- A = `remarquee rmdoc render-v6` output (Go pipeline)
+- B = `remarks` output (Python reference)
+
+High-signal VLM findings from the first run (pages 1–2):
+- **Color strokes**: reference output includes colored strokes; remarquee output appears black-only (matches our “stroke color missing” investigation).
+- **Typed text**: reference output shows typed text (e.g. “Test”); remarquee output is missing it (matches “typed text not rendered” investigation).
+
+### Night: Wrote a human guide for the golden testing system
+
+Added a readable guide describing how to use and debug the golden system (golden tests + pdfcmp + remarks runner + vlm-validate), including the “brittle setup” failure modes and what to check.
+
+- `reference/03-golden-testing-validation-system-how-to-use-how-it-works.md`
+
+### Late night: Fixed V6 stroke color rendering (with a tight feedback loop)
+
+We tackled the “all strokes are black” issue and built a clean loop to verify parsing + rendering:
+
+- **Parsing verification**:
+  - Added `TestParseRMV6SceneTree_StrokeColorsPresent_TestRmdoc` which asserts `Test.rmdoc` contains non-black stroke colors and at least one **concrete highlight color id** (14..19).
+- **Root cause**:
+  - Renderer was setting `RG(0,0,0)` once globally and never applying per-stroke color.
+  - Highlighter strokes in V6 can store real color in an optional trailing RGBA marker; we were consuming it but discarding it, collapsing highlight strokes into a generic color id.
+- **Fixes**:
+  - Apply per-stroke `RG` in `buildOverlayOps` (so colored strokes render).
+  - Decode the trailing `(b,g,r,a)` marker in `DecodeRMV6Line` and map via `HardcodedColorMap` to a concrete highlight PenColor id.
+- **Validation**:
+  - Re-ran `vlm-validate` (A vs B, page 1) and got a “colors match” result vs `remarks`.
+
+Also wrote a dedicated debugging playbook for the next developer:
+- `reference/04-debugging-playbook-v6-stroke-color-rendering.md`
+
+### After midnight: Page size mismatch vs `remarks` (root cause + fix)
+
+We hit a confusing golden failure mode: `maxDiffRatio=1.0` with no useful diffs. That turned out to be a **pure raster dimension mismatch** (A and B were different pixel sizes), not “everything is wrong”.
+
+We made it reproducible with ticket scripts:
+
+- `scripts/04-debug-golden-size-mismatch-test-rmdoc.sh`
+- `scripts/06-debug-golden-size-mismatch-cpage-pdf.sh`
+
+Root cause (high-level):
+
+- `remarks` uses `rmc` to convert `.rm` → SVG → PDF via **CairoSVG**.
+- CairoSVG treats SVG width/height as CSS px at 96dpi, then emits PDF points at 72pt/in → **0.75 scale**.
+- In `remarks`, when a background page has no content stream, it inserts that SVG-PDF directly (no scaling), so notebook/blank pages can end up at the 0.75-sized box.
+
+Fix (current pragmatic behavior for goldens):
+
+- For pages with no background content, render overlays onto a fixed “rm screen” canvas using the CairoSVG-effective scale, to match `remarks` output sizing.
+- Make `pdfcmp` tolerant to +/-1px raster rounding differences (compare overlap area).
+
+Outcome:
+
+- `TestRenderV6Golden_RemarksReference_CpagePdf` now passes reliably (no more size-mismatch-driven failure).
+- `Test.rmdoc` golden now fails with a meaningful diff ratio (~4.2%) and diff PNGs, i.e. we’re back to “real diffs” (typed text, etc.) instead of “dimension mismatch”.
+
+### Later: Human-in-the-loop validation with a real device screenshot
+
+At this point, the “A vs B” loop (remarquee vs `remarks`) was working, but we also wanted a **ground-truth reference from the actual device**. The goal was to avoid chasing phantom issues (especially around highlighter alignment) by comparing to what the reMarkable shows.
+
+Work done:
+
+- **Imported a device screenshot** of `Test.rmdoc` page 1 into the ticket:
+  - `reference/test-rmdoc-page1-remarkable-device.jpg`
+  - `reference/test-rmdoc-page1-remarkable-device.png` (resized to max 1280px for VLM ingestion)
+- **Added VLM scripts** to compare a rendered PNG vs the device screenshot using pinocchio:
+  - `scripts/07-render-test-rmdoc-page1-png.sh`
+  - `scripts/08-vlm-compare-test-page1-vs-device-screenshot.sh`
+  - `scripts/09-convert-device-screenshot-to-png.sh`
+- **Made pinocchio runs non-interactive** to avoid getting stuck on “continue in chat?”:
+  - `remarquee rmdoc vlm-validate` now passes `--non-interactive`
+- **Added plz-confirm image widgets** to explicitly keep a human in the loop for visual judgement:
+  - `scripts/10-plz-confirm-review-test-page1-vs-device.sh` (highlighter alignment question)
+
+Notes:
+
+- The human-in-loop result for highlighter alignment was: **slight offset (<= 2mm) acceptable**.
+- We also added a “page mapping sanity check” to avoid comparing the device screenshot to the wrong rendered page:
+  - `scripts/12-render-test-rmdoc-pages1-2-pngs.sh`
+  - `scripts/13-plz-confirm-match-device-to-rendered-page.sh`
+  - Result: **A1 matches B** (rendered page 1 matches the device photo).
+
+Additional debugging helpers created during the ellipse/alignment discussion:
+
+- `scripts/11-dump-test-rmdoc-stroke-tools-page1.go` (tool/color counts for page 1 strokes)
+- `scripts/14-dump-test-page1-groups-and-stroke-bboxes.go` (group anchor info + per-stroke bboxes)
+- `scripts/15-dump-rmscene-group-anchors-test-page1.py` (optional: compare anchors with `rmscene` ground truth via Poetry)
+
+## Step 1: Make remarks goldens regeneratable (all fixtures)
+
+This step removes a sharp edge in the golden workflow: `-update-golden` previously did nothing if a `*.remarks.pdf` already existed, which made it easy to think you refreshed goldens when you hadn’t. It also adds a single-purpose “generate-only” test so we can refresh committed references without being blocked by known rendering diffs (e.g., typed text).
+
+With this in place, updating committed `remarks` goldens becomes a deterministic, repeatable action you can run whenever fixtures or the reference pipeline changes.
+
+**Commit (code):** 3aa3065 — "RMQ-0006: add remarks golden updater"
+
+### What I did
+- Fixed `-update-golden` semantics so it always regenerates and overwrites existing `*.remarks.pdf` files.
+- Added `TestUpdateRemarksGoldens` to generate committed `remarks` goldens for all `.rmdoc` fixtures (including `testdata/generated/`) without running a remarquee-vs-remarks comparison.
+
+### Why
+- We need a reliable way to refresh reference PDFs independent of whether our renderer currently matches the reference implementation.
+- “Update” should be explicit and fail loudly if `remarks` isn’t available, rather than silently skipping.
+
+### What worked
+- The update path now overwrites existing goldens and produces deterministic output locations.
+
+### What was tricky to build
+- Making `-update-golden` safe: update requests should overwrite, but normal test runs should still prefer a committed golden and skip cleanly when `remarks` is missing.
+
+### What warrants a second pair of eyes
+- Confirm the fixture glob list for “all fixtures” matches what we actually want long-term (top-level `testdata/*.rmdoc` plus `testdata/generated/*.rmdoc`).
+
+### What should be done in the future
+- If CI is expected to run goldens, decide whether CI should install/run `remarks` or rely only on committed `*.remarks.pdf` artifacts (and document that contract).
+
+### Code review instructions
+- Start in:
+  - `remarquee/pkg/rmdoc/render/golden_remarks_test.go`
+  - `remarquee/pkg/rmdoc/render/golden_remarks_update_test.go`
+- Update goldens:
+  - `cd remarquee && go test ./pkg/rmdoc/render -run TestUpdateRemarksGoldens -update-golden -count=1`
+
+## Step 2: Make golden diff artifacts CI-uploadable
+
+This step makes golden failures actionable in CI by ensuring the PDFs and diff PNGs land in a stable directory (instead of a transient `t.TempDir()` path that’s hard to collect). The GitHub Actions workflow is updated to install Poppler (for `pdftoppm` fallback) and upload that directory as an artifact on failure.
+
+This doesn’t change the comparison logic; it just makes the existing diffs easy to retrieve when a test fails on a remote runner.
+
+**Commit (code):** 09e4f3c — "RMQ-0006: persist golden diffs for CI"
+
+### What I did
+- Added `RMQ_GOLDEN_WORKDIR` support to the remarks-based golden tests so PDFs/diffs can be written to a deterministic path.
+- Updated `.github/workflows/push.yml` to install `poppler-utils`, set `RMQ_GOLDEN_WORKDIR`, and upload the directory as an artifact on failures.
+
+### Why
+- Without artifacts, CI failures aren’t debuggable: you can’t see the A/B renderings or the diff images.
+
+### What worked
+- CI now has a “known place” for golden artifacts and will upload them when tests fail.
+
+### What was tricky to build
+- Keeping the local developer UX unchanged (default remains `t.TempDir()`), while allowing CI to opt into persistence via an env var.
+
+### What warrants a second pair of eyes
+- Confirm the artifact volume is acceptable (PDFs can be large), and consider limiting outputs to failing pages only if this becomes too noisy.
+
+### What should be done in the future
+- If we decide CI should always run goldens, pick and document the “reference availability” contract (commit goldens vs install `remarks` in CI).
+
+## Step 3: Fix golden updater collision across fixtures
+
+While wiring `TestUpdateRemarksGoldens`, we noticed a subtle but fatal issue: the loop reused a single `remarks-out/` directory, so the second fixture would see *multiple* `* _remarks.pdf` files and `FindSingleRemarksPDF` would fail. This step isolates each fixture’s remarks output into its own subdirectory so the updater can process multiple fixtures reliably.
+
+This is intentionally small and mechanical, but it’s required for the “update all fixtures” workflow to actually work.
+
+**Commit (code):** 66b48f1 — "RMQ-0006: isolate remarks-out per fixture"
+
+### What I did
+- Changed remarks output paths to `.../remarks-out/<fixture-basename>/` so each run produces exactly one discoverable reference PDF.
+
+### Why
+- The updater test intentionally iterates multiple fixtures; sharing one output directory breaks determinism and makes the workflow flaky.
+
+### What worked
+- `FindSingleRemarksPDF` can remain strict (exactly one), while the updater remains multi-fixture.
+
+### What was tricky to build
+- Catching the failure mode early: the single-fixture golden tests mask this issue because they only generate one reference at a time.
+
+### What warrants a second pair of eyes
+- Confirm the per-fixture folder naming is stable enough for debugging (it uses the fixture basename with sanitization).
+
+### What should be done in the future
+- If we ever need multiple reference PDFs per fixture, replace `FindSingleRemarksPDF` with a fixture-aware selection rule (and update tests accordingly).
+
+## Step 4: Add a CI golden job (install pinned remarks + upload diffs)
+
+This step closes the loop for regressions: CI now runs the remarks-based goldens in a dedicated job and uploads the rendered PDFs + diff PNGs when the job fails. The job is intentionally **allow-fail** for now because we still have known, tracked rendering gaps (typed text, templates). The value is immediate: every PR gets a “did rendering change?” signal with artifacts you can inspect.
+
+We pin the `remarks` commit in CI to avoid silent reference drift.
+
+### What I did
+- Added a `golden` job to `.github/workflows/push.yml`:
+  - installs Python 3.12
+  - installs `remarks` from a pinned Git commit
+  - runs `go test ./pkg/rmdoc/render -run TestRenderV6Golden_RemarksReference_`
+  - uploads `RMQ_GOLDEN_WORKDIR` when the golden step fails
+- Marked CI integration tasks as complete (62–63).
+
+### Why
+- CI failures are only actionable if we can retrieve the A/B PDFs and diff images.
+- Pinning the reference implementation is critical; otherwise “CI changed” can mean “remarks changed”.
+
+### What worked
+- CI now has a first-class golden lane and will preserve artifacts for inspection.
+
+### What was tricky to build
+- Keeping the job useful while it’s still allow-fail: we want artifacts and signal without blocking merges during known-incomplete fidelity.
+
+### What warrants a second pair of eyes
+- Confirm the pinned `remarks` commit is the right one to standardize on, and decide when/how we bump it.
+
+### What should be done in the future
+- Once typed text/templates are implemented, flip the golden job to be required (remove allow-fail) and consider tightening tolerances.
+
+## Step 5: Render typed text + match highlighter stroke fidelity (goldens pass)
+
+This step closes the biggest remaining fidelity gap for the `Test.rmdoc` golden: typed text now renders, and highlighter/shader strokes use tool-specific opacity + width. With those changes, the `remarks` reference golden tests pass locally.
+
+**Commit (scripts):** 23eeee9 — "RMQ-0006: isolate ticket Go scripts"  
+**Commit (code):** bc03b8c — "RMQ-0006: render V6 typed text"  
+**Commit (code):** 34df1e8 — "RMQ-0006: match highlighter stroke style"
+
+### What I did
+- Moved ticket helper programs into per-script subdirectories so `go test ./...` doesn't fail due to multiple `main()`s.
+- Implemented minimal RootTextBlock rendering:
+  - built a paragraph-oriented view from CRDT text items (including empty paragraphs for correct Y offsets)
+  - rendered typed text as PDF text operators (`BT/ET`, `Tf`, `Tm`, `Tj`) with rmc-like fonts/sizes
+- Implemented tool-specific stroke style:
+  - highlighter uses a wide brush (25 screen units) and alpha (0.3)
+  - shader uses alpha derived from hardcoded RGBA values
+  - used PDF `ExtGState` + `gs` to control opacity
+- Validated by running the remarks reference goldens:
+  - `RMQ_GOLDEN_WORKDIR=/tmp/rmq-goldendiff PATH="/tmp/remarks-venv/bin:$PATH" go test ./pkg/rmdoc/render -run 'TestRender.*Golden_RemarksReference_.*' -count=1`
+
+### Why
+- Typed text was a known mismatch (and made the diff PNGs noisy/less actionable).
+- Highlighter strokes dominated the remaining pixel diffs because we were rendering them as thin opaque pen strokes.
+
+### What worked
+- Typed text appears in the expected location on `Test.rmdoc` (page 1) and matches the reference output closely enough for goldens.
+- With highlighter opacity/width in place, the `Test.rmdoc` remarks-reference golden passes.
+
+### What didn't work
+- N/A (this step was a straight-through fix once the reference behavior was understood).
+
+### What I learned
+- The most important fidelity improvements for goldens are “big semantic levers” (typed text + transparency/brush width) rather than micro-coordinate tuning.
+
+### What was tricky to build
+- RootText paragraph styles are keyed by **paragraph start IDs**, not the END_MARKER; using END_MARKER as a default style shifts anchors/typed text to the wrong Y.
+- PDF opacity needs `ExtGState` resources; you must also reset back to opaque after a translucent stroke, or subsequent strokes inherit the alpha.
+
+### What warrants a second pair of eyes
+- The exact mapping of pen tool IDs → base widths/opacities (currently coarse; good enough for goldens but worth validating against more fixtures).
+
+### What should be done in the future
+- If we see drift on other fixtures, consider porting the rmc segment-based stroke width model (per-tool segment length + per-point dynamics) instead of using a single stroke-wide width.
+
+### Code review instructions
+- Start in `pkg/rmdoc/render/v6_merge_background.go` (stroke `ExtGState` usage + typed text ops).
+- Then review `pkg/rmdoc/rmv6_text_document.go` and confirm the paragraph start-id style logic.
+- Validate with `PATH="/tmp/remarks-venv/bin:$PATH" go test ./pkg/rmdoc/render -run 'TestRender.*Golden_RemarksReference_.*' -count=1`.
+
+## 2026-01-10
+
+### DSL-based fixture generation (YAML + planned JS scriptability)
+
+We started standardizing on “controlled fixtures” as the fastest path to debug rendering problems (especially device vs export confusion). The repeated pain point: creating/editing `.rmdoc` fixtures is slow and easy to mix up, which makes visual comparisons unreliable.
+
+Decision: introduce a **versioned YAML DSL** to describe RMDoc-like content declaratively, and extend it with **JS scriptability** executed in an embedded goja VM (so we can generate whole families of fixtures with sweeps, randomness, and reusable helpers).
+
+Work done:
+
+- Added a ticket doc capturing the DSL design process and spec:
+  - `reference/06-yaml-dsl-rmdoc-spec-and-design.md`
+  - Includes a “supported now vs planned” matrix (critical to avoid overpromising).
+- Proposed a JS builder API in the same doc:
+  - `rm.doc(...).page(...).layer(...).ellipse(...).stroke(...)...`
+  - contract: JS returns a plain object `{ rm_dsl: "v0", document: ... }` which Go validates/normalizes.
+- Added the first canonical YAML case:
+  - `cases/01-ellipse-at-bottom.yaml`
+- Added a minimal Go renderer for YAML DSL → programmatic PNG (no PDF renderer):
+  - `scripts/18-rmdsl-render-to-png/main.go`
+
+What we learned:
+
+- Fixture identity matters more than any single coordinate hunch: if the device screenshot is of a different fixture/page/view, the debug loop collapses.
+- A “case language” is the right abstraction boundary: it separates “test intent” from “device encoding / renderer internals”.
+
+Follow-up (same day): implemented the JS execution path using an embedded goja VM.
+
+- Added `pkg/rmdsl`:
+  - load cases from YAML or JS (`LoadFromFile`)
+  - JS runner provides a minimal `rm` builder API via a prelude, plus `rm.include()` for reuse
+- Updated `scripts/18-rmdsl-render-to-png` to accept `.js` inputs.
+- Added a sample JS case:
+  - `cases/02-ellipse-at-bottom.js`
+
+This unlocks scripted sweeps and parametrized fixtures without needing to hand-edit YAML for every variant.
+
+### Ellipse sweep: end-to-end device validation loop (PDF transport)
+
+We implemented and exercised a full “protocol run” for the ellipse/oval investigation using the new DSL and JS scriptability. The key idea was to remove ambiguity by generating a *family* of pages where the ellipse position is known and unambiguous, then verifying on-device that the ellipse moves monotonically down the page as expected.
+
+Work done:
+
+- Added a JS case generator producing 5 pages (y=200..1700), each with:
+  - an ellipse at the target y
+  - a rotated square reference
+  - a page marker: N short red dashes near the top-left (N = page index)
+  - a green bottom marker line
+- Added a pragmatic “PDF transport” renderer (DSL → multi-page PDF) so we can upload to the tablet using existing `cloud put` (since we don’t yet upload `.rmdoc` notebooks as editable docs).
+- Added a single orchestrator script that:
+  - renders the PDF
+  - uploads it to `/remarquee/rendering/rmq-0006-ellipse`
+  - asks the user (via `plz-confirm`) which pages look wrong
+
+Observed result (human on device):
+
+- Pages behaved as expected: “first page is at the top … ellipse moves towards the bottom”.
+- On the last page, the ellipse begins to clip at the bottom edge (expected when y is close to 1872).
+
+This gives us strong confidence that the **basic coordinate model (rm_screen_v6)** and our DSL-based rendering pipeline are consistent and that the earlier “ellipse mismatch” discussion likely involved fixture/view confusion rather than a fundamental y-transform bug.
+
+### Inverse test: device-authored ellipses-test -> parse -> regenerate -> compare
+
+We then ran the “inverse” workflow to validate that parsing and regeneration don’t lose information:
+
+1) Download a device-authored document (`ellipses-test`) from the cloud as `.rmdoc`.
+2) Render it with `remarquee rmdoc render-v6` (A).
+3) Parse it and emit a RMDoc-DSL YAML that replays the extracted strokes (`kind: stroke`).
+4) Render the regenerated YAML to PDF (B).
+5) Rasterize and compare A vs B, and ask a human to confirm.
+
+Result:
+
+- The A vs B images were judged “perfect” via `plz-confirm`, which indicates our V6 stroke parsing + anchor application is stable enough to round-trip into a declarative representation (for strokes).
+
+Artifacts/scripts added for this:
+
+- `scripts/21-rmdoc-v6-to-dsl-yaml/main.go` — exports strokes per page to RMDoc-DSL YAML
+- `scripts/21-ellipses-test-parse-regenerate-compare.sh` — orchestrates the end-to-end A/B compare
+

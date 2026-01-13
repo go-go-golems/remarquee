@@ -46,14 +46,15 @@ tag-patch:
 
 release:
 	git push origin --tags
-	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/XXX@$(shell svu current)
+	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/remarquee@$(shell svu current)
 
 bump-glazed:
 	go get github.com/go-go-golems/glazed@latest
 	go get github.com/go-go-golems/clay@latest
 	go mod tidy
 
-XXX_BINARY=$(shell which XXX)
+# XXX_BINARY=$(shell which XXX)
+REMARQUEE_BINARY=$(shell which remarquee)
 install:
-	go build -o ./dist/XXX ./cmd/XXX && \
-		cp ./dist/XXX $(XXX_BINARY)
+	go build -o ./dist/remarquee ./cmd/remarquee && \
+		cp ./dist/remarquee $(REMARQUEE_BINARY)

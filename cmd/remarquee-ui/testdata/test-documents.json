@@ -1,0 +1,93 @@
+[
+  {
+    "id": "cpage-pdf",
+    "name": "cPages PDF-backed (copies of different pages)",
+    "path": "testdata/cpage-pdf.rmdoc",
+    "description": "Modern cPages schema, PDF-backed document with 4 UI pages: 2 duplicates of page 0, 2 inserted blank pages. Tests UI ordering, page duplication, and inserted pages. Contains V6 annotations (version=6 in .rm files) - can be used for V6 annotation structure testing until pure V6 notebook fixture is available.",
+    "schema": "cPages",
+    "docType": "PDF",
+    "expectedPages": 4,
+    "annotationVersion": "V6"
+  },
+  {
+    "id": "device-test",
+    "name": "Device 'Test' (downloaded from cloud)",
+    "path": "testdata/Test.rmdoc",
+    "description": "Downloaded via `remarquee cloud get /Test`. Real device document intended to exercise a variety of strokes/features for V6 parsing/rendering validation.",
+    "schema": "cPages",
+    "docType": "Unknown",
+    "expectedPages": 2,
+    "annotationVersion": "V6"
+  },
+  {
+    "id": "fake-cpages-pdf-no-annotations",
+    "name": "Fake cPages PDF-backed (no annotations)",
+    "path": "testdata/generated/fake-cpages-pdf-no-annotations.rmdoc",
+    "description": "Generated cPages PDF-backed document (4 UI pages: duplicated + inserted) with no .rm files. Exercises page plan ordering and background-only rendering paths.",
+    "schema": "cPages",
+    "docType": "PDF",
+    "expectedPages": 4,
+    "annotationVersion": "None"
+  },
+  {
+    "id": "fake-cpages-pdf-v6-empty-rm",
+    "name": "Fake cPages PDF-backed (V6 header-only .rm)",
+    "path": "testdata/generated/fake-cpages-pdf-v6-empty-rm.rmdoc",
+    "description": "Generated cPages PDF-backed document with a V6 header-only .rm file (parses but contains no blocks). Exercises \"has rm file but no strokes\" paths.",
+    "schema": "cPages",
+    "docType": "PDF",
+    "expectedPages": 2,
+    "annotationVersion": "V6"
+  },
+  {
+    "id": "fake-cpages-pdf-v6-sample-rm",
+    "name": "Fake cPages PDF-backed (sample V6 annotations)",
+    "path": "testdata/generated/fake-cpages-pdf-v6-sample-rm.rmdoc",
+    "description": "Generated cPages PDF-backed document embedding a real V6 .rm extracted from cpage-pdf.rmdoc. Exercises stroke merge + (if present) glyph-range highlight annotation paths.",
+    "schema": "cPages",
+    "docType": "PDF",
+    "expectedPages": 2,
+    "annotationVersion": "V6"
+  },
+  {
+    "id": "fake-cpages-notebook-v6-empty",
+    "name": "Fake cPages Notebook (V6 header-only .rm)",
+    "path": "testdata/generated/fake-cpages-notebook-v6-empty.rmdoc",
+    "description": "Generated cPages notebook-style document (no payload PDF) with V6 header-only .rm files. Exercises blank-page rendering paths.",
+    "schema": "cPages",
+    "docType": "Notebook",
+    "expectedPages": 2,
+    "annotationVersion": "V6"
+  },
+  {
+    "id": "fake-cpages-pdf-deleted-pages",
+    "name": "Fake cPages PDF-backed (deleted pages in .content)",
+    "path": "testdata/generated/fake-cpages-pdf-deleted-pages.rmdoc",
+    "description": "Generated cPages PDF-backed document where one cPages entry is marked deleted. Parser should filter it out (expectedPages excludes deleted).",
+    "schema": "cPages",
+    "docType": "PDF",
+    "expectedPages": 2,
+    "annotationVersion": "None"
+  },
+  {
+    "id": "legacy-notebook",
+    "name": "Legacy V3/V5 Notebook",
+    "path": "testdata/legacy-notebook.zip",
+    "description": "Legacy schema, notebook with 1 page. Tests legacy .content parsing, V3/V5 .rm annotation rendering via rmapi.",
+    "schema": "legacy",
+    "docType": "Notebook",
+    "expectedPages": 1,
+    "annotationVersion": "V3/V5"
+  },
+  {
+    "id": "legacy-pdf-a4",
+    "name": "Legacy PDF-backed (rmapi fixture, A4)",
+    "path": "testdata/legacy-pdf-a4.zip",
+    "description": "Legacy schema, PDF-backed doc with 1 page and V5 .rm annotations. Sourced from rmapi's test fixtures; used as a compact reproducible legacy PDF merge/annotation test (RMQ-0004 task 51).",
+    "schema": "legacy",
+    "docType": "PDF",
+    "expectedPages": 1,
+    "annotationVersion": "V5"
+  }
+]
+

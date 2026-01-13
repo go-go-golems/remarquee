@@ -1,0 +1,86 @@
+rm_dsl: v0
+document:
+  name: "rmq-0009-tools-showcase-advanced"
+  kind: notebook
+  format: v6
+  pages:
+    - id: "p1"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      layers:
+        - name: "tools"
+          items:
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: black
+                width: 1
+              points:
+                - { x: -550, y: 250 }
+                - { x:  550, y: 250 }
+            - kind: stroke
+              stroke:
+                tool: ballpoint_2
+                color: blue
+                width: 1.5
+              points:
+                - { x: -550, y: 400 }
+                - { x:  550, y: 400 }
+            - kind: stroke
+              stroke:
+                tool: marker_2
+                color: red
+                width: 2
+              points:
+                - { x: -550, y: 550 }
+                - { x:  550, y: 550 }
+            - kind: stroke
+              stroke:
+                tool: pencil_2
+                color: green
+                width: 1
+              points:
+                - { x: -550, y: 700 }
+                - { x:  550, y: 700 }
+            - kind: stroke
+              stroke:
+                tool: highlighter_2
+                color: highlight_pink
+                width: 2
+              points:
+                - { x: -550, y: 850 }
+                - { x:  550, y: 850 }
+        - name: "angles"
+          items:
+            - kind: stroke
+              stroke:
+                tool: ballpoint_2
+                color: black
+                width: 1
+              points:
+                - { x: -400, y: 1100 }
+                - { x: -200, y: 950 }
+                - { x: 0, y: 1120 }
+                - { x: 200, y: 980 }
+                - { x: 400, y: 1140 }
+        - name: "shapes"
+          items:
+            - kind: shape
+              shape: rect
+              stroke:
+                tool: fineliner_2
+                color: blue
+                width: 1
+              rect: { x: -300, y: 1300, w: 600, h: 300 }
+              rotate_deg: -20
+            - kind: shape
+              shape: ellipse
+              stroke:
+                tool: fineliner_2
+                color: green
+                width: 1
+              center: { x: 0, y: 1500 }
+              rx: 200
+              ry: 120

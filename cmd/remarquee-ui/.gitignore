@@ -1,0 +1,12 @@
+# Build outputs
+remarquee-ui
+frontend/dist/
+frontend/node_modules/
+
+# Runtime outputs
+outputs/*.pdf
+outputs/*.json
+
+# Keep directory structure
+!outputs/.gitkeep
+

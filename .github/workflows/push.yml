@@ -10,14 +10,72 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - run: git fetch --force --tags
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '>=1.19.5'
           cache: true
+      - name: Generate frontend assets
+        run: go generate ./cmd/remarquee-ui
+      - name: Install Poppler utils (pdftoppm)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
       -
         name: Run unit tests
-        run: go test ./...
+        env:
+          RMQ_GOLDEN_WORKDIR: ${{ runner.temp }}/rmq-golden-artifacts
+        run: go test ./... -count=1
+      - name: Upload golden diff artifacts (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rmq-golden-artifacts
+          path: ${{ runner.temp }}/rmq-golden-artifacts
+          if-no-files-found: ignore
+
+  golden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - run: git fetch --force --tags
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '>=1.19.5'
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install system deps (Poppler utils)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+      - name: Install remarks (pinned)
+        env:
+          REMARKS_COMMIT: 621b2d79946f0d120b892ee6b5ff92b30934bd5c
+        run: |
+          python -m pip install -U pip
+          python -m pip install "remarks @ git+https://github.com/Scrybbling-together/remarks.git@${REMARKS_COMMIT}"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          command -v remarks
+          remarks --help | head -n 20
+      - name: Run golden tests (allow-fail for now)
+        id: golden
+        continue-on-error: true
+        env:
+          RMQ_GOLDEN_WORKDIR: ${{ runner.temp }}/rmq-golden-artifacts
+        run: |
+          go test ./pkg/rmdoc/render -run TestRenderV6Golden_RemarksReference_ -count=1
+      - name: Upload golden diff artifacts
+        if: steps.golden.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rmq-golden-artifacts-golden-job
+          path: ${{ runner.temp }}/rmq-golden-artifacts
+          if-no-files-found: ignore

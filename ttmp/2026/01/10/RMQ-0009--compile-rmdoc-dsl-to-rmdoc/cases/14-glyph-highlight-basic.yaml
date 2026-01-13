@@ -1,0 +1,31 @@
+rm_dsl: v0
+document:
+  name: "rmq-0009-glyph-highlight-basic"
+  kind: notebook
+  format: v6
+  pages:
+    - id: "p1"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      layers:
+        - name: "highlights"
+          items:
+            - kind: glyph
+              glyph:
+                text: "Highlight A"
+                color: highlight_yellow
+                rects:
+                  - { x: -300, y: 320, w: 600, h: 70 }
+                  - { x: -300, y: 410, w: 420, h: 70 }
+        - name: "baseline"
+          items:
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: black
+                width: 1
+              points:
+                - { x: -500, y: 320 }
+                - { x:  500, y: 320 }

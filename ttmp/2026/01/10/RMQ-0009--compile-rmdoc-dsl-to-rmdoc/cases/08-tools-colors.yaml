@@ -1,0 +1,46 @@
+rm_dsl: v0
+document:
+  name: "rmq-0009-tools-colors"
+  kind: notebook
+  format: v6
+  pages:
+    - id: "p1"
+      canvas:
+        space: rm_screen_v6
+        width: 1404
+        height: 1872
+      layers:
+        - name: "layer-1"
+          items:
+            - kind: stroke
+              stroke:
+                tool: fineliner_2
+                color: black
+                width: 1
+              points:
+                - { x: -500, y: 200 }
+                - { x:  500, y: 200 }
+            - kind: stroke
+              stroke:
+                tool: marker_2
+                color: red
+                width: 1
+              points:
+                - { x: -500, y: 400 }
+                - { x:  500, y: 400 }
+            - kind: stroke
+              stroke:
+                tool: ballpoint_2
+                color: blue
+                width: 1
+              points:
+                - { x: -500, y: 600 }
+                - { x:  500, y: 600 }
+            - kind: stroke
+              stroke:
+                tool: pencil_2
+                color: green
+                width: 1
+              points:
+                - { x: -500, y: 800 }
+                - { x:  500, y: 800 }

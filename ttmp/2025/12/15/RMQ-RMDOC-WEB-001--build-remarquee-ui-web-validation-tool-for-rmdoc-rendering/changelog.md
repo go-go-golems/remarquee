@@ -1,0 +1,53 @@
+# Changelog
+
+## 2025-12-15
+
+- Initial workspace created
+
+
+## 2025-12-15
+
+Phase 0: Go backend scaffold + test documents (commit 8855874)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/Makefile — Build targets for dev/prod modes
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/main.go — HTTP server with /api/test-documents endpoint
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/test-documents.json — Test document manifest
+
+
+## 2025-12-15
+
+Phase 1: Core API endpoints (commit c107adb)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/api/inspect.go — GET /api/document/:id/inspect endpoint
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/api/outputs.go — GET /api/outputs/:filename endpoint
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/api/render.go — POST /api/render/background and /api/render/legacy endpoints
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/pkg/rmdoc/types.go — Added String() methods for JSON serialization
+
+
+## 2025-12-15
+
+Phase 0-5 complete: remarquee-ui web validation tool fully implemented (Go backend + React frontend + validation persistence + production build)
+
+
+## 2025-12-15
+
+UI improvements: 3-column desktop layout, validation guidance panel, enhanced inspect panel with visual highlighting, fixed all CSS contrast issues (commits a163e7b, b78506c, 2866449)
+
+
+## 2025-12-15
+
+Added internal structure display: expandable sections show .rm files (with V3/V5/V6 detection), .content/.metadata JSON, and full file list (commit 32606b6)
+
+
+## 2026-01-12
+
+Add validation tooling tasks moved from RMQ-0004/RMQ-0006
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/ttmp/2025/12/15/RMQ-RMDOC-WEB-001--build-remarquee-ui-web-validation-tool-for-rmdoc-rendering/tasks.md — Added migrated tasks
+

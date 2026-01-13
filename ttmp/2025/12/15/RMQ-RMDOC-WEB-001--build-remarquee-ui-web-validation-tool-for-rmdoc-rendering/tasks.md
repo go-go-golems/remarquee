@@ -1,0 +1,142 @@
+# Tasks — RMQ-RMDOC-WEB-001
+
+## Overview
+
+Build `remarquee-ui`: an interactive web UI for validating `.rmdoc` parsing and PDF rendering with pre-prepared test fixtures.
+
+**Design doc**: `../RMQ-0004--port-rmdoc-parsing-rendering-to-go-v3-v5-v6/design-doc/02-design-interactive-rmdoc-render-validation-ui.md`
+
+## Phase 0 — Go backend scaffold + test documents
+
+- [x] Create `cmd/remarquee-ui/main.go` with `net/http` server (dev/prod modes)
+- [x] Create `cmd/remarquee-ui/Makefile` with dev/build/clean targets
+- [x] Implement `/api/test-documents` handler (returns manifest)
+- [x] Add `cmd/remarquee-ui/testdata/` directory with pre-prepared `.rmdoc` fixtures
+- [x] Create `cmd/remarquee-ui/testdata/test-documents.json` manifest file
+- [x] Smoke-test: `curl http://localhost:8080/api/test-documents`
+
+## Phase 1 — Core API endpoints
+
+- [x] Create `cmd/remarquee-ui/api/` package structure
+- [x] Implement `GET /api/document/:id/inspect` (calls `pkg/rmdoc.OpenFile`)
+- [x] Implement `POST /api/render/background` (calls `pkg/rmdoc/render.BuildBackgroundPDF`)
+- [x] Implement `POST /api/render/legacy` (calls rmapi `PdfGenerator`)
+- [x] Implement `GET /api/outputs/:filename` (serve PDFs from outputs/)
+- [x] Add basic error handling and JSON responses
+- [x] Smoke-test all endpoints with `curl`
+
+## Phase 2 — React frontend scaffold
+
+- [x] Init React + Vite + TypeScript in `cmd/remarquee-ui/frontend/`
+- [x] Add `package.json` with React, Redux Toolkit, Vite dependencies
+- [x] Configure `vite.config.ts` with proxy (`/api/*` → `http://localhost:8080`)
+- [x] Add `tsconfig.json` with strict TypeScript settings
+- [x] Setup Redux Toolkit store with 3 slices (documents, render, validation)
+- [x] Create basic App layout (header, sidebar, main panel)
+- [ ] Smoke-test: `npm run dev` and verify proxy works
+
+## Phase 3 — Core UI components
+
+- [x] Implement `DocumentSelector` component (list + select from test documents)
+- [x] Implement `InspectPanel` component (display schema/pages table)
+- [x] Implement `RenderActions` component (buttons for inspect/background/legacy)
+- [x] Implement `PDFViewer` component (iframe or download link for outputs)
+- [x] Implement `ValidationForm` component (PASS/FAIL radio + notes textarea + submit)
+- [x] Wire all components to Redux slices
+- [ ] Manual UI smoke-test: select document → inspect → render → validate
+
+## Phase 4 — Validation persistence
+
+- [x] Implement `POST /api/validation` handler in backend
+- [x] Backend: write validation session as JSON to `reference/validation/<timestamp>.json`
+- [x] Backend: write validation session as Markdown to `reference/validation/<timestamp>.md`
+- [x] Frontend: dispatch validation submission from `ValidationForm`
+- [ ] Frontend: implement `GET /api/validation/history` to fetch past sessions
+- [ ] UI: display validation history list (collapsible)
+- [x] Manual test: submit validation → verify files created in ticket
+
+## Phase 5 — Production build + embed
+
+- [x] Create `cmd/remarquee-ui/embed.go` with `//go:embed frontend/dist`
+- [x] Update `main.go` to serve embedded assets in prod mode (no `--dev` flag)
+- [x] Update Makefile `build` target: `npm run build` → `go build`
+- [x] Test single-binary deployment: `./remarquee-ui` (prod mode)
+- [x] Add `.gitignore` entries: `frontend/dist`, `frontend/node_modules`, `outputs/`
+
+## Phase 6 — UI Enhancements
+
+- [x] Fix CSS contrast issues (white-on-white text)
+- [x] Convert to 3-column desktop layout
+- [x] Add validation guidance panel with dynamic checklist
+- [x] Enhance inspect panel with visual highlighting (duplicates, inserted pages)
+- [x] Add internal structure display (expandable sections for .rm files, JSON content)
+- [x] Document V6 test fixture status: cpage-pdf.rmdoc contains V6 annotations (version=6), can be used for V6 structure testing. Pure V6 notebook fixture (not PDF-backed) should be added when available from cloud.
+- [ ] Test internal structure display with V6 document (using cpage-pdf.rmdoc)
+
+## Acceptance Criteria
+
+- [x] Can select from pre-prepared test documents via web UI
+- [x] Can inspect a document and see schema + pages in a table
+- [x] Can build background PDF and view/download it
+- [x] Can render legacy PDF (V3/V5) and view/download it
+- [x] Can submit validation (PASS/FAIL + notes) and see it persisted to ticket
+- [x] Single `make build` produces a standalone binary with embedded frontend
+- [x] Dev mode (`make dev-backend` + `make dev-frontend`) works with hot reload
+- [x] Desktop-optimized 3-column layout with validation guidance
+- [x] Visual highlighting for duplicates and inserted pages
+- [x] Internal structure inspection (shows .rm files, versions, JSON content)
+
+- [ ] Define validation runner strategy (remarks vs goldens vs structural) and implement 
+  # rmdoc - Inspect and render .rmdoc archives                                
+                                                                              
+  For more help, run: remarquee help rmdoc                                    
+                                                                              
+  Run remarquee help --ui to open the interactive help TUI.                   
+                                                                              
+  ## Usage:                                                                   
+                                                                              
+  remarquee rmdoc [command]                                                   
+                                                                              
+  ## Available Commands:                                                      
+                                                                              
+  • **build-background** Build a UI-ordered background PDF using PageRef.     
+  SourcePDFPage (debug utility)                                               
+  • **inspect**          Inspect a local .rmdoc and print detected schema +   
+  page plan                                                                   
+  • **render-legacy**    Render a legacy (V3/V5) .rmdoc/.zip to an annotated  
+  PDF (rmapi-backed)                                                          
+  • **render-v6**        Render a V6 (cPages) .rmdoc to an annotated PDF      
+  (strokes + smart highlights)                                                
+  • **vlm-validate**     Render PDF pages to PNG and ask pinocchio (VLM) to   
+  validate/compare                                                            
+                                                                              
+  ## Flags:                                                                   
+                                                                              
+        -h, --help    help for rmdoc                                          
+       --long-help    Show long help                                          
+                                                                              
+  ## Global flags:                                                            
+                                                                              
+        --log-file    Log file (default: stderr)                              
+       --log-format    Log format (json, text) (default "text")               
+       --log-level    Log level (trace, debug, info, warn, error, fatal)      
+  (default "info")                                                            
+       --log-to-stdout    Log to stdout even when log-file is set             
+       --logstash-app-name    Application name for Logstash logs (default     
+  "remarquee")                                                                
+       --logstash-enabled    Enable logging to Logstash                       
+       --logstash-environment    Environment name for Logstash logs           
+  (development, staging, production) (default "development")                  
+       --logstash-host    Logstash host (default "logstash")                  
+       --logstash-port    Logstash port (default 5044)                        
+       --logstash-protocol    Logstash protocol (tcp, udp) (default "tcp")    
+       --with-caller    Log caller information                                
+                                                                              
+  Use remarquee rmdoc [command] --help for more information about a command.  
+  Use                                                                         
+  remarquee rmdoc --help --long-help for information about all flags.          with PNG diffs [moved from RMQ-0006/0004]
+- [ ] Implement debug CLIs: v6-stats, v6-dump-highlights, v6-dump-strokes [moved from RMQ-0006]
+- [ ] Implement PDF comparison utilities (python or Go), tolerance config, JSON output for diffs [moved from RMQ-0006]
+- [ ] Define validation sweeps (ellipse/rect/tool/highlight/anchor/typed text) + CI subset + artifact storage [moved from RMQ-0006/0008]
+- [ ] Document validation procedures, tolerance settings, troubleshooting guidance [moved from RMQ-0006]
+- [ ] Decide validation session storage ownership (WEB vs other) to keep single source of truth [moved from RMQ-0006/0004]
