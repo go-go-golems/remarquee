@@ -1,3 +1,19 @@
+---
+Title: rmapi Filetree and Sync15 Model — A Practical Textbook
+Slug: filetree-and-sync15-model
+Short: A structured, end-to-end explanation of rmapi’s Sync15 mirroring and filetree model.
+Topics:
+- rmapi
+- remarkable
+- sync15
+- filetree
+- modeling
+IsTemplate: false
+IsTopLevel: false
+ShowPerDefault: true
+SectionType: GeneralTopic
+---
+
 # rmapi Filetree and Sync15 Model: A Practical Textbook
 
 This document is a structured, end-to-end explanation of how rmapi models
