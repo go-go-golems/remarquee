@@ -85,5 +85,19 @@ func NewRmdocCommand() *cobra.Command {
 	} else {
 		cmd.AddCommand(vlmCmd)
 	}
+
+	jsRunCmd, err := NewJSRunCobraCommand()
+	if err != nil {
+		cmd.AddCommand(&cobra.Command{
+			Use:   "js-run",
+			Short: "Run a JavaScript script to create an rmdoc document (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		cmd.AddCommand(jsRunCmd)
+	}
+
 	return cmd
 }
