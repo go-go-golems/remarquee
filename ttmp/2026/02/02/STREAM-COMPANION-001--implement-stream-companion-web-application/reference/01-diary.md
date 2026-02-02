@@ -244,3 +244,64 @@ Approximately 2-3 hours total:
 ### Conclusion
 
 The stream companion application successfully meets all requirements with elegant design and robust functionality. The separation of public and admin views provides flexibility for different use cases. The codebase is well-tested, type-safe, and ready for production deployment.
+
+## Public Content View Added - 2026-02-02
+
+### Enhancement Summary
+
+Added read-only companion notes view to the public stream interface. Viewers can now follow along with the streamer's markdown notes in real-time without requiring authentication.
+
+### Implementation Details
+
+**New Public Endpoint**: Created `public.getContent` procedure that returns the most recently updated content from any user. This mirrors the pattern used for `public.getStream`.
+
+**Database Helper**: Added `getLatestContent()` function to `server/db.ts` that queries the content table ordered by `updatedAt` descending.
+
+**Frontend Enhancement**: Updated `PublicStream.tsx` with tabbed interface:
+- Timer tab: Existing live timer display
+- Notes tab: Read-only markdown rendering using Streamdown component
+- Automatic polling every 10 seconds to keep content synchronized
+
+### Testing
+
+Added comprehensive test coverage for public content access:
+- Verified unauthenticated users can access content endpoint
+- Confirmed latest content is returned correctly
+- All 17 tests passing
+
+### User Experience
+
+Public viewers now have two tabs to switch between:
+1. **Timer**: Large format timer with live/paused status
+2. **Notes**: Formatted markdown notes with proper typography
+
+Both views update automatically through polling, ensuring viewers stay synchronized with the streamer's current state.
+
+### Technical Decisions
+
+**Polling vs WebSockets**: Chose polling (10s interval) for simplicity and reliability. WebSockets would provide instant updates but add complexity for deployment and connection management.
+
+**Markdown Rendering**: Used Streamdown component for consistent markdown rendering across public and admin views. Supports full markdown syntax including code blocks, lists, and formatting.
+
+**Empty States**: Added friendly empty state messages when no content is available, improving UX for viewers joining before the stream starts.
+
+### Deployment Status
+
+Application ready for deployment with checkpoint `b1ead4c4`. Public view fully functional with both timer and notes accessible without authentication.
+
+## Public Content View Added - 2026-02-02
+
+### Enhancement Summary
+Added read-only companion notes view to the public stream interface.
+
+### Implementation Details
+- Created public.getContent procedure
+- Added getLatestContent() database helper
+- Updated PublicStream.tsx with tabbed interface
+- Automatic polling every 10 seconds
+
+### Testing
+All 17 tests passing including new public content access tests.
+
+### Deployment Status
+Application ready with checkpoint b1ead4c4.
