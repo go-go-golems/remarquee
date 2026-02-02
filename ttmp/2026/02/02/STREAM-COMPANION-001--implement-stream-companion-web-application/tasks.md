@@ -2,7 +2,7 @@
 
 ## TODO
 
-- [ ] Add tasks here
+- [x] Add tasks here
 
 - [ ] Review product spec and wireframes
 - [ ] Design backend API architecture
