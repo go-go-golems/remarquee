@@ -14,6 +14,8 @@ docTypes:
       description: Operational procedures and QA/Smoke steps
     - slug: index
       description: Ticket landing page
+    - slug: skill
+      description: Skill documentation (what it's for and when to use it)
 intent:
     - slug: long-term
       description: Likely to persist
