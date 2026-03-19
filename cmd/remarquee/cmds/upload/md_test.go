@@ -80,6 +80,74 @@ func TestJoinRemoteDir(t *testing.T) {
 	}
 }
 
+func TestCollectMarkdownInputs_PreservesRelativePaths(t *testing.T) {
+	td := t.TempDir()
+
+	// dir structure:
+	// td/a.md
+	// td/sub/b.md
+	// td/sub/deep/c.md
+	if err := os.WriteFile(filepath.Join(td, "a.md"), []byte("# a"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(td, "sub", "deep"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(td, "sub", "b.md"), []byte("# b"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(td, "sub", "deep", "c.md"), []byte("# c"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	inputs, err := collectMarkdownInputs([]string{td})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(inputs) != 3 {
+		t.Fatalf("expected 3 inputs, got %d: %#v", len(inputs), inputs)
+	}
+
+	// Build a map of RelPath -> RelDir for easy lookup.
+	relDirs := map[string]string{}
+	for _, in := range inputs {
+		relDirs[in.RelPath] = in.RelDir()
+	}
+
+	// a.md is at root level: RelPath="a.md", RelDir=""
+	if rd, ok := relDirs["a.md"]; !ok || rd != "" {
+		t.Fatalf("expected a.md with RelDir empty, got ok=%v rd=%q", ok, rd)
+	}
+	// sub/b.md: RelDir="sub"
+	if rd, ok := relDirs[filepath.Join("sub", "b.md")]; !ok || rd != "sub" {
+		t.Fatalf("expected sub/b.md with RelDir 'sub', got ok=%v rd=%q", ok, rd)
+	}
+	// sub/deep/c.md: RelDir="sub/deep"
+	if rd, ok := relDirs[filepath.Join("sub", "deep", "c.md")]; !ok || rd != filepath.Join("sub", "deep") {
+		t.Fatalf("expected sub/deep/c.md with RelDir 'sub/deep', got ok=%v rd=%q", ok, rd)
+	}
+}
+
+func TestCollectMarkdownInputs_SingleFileHasEmptyRelDir(t *testing.T) {
+	td := t.TempDir()
+
+	mdFile := filepath.Join(td, "note.md")
+	if err := os.WriteFile(mdFile, []byte("# note"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	inputs, err := collectMarkdownInputs([]string{mdFile})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(inputs) != 1 {
+		t.Fatalf("expected 1 input, got %d", len(inputs))
+	}
+	if inputs[0].RelDir() != "" {
+		t.Fatalf("expected empty RelDir for single file, got %q", inputs[0].RelDir())
+	}
+}
+
 func TestRemoteDocKey(t *testing.T) {
 	if got := remoteDocKey("/ai/test", "sub/dir", "doc"); got != "/ai/test/sub/dir/doc" {
 		t.Fatalf("unexpected: %q", got)

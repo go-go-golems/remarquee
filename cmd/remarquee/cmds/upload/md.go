@@ -27,6 +27,7 @@ type uploadMarkdownSettings struct {
 	PDFOnly         bool
 	OutputDir       string
 	PreserveDirs    bool
+	Flatten         bool
 	Date            string
 	RemoteDir       string
 	Pandoc          string
@@ -49,6 +50,7 @@ Convert markdown files to PDF (pandoc + xelatex, DejaVu fonts) and upload them t
 Inputs:
 - You may pass markdown files (*.md) and/or directories.
 - Directories are recursively scanned for *.md files.
+- Directory structure is mirrored remotely by default. Use --flatten to upload all files to a single directory.
 
 Destination:
 - Default remote directory: /ai/YYYY/MM/DD/ (today's date)
@@ -73,7 +75,8 @@ Safety:
 	cmd.Flags().BoolVar(&s.DryRun, "dry-run", false, "Print what would be done, but do not run pandoc or upload")
 	cmd.Flags().BoolVar(&s.PDFOnly, "pdf-only", false, "Only generate PDFs, do not upload")
 	cmd.Flags().StringVar(&s.OutputDir, "output-dir", "", "Output directory for PDFs in --pdf-only mode (default: current directory)")
-	cmd.Flags().BoolVar(&s.PreserveDirs, "preserve-dirs", false, "When uploading directories, recreate the local relative directory structure remotely")
+	cmd.Flags().BoolVar(&s.PreserveDirs, "preserve-dirs", true, "Recreate the local relative directory structure remotely (default: true)")
+	cmd.Flags().BoolVar(&s.Flatten, "flatten", false, "Upload all files to a single flat directory (overrides --preserve-dirs)")
 
 	// Destination.
 	cmd.Flags().StringVar(&s.Date, "date", "", "Destination date folder under /ai (YYYY/MM/DD or YYYY-MM-DD). Default: today")
@@ -91,6 +94,11 @@ Safety:
 }
 
 func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdownSettings, args []string) error {
+	// --flatten is a convenience inverse of --preserve-dirs.
+	if s.Flatten {
+		s.PreserveDirs = false
+	}
+
 	mdInputs, err := collectMarkdownInputs(args)
 	if err != nil {
 		return err

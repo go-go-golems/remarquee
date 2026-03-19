@@ -28,7 +28,7 @@ func TestBuildBackgroundPDF_CPagesFixture_PageCountAndReadable(t *testing.T) {
 	ctx := context.Background()
 
 	root := repoRootFromThisFile(t)
-	fixture := filepath.Join(root, "..", "remarks", "tests", "in", "copies of different pages.rmdoc")
+	fixture := filepath.Join(root, "cmd", "remarquee-ui", "testdata", "cpage-pdf.rmdoc")
 
 	doc, err := rmdoc.OpenFile(ctx, fixture)
 	if err != nil {
