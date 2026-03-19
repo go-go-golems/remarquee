@@ -6,6 +6,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -51,7 +52,7 @@ func readFirstRMFileFromRMDoc(t *testing.T, rmdocPath string) []byte {
 }
 
 func TestRenderRMV6RMToPDFBytes(t *testing.T) {
-	rmBytes := readFirstRMFileFromRMDoc(t, "/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/cpage-pdf.rmdoc")
+	rmBytes := readFirstRMFileFromRMDoc(t, filepath.Join(repoRootInternal(t), "cmd", "remarquee-ui", "testdata", "cpage-pdf.rmdoc"))
 
 	pdfBytes, err := RenderRMV6RMToPDFBytes(context.Background(), bytes.NewReader(rmBytes))
 	if err != nil {

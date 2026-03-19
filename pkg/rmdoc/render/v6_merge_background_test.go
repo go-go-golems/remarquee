@@ -3,6 +3,8 @@ package render
 import (
 	"bytes"
 	"context"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -11,9 +13,19 @@ import (
 	pdf "github.com/unidoc/unipdf/v3/model"
 )
 
+func repoRootInternal(t *testing.T) string {
+	t.Helper()
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	// This file lives at: remarquee/pkg/rmdoc/render/v6_merge_background_test.go
+	return filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", "..", ".."))
+}
+
 func TestMergeRMDocV6OntoBackgroundPDF_Smoke(t *testing.T) {
 	ctx := context.Background()
-	path := "/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/cpage-pdf.rmdoc"
+	path := filepath.Join(repoRootInternal(t), "cmd", "remarquee-ui", "testdata", "cpage-pdf.rmdoc")
 
 	doc, err := rmdoc.OpenFile(ctx, path)
 	if err != nil {
@@ -57,7 +69,7 @@ func TestMergeRMDocV6OntoBackgroundPDF_Smoke(t *testing.T) {
 
 func TestMergeRMDocV6OntoBackgroundPDFWithInfo_HighlightsXTranslation_Smoke(t *testing.T) {
 	ctx := context.Background()
-	path := "/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/cpage-pdf.rmdoc"
+	path := filepath.Join(repoRootInternal(t), "cmd", "remarquee-ui", "testdata", "cpage-pdf.rmdoc")
 
 	doc, err := rmdoc.OpenFile(ctx, path)
 	if err != nil {
@@ -78,7 +90,7 @@ func TestMergeRMDocV6OntoBackgroundPDFWithInfo_HighlightsXTranslation_Smoke(t *t
 
 func TestMergeRMDocV6OntoBackgroundPDF_SmartHighlights_NoCrash(t *testing.T) {
 	ctx := context.Background()
-	path := "/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/cpage-pdf.rmdoc"
+	path := filepath.Join(repoRootInternal(t), "cmd", "remarquee-ui", "testdata", "cpage-pdf.rmdoc")
 
 	out, err := MergeRMDocV6OntoBackgroundPDF(ctx, path, V6MergeOptions{})
 	if err != nil {

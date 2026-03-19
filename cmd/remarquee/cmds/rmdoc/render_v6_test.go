@@ -4,11 +4,22 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 )
+
+func repoRootFromThisFile(t *testing.T) string {
+	t.Helper()
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	// This file lives at: remarquee/cmd/remarquee/cmds/rmdoc/render_v6_test.go
+	return filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", "..", "..", ".."))
+}
 
 func TestRenderV6Command_Smoke(t *testing.T) {
 	cmd, err := NewRenderV6Command()
@@ -25,7 +36,7 @@ func TestRenderV6Command_Smoke(t *testing.T) {
 	}
 
 	pp := parameters.NewParsedParameters()
-	pp.Set("file", &parameters.ParsedParameter{Value: "/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/cpage-pdf.rmdoc"})
+	pp.Set("file", &parameters.ParsedParameter{Value: filepath.Join(repoRootFromThisFile(t), "cmd", "remarquee-ui", "testdata", "cpage-pdf.rmdoc")})
 	pp.Set("out", &parameters.ParsedParameter{Value: out})
 	pp.Set("force", &parameters.ParsedParameter{Value: true})
 

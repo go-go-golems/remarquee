@@ -3,13 +3,15 @@ package rmdoc
 import (
 	"bytes"
 	"context"
+	"path/filepath"
 	"sort"
 	"testing"
 )
 
 func TestParseRMV6SceneTree_StrokeColorsPresent_TestRmdoc(t *testing.T) {
 	ctx := context.Background()
-	path := "/home/manuel/workspaces/2025-12-14/build-remarquee-tool/remarquee/cmd/remarquee-ui/testdata/Test.rmdoc"
+	root := repoRootFromThisFile(t)
+	path := filepath.Join(root, "cmd", "remarquee-ui", "testdata", "Test.rmdoc")
 
 	doc, err := OpenFile(ctx, path)
 	if err != nil {
