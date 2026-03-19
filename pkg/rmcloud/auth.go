@@ -4,6 +4,7 @@ import (
 	"github.com/juruen/rmapi/api"
 	"github.com/pkg/errors"
 	"strings"
+	"time"
 )
 
 const authRetries = 3
@@ -22,9 +23,19 @@ func CreateApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
 	var lastErr error
 	for i := 0; i < authRetries; i++ {
 		reauth := auth.Reauth || i > 0
-		httpCtx := api.AuthHttpCtx(reauth, auth.NonInteractive)
+		httpCtx, err := api.AuthHttpCtx(reauth, auth.NonInteractive)
+		if err != nil {
+			lastErr = errors.Wrap(err, "rmapi auth failed")
+			if i < authRetries-1 {
+				time.Sleep(time.Duration(250*(1<<i)) * time.Millisecond)
+			}
+			continue
+		}
 		if httpCtx.Tokens.UserToken == "" {
 			lastErr = errors.New("rmapi did not return a user token; device token may be invalid, run `rmapi reset` and re-register this device")
+			if i < authRetries-1 {
+				time.Sleep(time.Duration(250*(1<<i)) * time.Millisecond)
+			}
 			continue
 		}
 		userInfo, err := api.ParseToken(httpCtx.Tokens.UserToken)
@@ -34,12 +45,18 @@ func CreateApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
 			} else {
 				lastErr = errors.Wrap(err, "failed to parse rmapi user token")
 			}
+			if i < authRetries-1 {
+				time.Sleep(time.Duration(250*(1<<i)) * time.Millisecond)
+			}
 			continue
 		}
 
 		apiCtx, err := api.CreateApiCtx(httpCtx, userInfo.SyncVersion)
 		if err != nil {
 			lastErr = errors.Wrap(err, "failed to create rmapi api context")
+			if i < authRetries-1 {
+				time.Sleep(time.Duration(250*(1<<i)) * time.Millisecond)
+			}
 			continue
 		}
 
