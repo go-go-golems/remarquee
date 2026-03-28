@@ -6,17 +6,19 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 )
 
 type PandocOptions struct {
-	PandocPath      string
-	PDFEngine       string
-	MainFont        string
-	MonoFont        string
-	Geometry        string
-	LatexHeaderFile string
+	PandocPath       string
+	PDFEngine        string
+	MainFont         string
+	MonoFont         string
+	Geometry         string
+	LatexHeaderFile  string
+	ExtraLatexHeader string
 
 	TOC      bool
 	TOCDepth int
@@ -77,12 +79,22 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 		return errors.Wrap(err, "failed to write preprocessed markdown")
 	}
 
-	headerPath := opts.LatexHeaderFile
-	if headerPath == "" {
-		headerPath = filepath.Join(tmpDir, filepath.Base(mdPath)+".header.tex")
+	headerPaths := make([]string, 0, 2)
+	if opts.LatexHeaderFile != "" {
+		headerPaths = append(headerPaths, opts.LatexHeaderFile)
+	} else {
+		headerPath := filepath.Join(tmpDir, filepath.Base(mdPath)+".header.tex")
 		if err := os.WriteFile(headerPath, []byte(defaultLatexHeader), 0o644); err != nil {
 			return errors.Wrap(err, "failed to write latex header")
 		}
+		headerPaths = append(headerPaths, headerPath)
+	}
+	if strings.TrimSpace(opts.ExtraLatexHeader) != "" {
+		extraHeaderPath := filepath.Join(tmpDir, filepath.Base(mdPath)+".extra-header.tex")
+		if err := os.WriteFile(extraHeaderPath, []byte(opts.ExtraLatexHeader), 0o644); err != nil {
+			return errors.Wrap(err, "failed to write extra latex header")
+		}
+		headerPaths = append(headerPaths, extraHeaderPath)
 	}
 
 	argv := []string{
@@ -90,10 +102,12 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 		"-o", outPDF,
 		"--pdf-engine=" + opts.PDFEngine,
 		"--standalone",
-		"-H", headerPath,
 		"-V", "mainfont=" + opts.MainFont,
 		"-V", "monofont=" + opts.MonoFont,
 		"-V", "geometry:" + opts.Geometry,
+	}
+	for _, headerPath := range headerPaths {
+		argv = append(argv, "-H", headerPath)
 	}
 
 	if opts.TOC {

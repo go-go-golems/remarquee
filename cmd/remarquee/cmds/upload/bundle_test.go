@@ -1,8 +1,10 @@
 package upload
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -43,5 +45,27 @@ func TestCollectMarkdownFilesForBundle_Order(t *testing.T) {
 	}
 	if files[2].Title != filepath.Join("sub", "b") {
 		t.Fatalf("expected third title sub/b, got: %q", files[2].Title)
+	}
+}
+
+func TestUploadBundleDryRunShowsEditorLayout(t *testing.T) {
+	td := t.TempDir()
+	md := filepath.Join(td, "bundle.md")
+	if err := os.WriteFile(md, []byte("# Bundle\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewUploadBundleCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"--dry-run", "--pdf-only", "--layout", "editor", md})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out.String(), "DRY: layout=editor") {
+		t.Fatalf("expected dry-run output to mention editor layout, got:\n%s", out.String())
 	}
 }

@@ -42,10 +42,10 @@ remarquee upload bundle <path...> [flags]
 - `--toc-depth`: ToC depth (pandoc `--toc-depth`, default 1)
 - `--dry-run`: prints planned work; does not run pandoc or upload
 - `--pdf-only --output-dir`: generate the bundle PDF locally only
+- `--layout editor`: use a more annotation-friendly reading layout with wider margins and looser paragraph spacing
 
 ### Auth flags
 
 - `--non-interactive`: never prompt; fails if tokens are missing
 - `--reauth`: re-authenticate
-
 

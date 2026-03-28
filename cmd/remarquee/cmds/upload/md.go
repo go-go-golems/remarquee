@@ -28,12 +28,14 @@ type uploadMarkdownSettings struct {
 	OutputDir       string
 	PreserveDirs    bool
 	Flatten         bool
+	Name            string
 	Date            string
 	RemoteDir       string
 	Pandoc          string
 	PDFEngine       string
 	MainFont        string
 	MonoFont        string
+	Layout          string
 	Geometry        string
 	LatexHeaderFile string
 }
@@ -77,6 +79,7 @@ Safety:
 	cmd.Flags().StringVar(&s.OutputDir, "output-dir", "", "Output directory for PDFs in --pdf-only mode (default: current directory)")
 	cmd.Flags().BoolVar(&s.PreserveDirs, "preserve-dirs", true, "Recreate the local relative directory structure remotely (default: true)")
 	cmd.Flags().BoolVar(&s.Flatten, "flatten", false, "Upload all files to a single flat directory (overrides --preserve-dirs)")
+	cmd.Flags().StringVar(&s.Name, "name", "", "Custom output document name (only valid when exactly one markdown file is selected)")
 
 	// Destination.
 	cmd.Flags().StringVar(&s.Date, "date", "", "Destination date folder under /ai (YYYY/MM/DD or YYYY-MM-DD). Default: today")
@@ -87,6 +90,7 @@ Safety:
 	cmd.Flags().StringVar(&s.PDFEngine, "pdf-engine", "xelatex", "Pandoc PDF engine (default: xelatex)")
 	cmd.Flags().StringVar(&s.MainFont, "mainfont", "DejaVu Sans", "Main font for PDF generation")
 	cmd.Flags().StringVar(&s.MonoFont, "monofont", "DejaVu Sans Mono", "Monospace font for code blocks")
+	cmd.Flags().StringVar(&s.Layout, "layout", mdpdf.MarkdownLayoutDefault, "Markdown layout preset: default|editor (editor adds wider margins and more annotation-friendly spacing)")
 	cmd.Flags().StringVar(&s.Geometry, "geometry", "margin=1in", "LaTeX geometry setting passed to pandoc (default: margin=1in)")
 	cmd.Flags().StringVar(&s.LatexHeaderFile, "latex-header-file", "", "Optional path to a LaTeX header file to include (overrides built-in header)")
 
@@ -117,7 +121,11 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	// - preserve-dirs mode: detect collisions at the computed remote location
 	seenRemoteKeys := map[string]string{}
 	for _, in := range mdInputs {
-		docName := strings.TrimSuffix(filepath.Base(in.AbsPath), filepath.Ext(in.AbsPath))
+		pdfName, err := markdownPDFName(in, s.Name, len(mdInputs))
+		if err != nil {
+			return err
+		}
+		docName := strings.TrimSuffix(pdfName, filepath.Ext(pdfName))
 		relDir := ""
 		if s.PreserveDirs {
 			relDir = in.RelDir()
@@ -129,19 +137,29 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		seenRemoteKeys[key] = in.AbsPath
 	}
 
-	pandocOpts := mdpdf.DefaultPandocOptions()
-	pandocOpts.PandocPath = s.Pandoc
-	pandocOpts.PDFEngine = s.PDFEngine
-	pandocOpts.MainFont = s.MainFont
-	pandocOpts.MonoFont = s.MonoFont
-	pandocOpts.Geometry = s.Geometry
-	pandocOpts.LatexHeaderFile = s.LatexHeaderFile
+	pandocOpts, err := configureMarkdownPandocOptions(
+		cmd.Flags(),
+		s.Layout,
+		s.Pandoc,
+		s.PDFEngine,
+		s.MainFont,
+		s.MonoFont,
+		s.Geometry,
+		s.LatexHeaderFile,
+	)
+	if err != nil {
+		return err
+	}
 
 	if s.DryRun {
+		fmt.Fprintf(cmd.OutOrStdout(), "DRY: layout=%s\n", mdpdf.NormalizeMarkdownLayout(s.Layout))
 		fmt.Fprintf(cmd.OutOrStdout(), "DRY: remote-dir=%s\n", remoteDir)
 		for _, in := range mdInputs {
 			mdPath := in.AbsPath
-			pdfName := strings.TrimSuffix(filepath.Base(mdPath), filepath.Ext(mdPath)) + ".pdf"
+			pdfName, err := markdownPDFName(in, s.Name, len(mdInputs))
+			if err != nil {
+				return err
+			}
 			if s.PDFOnly {
 				outDir := s.OutputDir
 				if outDir == "" {
@@ -176,7 +194,10 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 
 		for _, in := range mdInputs {
 			mdPath := in.AbsPath
-			pdfName := strings.TrimSuffix(filepath.Base(mdPath), filepath.Ext(mdPath)) + ".pdf"
+			pdfName, err := markdownPDFName(in, s.Name, len(mdInputs))
+			if err != nil {
+				return err
+			}
 			outPDF := filepath.Join(outDir, pdfName)
 			if s.PreserveDirs {
 				outPDF = filepath.Join(outDir, in.RelDir(), pdfName)
@@ -211,7 +232,10 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 
 	for _, in := range mdInputs {
 		mdPath := in.AbsPath
-		pdfName := strings.TrimSuffix(filepath.Base(mdPath), filepath.Ext(mdPath)) + ".pdf"
+		pdfName, err := markdownPDFName(in, s.Name, len(mdInputs))
+		if err != nil {
+			return err
+		}
 		outPDF := filepath.Join(tmpDir, pdfName)
 		if s.PreserveDirs {
 			outPDF = filepath.Join(tmpDir, in.RelDir(), pdfName)
@@ -269,6 +293,21 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	}
 
 	return nil
+}
+
+func markdownPDFName(in markdownInput, override string, total int) (string, error) {
+	override = strings.TrimSpace(override)
+	if override != "" {
+		if total != 1 {
+			return "", errors.New("--name is only valid when exactly one markdown file is selected")
+		}
+		if strings.ContainsAny(override, `/\`) {
+			return "", errors.New("--name must be a basename and may not contain path separators")
+		}
+		return ensurePDFSuffix(override), nil
+	}
+
+	return strings.TrimSuffix(filepath.Base(in.AbsPath), filepath.Ext(in.AbsPath)) + ".pdf", nil
 }
 
 type markdownInput struct {
