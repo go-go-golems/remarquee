@@ -5,6 +5,14 @@ topics:
       description: Backend services
     - slug: websocket
       description: WebSocket lifecycle & events
+    - slug: markdown
+      description: Markdown authoring, transformation, and rendering workflows
+    - slug: pdf
+      description: PDF generation, rendering, and document presentation workflows
+    - slug: remarkable
+      description: reMarkable cloud, document, and device-facing workflows
+    - slug: upload
+      description: Upload and transfer workflows for generated artifacts
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
