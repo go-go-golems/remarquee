@@ -459,7 +459,8 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 		width := math.Max(wSvg, wBg)
 		height := math.Max(hSvg, hBg)
 
-		var xSvg, ySvg, xBg, yBg float64
+		var xSvg, xBg float64
+		var ySvgTop, yBgTop float64
 		highlightsX := wBg / 2.0
 		if wSvg > wBg {
 			xBg = width/2 - wBg/2 - (wSvg/2 + xShift)
@@ -470,10 +471,12 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 		highlightsXTranslation[i] = highlightsX
 
 		if hSvg > hBg {
-			yBg = -yShift
+			yBgTop = -yShift
 		} else if hSvg < hBg {
-			ySvg = yShift
+			ySvgTop = yShift
 		}
+		ySvg := remarksTopYToPDFBottomY(height, ySvgTop, hSvg)
+		yBg := remarksTopYToPDFBottomY(height, yBgTop, hBg)
 
 		mergedPage, err := buildMergedPage(width, height, xBg, yBg, xSvg, ySvg, bgPage, bgContent, rot, w0, h0, strokes, tree.RootText, textParagraphs, bbox, wSvg, hSvg, opts)
 		if err != nil {
@@ -681,7 +684,8 @@ func MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx context.Context, rmdocPat
 		width := math.Max(wSvg, wBg)
 		height := math.Max(hSvg, hBg)
 
-		var xSvg, ySvg, xBg, yBg float64
+		var xSvg, xBg float64
+		var ySvgTop, yBgTop float64
 		highlightsX := wBg / 2.0
 		if wSvg > wBg {
 			xBg = width/2 - wBg/2 - (wSvg/2 + xShift)
@@ -692,10 +696,12 @@ func MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx context.Context, rmdocPat
 		highlightsXTranslation[i] = highlightsX
 
 		if hSvg > hBg {
-			yBg = -yShift
+			yBgTop = -yShift
 		} else if hSvg < hBg {
-			ySvg = yShift
+			ySvgTop = yShift
 		}
+		ySvg := remarksTopYToPDFBottomY(height, ySvgTop, hSvg)
+		yBg := remarksTopYToPDFBottomY(height, yBgTop, hBg)
 
 		mergedPage, err := buildMergedPage(width, height, xBg, yBg, xSvg, ySvg, bgPage, bgContent, rot, w0, h0, strokes, tree.RootText, textParagraphs, bbox, wSvg, hSvg, opts)
 		if err != nil {
@@ -969,6 +975,12 @@ func normalizeRot(rot int64) int64 {
 		rot += 360
 	}
 	return rot
+}
+
+// remarksTopYToPDFBottomY converts the top-origin placement used by remarks/PyMuPDF
+// into the bottom-origin coordinate system used by PDF content streams.
+func remarksTopYToPDFBottomY(pageHeight, topY, objectHeight float64) float64 {
+	return pageHeight - topY - objectHeight
 }
 
 // backgroundTransform returns an affine transform matrix (a,b,c,d,e,f) for `cm`
