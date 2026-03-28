@@ -1,7 +1,7 @@
 ---
 Title: Add --cloud flag to rmdoc render commands
 Ticket: RMQ-0016
-Status: active
+Status: complete
 Topics:
     - cli
     - cloud
@@ -25,9 +25,9 @@ RelatedFiles:
     - Path: pkg/rmdoc/render/v6_merge_background.go
       Note: V6 renderer entrypoint that still takes an archive path
 ExternalSources: []
-Summary: Ticket for documenting and later implementing `--cloud` support on the `rmdoc` render commands, plus an adjacent review of CLI verb cleanup opportunities.
-LastUpdated: 2026-03-28T10:35:12.47526385-04:00
-WhatFor: Track design work for rendering `.rmdoc` files directly from reMarkable cloud paths without forcing a manual `cloud get` step first.
+Summary: Ticket covering the design, implementation, validation, and delivery of `--cloud` support on `rmdoc render-v6` and `rmdoc render-legacy`, plus an adjacent review of CLI verb cleanup opportunities.
+LastUpdated: 2026-03-28T11:05:08-04:00
+WhatFor: Track the design and completed implementation work for rendering `.rmdoc` files directly from reMarkable cloud paths without forcing a manual `cloud get` step first.
 WhenToUse: Use when implementing, reviewing, or continuing RMQ-0016.
 ---
 
@@ -49,13 +49,16 @@ The ticket also includes a separate CLI review document because the inspection w
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 Deliverables produced in this ticket so far:
 
 - detailed design and implementation guide
 - CLI verb review and tightening recommendations
 - investigation diary
+- shared `pkg/rmcloud` download helper extracted and reused by `cloud get`
+- shared `rmdoc` local/cloud input resolver added
+- `render-v6` and `render-legacy` now support `--cloud`
 - `docmgr doctor` passes cleanly for `RMQ-0016`
 - reMarkable bundle uploaded to `/ai/2026/03/28/RMQ-0016`
 

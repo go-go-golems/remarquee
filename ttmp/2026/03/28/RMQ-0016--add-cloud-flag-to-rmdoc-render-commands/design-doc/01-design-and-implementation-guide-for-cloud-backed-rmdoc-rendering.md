@@ -1,7 +1,7 @@
 ---
 Title: Design and implementation guide for cloud-backed rmdoc rendering
 Ticket: RMQ-0016
-Status: active
+Status: complete
 Topics:
     - cli
     - cloud
@@ -16,10 +16,13 @@ RelatedFiles:
       Note: |-
         Existing cloud download behavior that should be reused instead of reimplemented
         Existing cloud download flow to reuse
+    - Path: cmd/remarquee/cmds/rmdoc/input_resolver.go
+      Note: Implemented shared local/cloud input resolver
     - Path: cmd/remarquee/cmds/rmdoc/render_legacy.go
       Note: |-
         Current legacy render command and rmapi-backed PDF generation
         Current legacy render command and path-oriented rmapi generator
+        Legacy render command now uses the shared resolver
     - Path: cmd/remarquee/cmds/rmdoc/render_v6.go
       Note: |-
         Current V6 render command and its local-path assumptions
@@ -28,6 +31,8 @@ RelatedFiles:
       Note: |-
         Shared rmapi authentication bootstrap
         Shared rmapi auth bootstrap
+    - Path: pkg/rmcloud/download.go
+      Note: Implemented reusable remote download helper
     - Path: pkg/rmdoc/open.go
       Note: |-
         Local archive opening API and package boundary
@@ -42,10 +47,11 @@ RelatedFiles:
       Note: Prior CLI inventory and command taxonomy
 ExternalSources: []
 Summary: Add a shared cloud input resolution layer so `rmdoc render-v6` and `rmdoc render-legacy` can accept remote cloud paths via `--cloud` and render from a temporary local download without changing the renderer package boundaries.
-LastUpdated: 2026-03-28T10:35:12.568156281-04:00
+LastUpdated: 2026-03-28T11:05:08-04:00
 WhatFor: Intern-facing design and implementation guide for adding cloud-backed input support to the render commands without mixing network concerns into `pkg/rmdoc`.
 WhenToUse: Use when implementing or reviewing `--cloud` support for `rmdoc` commands, or when onboarding someone new to the remarquee render stack.
 ---
+
 
 
 # Design and implementation guide for cloud-backed rmdoc rendering

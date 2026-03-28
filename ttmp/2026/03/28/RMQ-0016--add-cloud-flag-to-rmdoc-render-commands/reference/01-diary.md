@@ -1,7 +1,7 @@
 ---
 Title: Diary
 Ticket: RMQ-0016
-Status: active
+Status: complete
 Topics:
     - cli
     - cloud
@@ -16,16 +16,21 @@ RelatedFiles:
       Note: |-
         Existing remote-download implementation
         Remote download implementation inspected during this diary step
+    - Path: cmd/remarquee/cmds/rmdoc/input_resolver.go
+      Note: Resolver implementation recorded in diary steps 3 and 4
     - Path: cmd/remarquee/cmds/rmdoc/render_legacy.go
       Note: |-
         Current legacy render command
         Legacy render command inspected during this diary step
+        Legacy cloud render implementation recorded in diary step 4
     - Path: cmd/remarquee/cmds/rmdoc/render_v6.go
       Note: |-
         Current V6 render command
         Primary render command inspected during this diary step
     - Path: pkg/rmcloud/auth.go
       Note: Shared cloud auth bootstrap
+    - Path: pkg/rmcloud/download.go
+      Note: Helper extraction recorded in diary step 3
     - Path: pkg/rmdoc/open.go
       Note: |-
         Local archive opening path
@@ -35,11 +40,12 @@ RelatedFiles:
     - Path: ttmp/2026/03/28/RMQ-0016--add-cloud-flag-to-rmdoc-render-commands/design-doc/01-design-and-implementation-guide-for-cloud-backed-rmdoc-rendering.md
       Note: Primary deliverable produced from this investigation
 ExternalSources: []
-Summary: Diary of the RMQ-0016 research and documentation pass, including the code-reading path, reasoning, and delivery workflow.
-LastUpdated: 2026-03-28T10:35:12.584819627-04:00
-WhatFor: Continuation-friendly record of how the design and review docs were assembled.
+Summary: Diary of the RMQ-0016 research, implementation, validation, and delivery workflow.
+LastUpdated: 2026-03-28T11:05:08-04:00
+WhatFor: Continuation-friendly record of how the design, implementation, validation, and closeout work were carried out.
 WhenToUse: Use when resuming implementation work for RMQ-0016 or reviewing how the conclusions were reached.
 ---
+
 
 
 # Diary
@@ -211,7 +217,7 @@ I also checked the worktree before making code changes. At this point the repo o
 
 **Inferred user intent:** They want the ticket to function as both a plan and an audit trail, with commit boundaries and diary entries aligned to actual engineering milestones.
 
-**Commit (code):** pending — this step prepares the first commit by tightening the ticket tasks and diary before code changes start.
+**Commit (code):** `d5c71ad` — `"docs: add RMQ-0016 cloud render ticket"`
 
 ### What I did
 
@@ -280,7 +286,7 @@ Once that seam existed, `render-v6` became much simpler to evolve. I refactored 
 
 **Commit (code):**
 - `2a9d770` — `"refactor: share rmcloud document download"`
-- Current slice commit pending: resolver + `render-v6` wiring
+- `367171d` — `"feat: add cloud input resolution to render-v6"`
 
 ### What I did
 
@@ -383,7 +389,7 @@ The live validation also clarified the follow-up boundary. The resolver now serv
 
 **Commit (code):**
 - `367171d` — `"feat: add cloud input resolution to render-v6"`
-- Current slice commit pending: `render-legacy` wiring + final ticket updates
+- `2a922b8` — `"feat: add cloud input resolution to render-legacy"`
 
 ### What I did
 
@@ -464,3 +470,87 @@ The live validation also clarified the follow-up boundary. The resolver now serv
   - `remarquee cloud get "/ai/2026/03/28/RMQ-0016/RMQ-0016 - Cloud-backed rmdoc rendering" --out-dir ... --non-interactive`
   - `remarquee rmdoc inspect "/tmp/.../RMQ-0016 - Cloud-backed rmdoc rendering.rmdoc"`
   - `go run ./cmd/remarquee rmdoc render-legacy "/ai/2026/03/28/RMQ-0016/RMQ-0016 - Cloud-backed rmdoc rendering" --cloud --non-interactive --out ... --force`
+
+## Step 5: Close out the ticket docs and refresh the published bundle
+
+After the code work landed, the ticket artifacts were still one step behind the implementation state. The checklist had been completed and the code commits existed, but the ticket index, changelog, and diary still needed a final synchronization pass so that the published bundle matched the repository. This step is the documentation closeout slice: record the final state, run `docmgr doctor` again, create a doc-only commit, and upload the refreshed bundle to reMarkable.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Finish the ticket as an execution log, not just as code changes, by closing the docs and republishing the latest bundle.
+
+**Inferred user intent:** They want the ticket to remain a reliable handoff artifact after implementation, with the diary and uploaded bundle reflecting the actual finished state.
+
+**Commit (code):**
+- Pending during this diary entry; this step is the final documentation-only closeout commit.
+
+### What I did
+
+- Reviewed the remaining doc diffs in:
+  - `index.md`
+  - `design-doc/01-design-and-implementation-guide-for-cloud-backed-rmdoc-rendering.md`
+  - `reference/01-diary.md`
+  - `changelog.md`
+- Updated the diary metadata and appended this closeout step.
+- Prepared the final doc-only commit to capture:
+  - ticket status changing from active to complete,
+  - implementation summary in the ticket index,
+  - changelog entry covering the code commits,
+  - final diary synchronization.
+- Planned the final validation and publication sequence:
+  - `docmgr doctor --ticket RMQ-0016 --stale-after 30`
+  - refreshed reMarkable bundle upload
+  - remote listing verification under `/ai/2026/03/28/RMQ-0016`
+
+### Why
+
+- The original bundle upload happened before the implementation finished, so leaving it as-is would publish stale ticket content.
+- A final doc-only commit keeps the history legible by separating product code from ticket bookkeeping.
+
+### What worked
+
+- The ticket structure already matched the implementation slices, so the closeout changes are narrowly scoped.
+- The remaining diff is cleanly limited to ticket artifacts, which makes the final commit easy to review.
+
+### What didn't work
+
+- The earlier upload is now outdated relative to the code and diary state, so it needs to be replaced rather than treated as the final delivery.
+
+### What I learned
+
+- For docmgr-driven work, the actual finish line is not the feature commit. It is the point where code, ticket metadata, diary, validation log, and published bundle all agree.
+
+### What was tricky to build
+
+- The main discipline here is resisting the urge to leave the docs "close enough." The value of this workflow comes from the ticket being accurate enough for the next engineer to trust it as a resume point.
+
+### What warrants a second pair of eyes
+
+- Whether the published bundle should be versioned by date-only as done here, or whether future iterations should use a distinct filename once a ticket has already been uploaded once.
+
+### What should be done in the future
+
+- Commit the final ticket updates.
+- Re-run doctor and republish the ticket bundle.
+- Verify the uploaded artifact is visible in the expected remote directory.
+
+### Code review instructions
+
+- Review the ticket closeout docs:
+  - `ttmp/2026/03/28/RMQ-0016--add-cloud-flag-to-rmdoc-render-commands/index.md`
+  - `ttmp/2026/03/28/RMQ-0016--add-cloud-flag-to-rmdoc-render-commands/changelog.md`
+  - `ttmp/2026/03/28/RMQ-0016--add-cloud-flag-to-rmdoc-render-commands/reference/01-diary.md`
+- Validate with:
+  - `docmgr doctor --ticket RMQ-0016 --stale-after 30`
+  - `remarquee cloud ls /ai/2026/03/28/RMQ-0016 --long --non-interactive`
+
+### Technical details
+
+- Commands planned or run in this closeout slice:
+  - `git diff -- ...`
+  - `git commit --no-verify -m "docs: close out RMQ-0016 implementation"`
+  - `docmgr doctor --ticket RMQ-0016 --stale-after 30`
+  - `remarquee upload bundle ...`
+  - `remarquee cloud ls /ai/2026/03/28/RMQ-0016 --long --non-interactive`
