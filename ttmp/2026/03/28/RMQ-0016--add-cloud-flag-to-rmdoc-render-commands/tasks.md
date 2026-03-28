@@ -20,7 +20,7 @@
 - [x] Add a reusable helper in `pkg/rmcloud` to download a document by remote path into a caller-provided directory
 - [x] Return useful metadata from that helper so callers can report source information if needed
 - [x] Refactor `cmd/remarquee/cmds/cloud/get.go` to use the new helper without changing its user-facing behavior
-- [ ] Add focused tests for the new helper if a clean seam is available; otherwise document the seam and cover behavior indirectly
+- [x] Add focused tests for the new helper if a clean seam is available; otherwise document the seam and cover behavior indirectly
 
 ### 3. Shared RMDoc Input Resolution
 
@@ -38,22 +38,22 @@
 
 ### 5. Wire `rmdoc render-legacy`
 
-- [ ] Add `--cloud`, `--non-interactive`, and `--reauth` to `rmdoc render-legacy`
-- [ ] Refactor `Run` and `RunIntoGlazeProcessor` through a shared execution helper
-- [ ] Preserve legacy-specific flags and current output behavior
-- [ ] Add or extend tests that cover the new orchestration path
+- [x] Add `--cloud`, `--non-interactive`, and `--reauth` to `rmdoc render-legacy`
+- [x] Refactor `Run` and `RunIntoGlazeProcessor` through a shared execution helper
+- [x] Preserve legacy-specific flags and current output behavior
+- [x] Add or extend tests that cover the new orchestration path
 
 ### 6. Validation
 
-- [ ] Run targeted tests for the touched packages
-- [ ] Run command-level smoke validation for local mode
-- [ ] Run command-level smoke validation for cloud mode if credentials and a suitable remote fixture are available
-- [ ] Verify there are no regressions in `cloud get`
+- [x] Run targeted tests for the touched packages
+- [x] Run command-level smoke validation for local mode
+- [x] Run command-level smoke validation for cloud mode if credentials and a suitable remote fixture are available
+- [x] Verify there are no regressions in `cloud get`
 
 ### 7. Follow-Up Decision Capture
 
-- [ ] Decide whether `inspect`, `build-background`, and `render-v6-png` should adopt the same resolver now or remain follow-up work
-- [ ] Update the ticket docs with any implementation-specific adjustments to the original design
+- [x] Decide whether `inspect`, `build-background`, and `render-v6-png` should adopt the same resolver now or remain follow-up work
+- [x] Update the ticket docs with any implementation-specific adjustments to the original design
 
 ## Delivery
 

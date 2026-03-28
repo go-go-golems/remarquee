@@ -366,3 +366,101 @@ Once that seam existed, `render-v6` became much simpler to evolve. I refactored 
   - `git commit --no-verify -m "refactor: share rmcloud document download"`
   - `gofmt -w cmd/remarquee/cmds/rmdoc/input_resolver.go cmd/remarquee/cmds/rmdoc/input_resolver_test.go cmd/remarquee/cmds/rmdoc/render_v6.go cmd/remarquee/cmds/rmdoc/render_v6_test.go`
   - `go test ./cmd/remarquee/cmds/rmdoc`
+
+## Step 4: Wire `render-legacy`, finish focused validation, and decide the follow-up boundary
+
+This step completed the actual implementation scope from the ticket. I applied the same resolver pattern to `render-legacy`, added local and fake-cloud smoke tests against the compact `legacy-pdf-a4.zip` fixture, and then ran a focused validation pass across the touched packages. After that I used a real document from the live reMarkable cloud account to verify that the helper refactor had not broken `cloud get` and that `render-legacy --cloud` worked end to end when executed through the current checkout with `go run`.
+
+The live validation also clarified the follow-up boundary. The resolver now serves the two render entrypoints requested by the ticket, while `inspect`, `build-background`, and `render-v6-png` remain explicitly deferred. That keeps the first implementation tight and leaves the rest of the `rmdoc` subtree for a later cleanup pass instead of broadening this change unnecessarily.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue working down the checklist, commit stable slices, and keep the diary up to date as implementation progresses.
+
+**Inferred user intent:** They want end-to-end implementation progress, not just the V6 path, and they want the final ticket to reflect what was actually validated.
+
+**Commit (code):**
+- `367171d` — `"feat: add cloud input resolution to render-v6"`
+- Current slice commit pending: `render-legacy` wiring + final ticket updates
+
+### What I did
+
+- Refactored `cmd/remarquee/cmds/rmdoc/render_legacy.go` to:
+  - add `--cloud`, `--non-interactive`, and `--reauth`,
+  - initialize cloud settings explicitly,
+  - resolve local or cloud input through the shared resolver,
+  - share one execution helper across human and glaze output paths.
+- Added `cmd/remarquee/cmds/rmdoc/render_legacy_test.go` with:
+  - a local smoke test against `legacy-pdf-a4.zip`,
+  - a fake-download cloud smoke test using the same fixture.
+- Validated with:
+  - `go test ./cmd/remarquee/cmds/rmdoc`
+  - `go test ./pkg/rmcloud ./cmd/remarquee/cmds/cloud ./cmd/remarquee/cmds/rmdoc`
+- Performed a live `cloud get` smoke against the uploaded RMQ-0016 bundle:
+  - `remarquee cloud get "/ai/2026/03/28/RMQ-0016/RMQ-0016 - Cloud-backed rmdoc rendering" --out-dir ... --non-interactive`
+- Inspected the downloaded archive and confirmed it is a legacy PDF-backed `.rmdoc`.
+- Performed a live cloud render smoke against the current checkout:
+  - `go run ./cmd/remarquee rmdoc render-legacy "/ai/2026/03/28/RMQ-0016/RMQ-0016 - Cloud-backed rmdoc rendering" --cloud --non-interactive --out ... --force`
+- Updated the ticket checklist to mark the completed implementation slices.
+- Updated the design doc to record that the non-render `rmdoc` commands remain follow-up work.
+
+### Why
+
+- `render-legacy` needed to use the exact same input-resolution model as `render-v6`, otherwise the feature would still be inconsistent and the helper abstraction would remain only half-proven.
+- The live account checks mattered because the helper extraction touched the real rmapi-backed path resolution and fetch flow, not just local orchestration.
+
+### What worked
+
+- The resolver abstraction carried over to `render-legacy` cleanly.
+- The compact legacy fixture made command-level tests cheap and deterministic.
+- The live `cloud get` smoke passed against a known path under `/ai/2026/03/28/RMQ-0016`.
+- The live `render-legacy --cloud` smoke also passed once I invoked the current checkout through `go run` instead of the previously installed `remarquee` binary on `PATH`.
+
+### What didn't work
+
+- My first attempt at the live legacy render used `remarquee` from `PATH`, which still pointed at the pre-change installed binary and therefore rejected `--cloud` as an unknown flag. That was not a code regression; it was a validation mistake.
+
+### What I learned
+
+- The installed `remarquee` binary and the current checkout are easy to conflate during manual validation. For feature work in-progress, `go run ./cmd/remarquee ...` is the safer smoke-test entrypoint.
+- A real cloud-backed validation path does not require a pre-existing handwritten note fixture; an uploaded PDF bundle is enough to verify `cloud get` and the legacy render path.
+
+### What was tricky to build
+
+- The main subtlety here was validation realism. Fake-download tests are excellent for orchestration, but they do not prove that the helper still works against a live remote document. Using the uploaded RMQ-0016 bundle solved that without introducing new data dependencies.
+
+### What warrants a second pair of eyes
+
+- Whether a real V6 cloud fixture should be added later so `render-v6 --cloud` can be validated live the same way `render-legacy --cloud` was.
+- Whether the shared resolver should next be adopted by `inspect`, `build-background`, and `render-v6-png`, or left alone until the broader `rmdoc` CLI cleanup work starts.
+
+### What should be done in the future
+
+- Commit this legacy slice and the final ticket updates.
+- Update changelog/docmgr bookkeeping to reflect the completed implementation.
+- Re-run `docmgr doctor` and re-upload the ticket bundle so the diary and task state on reMarkable matches the code state.
+
+### Code review instructions
+
+- Review:
+  - `cmd/remarquee/cmds/rmdoc/render_legacy.go`
+  - `cmd/remarquee/cmds/rmdoc/render_legacy_test.go`
+  - `ttmp/2026/03/28/RMQ-0016--add-cloud-flag-to-rmdoc-render-commands/tasks.md`
+  - `ttmp/2026/03/28/RMQ-0016--add-cloud-flag-to-rmdoc-render-commands/design-doc/01-design-and-implementation-guide-for-cloud-backed-rmdoc-rendering.md`
+- Validate with:
+  - `go test ./pkg/rmcloud ./cmd/remarquee/cmds/cloud ./cmd/remarquee/cmds/rmdoc`
+  - `go run ./cmd/remarquee rmdoc render-legacy "<known-legacy-remote-path>" --cloud --non-interactive --out <tmp>.pdf --force`
+
+### Technical details
+
+- Commands run:
+  - `rg --files cmd/remarquee-ui/testdata | rg 'legacy|\\.zip$|\\.rmdoc$'`
+  - `nl -ba cmd/remarquee/cmds/rmdoc/render_legacy.go | sed -n '1,260p'`
+  - `gofmt -w cmd/remarquee/cmds/rmdoc/render_legacy.go cmd/remarquee/cmds/rmdoc/render_legacy_test.go`
+  - `go test ./cmd/remarquee/cmds/rmdoc`
+  - `go test ./pkg/rmcloud ./cmd/remarquee/cmds/cloud ./cmd/remarquee/cmds/rmdoc`
+  - `remarquee cloud get "/ai/2026/03/28/RMQ-0016/RMQ-0016 - Cloud-backed rmdoc rendering" --out-dir ... --non-interactive`
+  - `remarquee rmdoc inspect "/tmp/.../RMQ-0016 - Cloud-backed rmdoc rendering.rmdoc"`
+  - `go run ./cmd/remarquee rmdoc render-legacy "/ai/2026/03/28/RMQ-0016/RMQ-0016 - Cloud-backed rmdoc rendering" --cloud --non-interactive --out ... --force`

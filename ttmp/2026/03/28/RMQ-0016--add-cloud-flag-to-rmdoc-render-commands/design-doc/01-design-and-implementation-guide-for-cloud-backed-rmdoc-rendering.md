@@ -905,6 +905,10 @@ Reason:
 - shared resolver should be written so those commands can adopt it later
 - keeping the first implementation narrow reduces churn
 
+Implementation note:
+
+- The first implementation followed this recommendation. The shared resolver was wired only into `render-v6` and `render-legacy`; `inspect`, `build-background`, and `render-v6-png` remain follow-up work.
+
 ### Open question 2: Should `render-v6-png` adopt the same resolver right away?
 
 Recommendation: document it as an immediate follow-up, not part of the minimum scope.
