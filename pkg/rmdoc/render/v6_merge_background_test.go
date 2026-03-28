@@ -151,3 +151,20 @@ func TestMergeRMDocV6OntoBackgroundPDF_SmartHighlights_NoCrash(t *testing.T) {
 
 	_ = seenHighlight // not asserting true because fixture may not include highlights
 }
+
+func TestRemarksTopYToPDFBottomY(t *testing.T) {
+	const (
+		pageHeight  = 792.0
+		overlayTopY = 0.0
+		overlayH    = 596.0
+		backgroundH = 792.0
+		backgroundY = 0.0
+	)
+
+	if got := remarksTopYToPDFBottomY(pageHeight, overlayTopY, overlayH); got != 196.0 {
+		t.Fatalf("overlay bottom y = %v, want 196", got)
+	}
+	if got := remarksTopYToPDFBottomY(pageHeight, backgroundY, backgroundH); got != 0.0 {
+		t.Fatalf("background bottom y = %v, want 0", got)
+	}
+}

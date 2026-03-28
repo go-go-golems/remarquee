@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -13,20 +12,10 @@ import (
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
 )
 
-func repoRootFromThisFile(t *testing.T) string {
-	t.Helper()
-	_, thisFile, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("runtime.Caller failed")
-	}
-	// This file lives at: remarquee/cmd/remarquee/cmds/rmdoc/render_v6_test.go
-	return filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", "..", "..", ".."))
-}
-
-func TestRenderV6Command_Smoke(t *testing.T) {
-	cmd, err := NewRenderV6Command()
+func TestRenderLegacyCommand_Smoke(t *testing.T) {
+	cmd, err := NewRenderLegacyCommand()
 	if err != nil {
-		t.Fatalf("NewRenderV6Command: %v", err)
+		t.Fatalf("NewRenderLegacyCommand: %v", err)
 	}
 
 	tmp := t.TempDir()
@@ -38,7 +27,7 @@ func TestRenderV6Command_Smoke(t *testing.T) {
 	}
 
 	pp := parameters.NewParsedParameters()
-	pp.Set("file", &parameters.ParsedParameter{Value: filepath.Join(repoRootFromThisFile(t), "cmd", "remarquee-ui", "testdata", "cpage-pdf.rmdoc")})
+	pp.Set("file", &parameters.ParsedParameter{Value: filepath.Join(repoRootFromThisFile(t), "cmd", "remarquee-ui", "testdata", "legacy-pdf-a4.zip")})
 	pp.Set("out", &parameters.ParsedParameter{Value: out})
 	pp.Set("force", &parameters.ParsedParameter{Value: true})
 
@@ -60,15 +49,15 @@ func TestRenderV6Command_Smoke(t *testing.T) {
 	}
 }
 
-func TestRenderV6Command_CloudSmoke(t *testing.T) {
+func TestRenderLegacyCommand_CloudSmoke(t *testing.T) {
 	oldDownloader := downloadDocumentByPath
 	t.Cleanup(func() {
 		downloadDocumentByPath = oldDownloader
 	})
 
 	downloadDocumentByPath = func(ctx context.Context, auth rmcloud.AuthSettings, remotePath string, outDir string) (*rmcloud.DownloadedDocument, error) {
-		src := filepath.Join(repoRootFromThisFile(t), "cmd", "remarquee-ui", "testdata", "cpage-pdf.rmdoc")
-		dst := filepath.Join(outDir, "CloudFixture.rmdoc")
+		src := filepath.Join(repoRootFromThisFile(t), "cmd", "remarquee-ui", "testdata", "legacy-pdf-a4.zip")
+		dst := filepath.Join(outDir, "CloudLegacy.rmdoc")
 		in, err := os.Open(src)
 		if err != nil {
 			return nil, err
@@ -85,13 +74,13 @@ func TestRenderV6Command_CloudSmoke(t *testing.T) {
 		return &rmcloud.DownloadedDocument{
 			RemotePath: remotePath,
 			LocalPath:  dst,
-			Name:       "CloudFixture",
+			Name:       "CloudLegacy",
 		}, nil
 	}
 
-	cmd, err := NewRenderV6Command()
+	cmd, err := NewRenderLegacyCommand()
 	if err != nil {
-		t.Fatalf("NewRenderV6Command: %v", err)
+		t.Fatalf("NewRenderLegacyCommand: %v", err)
 	}
 
 	tmp := t.TempDir()
@@ -103,7 +92,7 @@ func TestRenderV6Command_CloudSmoke(t *testing.T) {
 	}
 
 	pp := parameters.NewParsedParameters()
-	pp.Set("file", &parameters.ParsedParameter{Value: "/Books/CloudFixture"})
+	pp.Set("file", &parameters.ParsedParameter{Value: "/Archive/CloudLegacy"})
 	pp.Set("out", &parameters.ParsedParameter{Value: out})
 	pp.Set("force", &parameters.ParsedParameter{Value: true})
 	pp.Set("cloud", &parameters.ParsedParameter{Value: true})

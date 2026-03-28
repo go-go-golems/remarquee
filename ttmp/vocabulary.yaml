@@ -13,6 +13,14 @@ topics:
       description: reMarkable cloud, document, and device-facing workflows
     - slug: upload
       description: Upload and transfer workflows for generated artifacts
+    - slug: cloud
+      description: reMarkable cloud and rmapi-backed remote workflows
+    - slug: cli
+      description: Command-line interface work and command taxonomy
+    - slug: rendering
+      description: PDF, image, or annotation rendering behavior
+    - slug: rmdoc
+      description: reMarkable .rmdoc container parsing and rendering
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

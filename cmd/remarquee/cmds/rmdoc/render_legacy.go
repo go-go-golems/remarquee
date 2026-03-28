@@ -3,8 +3,6 @@ package rmdoc
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
@@ -32,6 +30,8 @@ type RenderLegacySettings struct {
 	AddPageNumbers  bool `glazed.parameter:"add-page-numbers"`
 	AllPages        bool `glazed.parameter:"all-pages"`
 	AnnotationsOnly bool `glazed.parameter:"annotations-only"`
+
+	CloudInputSettings
 }
 
 var _ glazecmds.BareCommand = &RenderLegacyCommand{}
@@ -47,6 +47,47 @@ func NewRenderLegacyCommand() (*RenderLegacyCommand, error) {
 		return nil, err
 	}
 
+	flags := []*parameters.ParameterDefinition{
+		parameters.NewParameterDefinition(
+			"out",
+			parameters.ParameterTypeString,
+			parameters.WithDefault(""),
+			parameters.WithHelp("Output PDF path (default: <input>-annotations.pdf in current dir)"),
+		),
+		parameters.NewParameterDefinition(
+			"force",
+			parameters.ParameterTypeBool,
+			parameters.WithDefault(false),
+			parameters.WithHelp("Overwrite output file if it exists"),
+		),
+		parameters.NewParameterDefinition(
+			"add-page-numbers",
+			parameters.ParameterTypeBool,
+			parameters.WithDefault(false),
+			parameters.WithHelp("Add page numbers"),
+		),
+		parameters.NewParameterDefinition(
+			"all-pages",
+			parameters.ParameterTypeBool,
+			parameters.WithDefault(false),
+			parameters.WithHelp("Include pages without annotations"),
+		),
+		parameters.NewParameterDefinition(
+			"annotations-only",
+			parameters.ParameterTypeBool,
+			parameters.WithDefault(false),
+			parameters.WithHelp("Export annotations only (no background PDF)"),
+		),
+		parameters.NewParameterDefinition(
+			"file",
+			parameters.ParameterTypeString,
+			parameters.WithIsArgument(true),
+			parameters.WithRequired(true),
+			parameters.WithHelp("Path to the legacy .rmdoc/.zip file, or a remote cloud path when used with --cloud"),
+		),
+	}
+	flags = append(flags, cloudInputParameterDefinitions()...)
+
 	cmdDesc := glazecmds.NewCommandDescription(
 		"render-legacy",
 		glazecmds.WithShort("Render a legacy (V3/V5) .rmdoc/.zip to an annotated PDF (rmapi-backed)"),
@@ -57,45 +98,7 @@ Notes:
 - This command only supports legacy archives (legacy .content + V3/V5 .rm).
 - For cPages/V6 documents, this will return an error (V6 rendering not implemented yet).
 `),
-		glazecmds.WithFlags(
-			parameters.NewParameterDefinition(
-				"out",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Output PDF path (default: <input>-annotations.pdf in current dir)"),
-			),
-			parameters.NewParameterDefinition(
-				"force",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Overwrite output file if it exists"),
-			),
-			parameters.NewParameterDefinition(
-				"add-page-numbers",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Add page numbers"),
-			),
-			parameters.NewParameterDefinition(
-				"all-pages",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Include pages without annotations"),
-			),
-			parameters.NewParameterDefinition(
-				"annotations-only",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Export annotations only (no background PDF)"),
-			),
-			parameters.NewParameterDefinition(
-				"file",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Path to the legacy .rmdoc or .zip file"),
-			),
-		),
+		glazecmds.WithFlags(flags...),
 		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
 	)
 
@@ -107,45 +110,70 @@ func (c *RenderLegacyCommand) Run(ctx context.Context, parsedLayers *layers.Pars
 	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
 		return err
 	}
+	if err := initializeCloudInputSettings(parsedLayers, &s.CloudInputSettings); err != nil {
+		return err
+	}
 
-	doc, err := pkg_rmdoc.OpenFile(ctx, s.File)
+	res, err := c.execute(ctx, s)
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("ok: wrote %s\n", res.Output)
+	return nil
+}
+
+type renderLegacyExecution struct {
+	Input       string
+	InputSource string
+	Output      string
+	Schema      string
+	Type        string
+}
+
+func (c *RenderLegacyCommand) execute(ctx context.Context, s *RenderLegacySettings) (*renderLegacyExecution, error) {
+	input, err := ResolveRMDocInput(ctx, s.File, s.CloudInputSettings)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = input.Cleanup() }()
+
+	doc, err := pkg_rmdoc.OpenFile(ctx, input.LocalPath)
+	if err != nil {
+		return nil, err
+	}
 	if doc.Schema != pkg_rmdoc.SchemaLegacy {
-		return errors.Errorf("render-legacy only supports legacy archives; detected schema=%s", schemaString(doc.Schema))
+		return nil, errors.Errorf("render-legacy only supports legacy archives; detected schema=%s", schemaString(doc.Schema))
 	}
 	if doc.Type == pkg_rmdoc.DocTypeEPUB {
-		return errors.New("render-legacy: epub not supported")
+		return nil, errors.New("render-legacy: epub not supported")
 	}
 
 	out := s.Out
 	if out == "" {
-		base := filepath.Base(s.File)
-		ext := filepath.Ext(base)
-		base = base[:len(base)-len(ext)]
-		out = base + "-annotations.pdf"
+		out = defaultOutputPath(input.LocalPath, "-annotations.pdf")
 	}
-
-	if !s.Force {
-		if _, err := os.Stat(out); err == nil {
-			return errors.Errorf("output file exists: %s (use --force to overwrite)", out)
-		}
+	if err := ensureOutputWritable(out, s.Force); err != nil {
+		return nil, err
 	}
-
 	opts := rmapi_annotations.PdfGeneratorOptions{
 		AddPageNumbers:  s.AddPageNumbers,
 		AllPages:        s.AllPages,
 		AnnotationsOnly: s.AnnotationsOnly,
 	}
 
-	g := rmapi_annotations.CreatePdfGenerator(s.File, out, opts)
+	g := rmapi_annotations.CreatePdfGenerator(input.LocalPath, out, opts)
 	if err := g.Generate(); err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Printf("ok: wrote %s\n", out)
-	return nil
+	return &renderLegacyExecution{
+		Input:       input.RequestedPath,
+		InputSource: input.Source,
+		Output:      out,
+		Schema:      schemaString(doc.Schema),
+		Type:        docTypeString(doc.Type),
+	}, nil
 }
 
 func (c *RenderLegacyCommand) RunIntoGlazeProcessor(
@@ -157,48 +185,21 @@ func (c *RenderLegacyCommand) RunIntoGlazeProcessor(
 	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
 		return err
 	}
-
-	doc, err := pkg_rmdoc.OpenFile(ctx, s.File)
-	if err != nil {
+	if err := initializeCloudInputSettings(parsedLayers, &s.CloudInputSettings); err != nil {
 		return err
 	}
-	if doc.Schema != pkg_rmdoc.SchemaLegacy {
-		return errors.Errorf("render-legacy only supports legacy archives; detected schema=%s", schemaString(doc.Schema))
-	}
-	if doc.Type == pkg_rmdoc.DocTypeEPUB {
-		return errors.New("render-legacy: epub not supported")
-	}
 
-	out := s.Out
-	if out == "" {
-		base := filepath.Base(s.File)
-		ext := filepath.Ext(base)
-		base = base[:len(base)-len(ext)]
-		out = base + "-annotations.pdf"
-	}
-
-	if !s.Force {
-		if _, err := os.Stat(out); err == nil {
-			return errors.Errorf("output file exists: %s (use --force to overwrite)", out)
-		}
-	}
-
-	opts := rmapi_annotations.PdfGeneratorOptions{
-		AddPageNumbers:  s.AddPageNumbers,
-		AllPages:        s.AllPages,
-		AnnotationsOnly: s.AnnotationsOnly,
-	}
-
-	g := rmapi_annotations.CreatePdfGenerator(s.File, out, opts)
-	if err := g.Generate(); err != nil {
+	res, err := c.execute(ctx, s)
+	if err != nil {
 		return err
 	}
 
 	row := types.NewRow(
-		types.MRP("input", s.File),
-		types.MRP("output", out),
-		types.MRP("schema", schemaString(doc.Schema)),
-		types.MRP("type", docTypeString(doc.Type)),
+		types.MRP("input", res.Input),
+		types.MRP("input_source", res.InputSource),
+		types.MRP("output", res.Output),
+		types.MRP("schema", res.Schema),
+		types.MRP("type", res.Type),
 	)
 	return gp.AddRow(ctx, row)
 }
