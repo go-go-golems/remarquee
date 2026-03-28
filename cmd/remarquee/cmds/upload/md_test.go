@@ -202,3 +202,48 @@ func TestUploadMarkdownRejectsUnknownLayout(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestUploadMarkdownDryRunUsesCustomName(t *testing.T) {
+	td := t.TempDir()
+	md := filepath.Join(td, "draft.md")
+	if err := os.WriteFile(md, []byte("# Draft\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewUploadMarkdownCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"--dry-run", "--pdf-only", "--name", "editor-copy", md})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out.String(), filepath.Join(".", "editor-copy.pdf")) {
+		t.Fatalf("expected dry-run output to use custom pdf name, got:\n%s", out.String())
+	}
+}
+
+func TestUploadMarkdownRejectsNameWithMultipleFiles(t *testing.T) {
+	td := t.TempDir()
+	a := filepath.Join(td, "a.md")
+	b := filepath.Join(td, "b.md")
+	if err := os.WriteFile(a, []byte("# A\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(b, []byte("# B\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewUploadMarkdownCommand()
+	cmd.SetArgs([]string{"--dry-run", "--pdf-only", "--name", "combined", a, b})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for --name with multiple markdown files")
+	}
+	if !strings.Contains(err.Error(), "exactly one markdown file") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

@@ -40,6 +40,7 @@ Before running pandoc:
 - `--dry-run`: prints planned conversions/uploads; does not run pandoc or upload
 - `--pdf-only --output-dir`: generate PDFs locally only
 - `--preserve-dirs`: when uploading directories, recreate the local relative directory structure remotely
+- `--name`: custom output document name; only valid when exactly one markdown file is selected
 - `--layout editor`: use a more annotation-friendly reading layout with wider margins and looser paragraph spacing
 - `--pandoc`, `--pdf-engine`: control conversion tooling
 - `--mainfont`, `--monofont`, `--geometry`, `--latex-header-file`: typography customization

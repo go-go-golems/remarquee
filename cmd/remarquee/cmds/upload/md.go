@@ -28,6 +28,7 @@ type uploadMarkdownSettings struct {
 	OutputDir       string
 	PreserveDirs    bool
 	Flatten         bool
+	Name            string
 	Date            string
 	RemoteDir       string
 	Pandoc          string
@@ -78,6 +79,7 @@ Safety:
 	cmd.Flags().StringVar(&s.OutputDir, "output-dir", "", "Output directory for PDFs in --pdf-only mode (default: current directory)")
 	cmd.Flags().BoolVar(&s.PreserveDirs, "preserve-dirs", true, "Recreate the local relative directory structure remotely (default: true)")
 	cmd.Flags().BoolVar(&s.Flatten, "flatten", false, "Upload all files to a single flat directory (overrides --preserve-dirs)")
+	cmd.Flags().StringVar(&s.Name, "name", "", "Custom output document name (only valid when exactly one markdown file is selected)")
 
 	// Destination.
 	cmd.Flags().StringVar(&s.Date, "date", "", "Destination date folder under /ai (YYYY/MM/DD or YYYY-MM-DD). Default: today")
@@ -119,7 +121,11 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	// - preserve-dirs mode: detect collisions at the computed remote location
 	seenRemoteKeys := map[string]string{}
 	for _, in := range mdInputs {
-		docName := strings.TrimSuffix(filepath.Base(in.AbsPath), filepath.Ext(in.AbsPath))
+		pdfName, err := markdownPDFName(in, s.Name, len(mdInputs))
+		if err != nil {
+			return err
+		}
+		docName := strings.TrimSuffix(pdfName, filepath.Ext(pdfName))
 		relDir := ""
 		if s.PreserveDirs {
 			relDir = in.RelDir()
@@ -150,7 +156,10 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		fmt.Fprintf(cmd.OutOrStdout(), "DRY: remote-dir=%s\n", remoteDir)
 		for _, in := range mdInputs {
 			mdPath := in.AbsPath
-			pdfName := strings.TrimSuffix(filepath.Base(mdPath), filepath.Ext(mdPath)) + ".pdf"
+			pdfName, err := markdownPDFName(in, s.Name, len(mdInputs))
+			if err != nil {
+				return err
+			}
 			if s.PDFOnly {
 				outDir := s.OutputDir
 				if outDir == "" {
@@ -185,7 +194,10 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 
 		for _, in := range mdInputs {
 			mdPath := in.AbsPath
-			pdfName := strings.TrimSuffix(filepath.Base(mdPath), filepath.Ext(mdPath)) + ".pdf"
+			pdfName, err := markdownPDFName(in, s.Name, len(mdInputs))
+			if err != nil {
+				return err
+			}
 			outPDF := filepath.Join(outDir, pdfName)
 			if s.PreserveDirs {
 				outPDF = filepath.Join(outDir, in.RelDir(), pdfName)
@@ -220,7 +232,10 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 
 	for _, in := range mdInputs {
 		mdPath := in.AbsPath
-		pdfName := strings.TrimSuffix(filepath.Base(mdPath), filepath.Ext(mdPath)) + ".pdf"
+		pdfName, err := markdownPDFName(in, s.Name, len(mdInputs))
+		if err != nil {
+			return err
+		}
 		outPDF := filepath.Join(tmpDir, pdfName)
 		if s.PreserveDirs {
 			outPDF = filepath.Join(tmpDir, in.RelDir(), pdfName)
@@ -278,6 +293,18 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	}
 
 	return nil
+}
+
+func markdownPDFName(in markdownInput, override string, total int) (string, error) {
+	override = strings.TrimSpace(override)
+	if override != "" {
+		if total != 1 {
+			return "", errors.New("--name is only valid when exactly one markdown file is selected")
+		}
+		return ensurePDFSuffix(override), nil
+	}
+
+	return strings.TrimSuffix(filepath.Base(in.AbsPath), filepath.Ext(in.AbsPath)) + ".pdf", nil
 }
 
 type markdownInput struct {
