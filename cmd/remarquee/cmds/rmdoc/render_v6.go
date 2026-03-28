@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
@@ -29,6 +28,8 @@ type RenderV6Settings struct {
 	Out  string `glazed.parameter:"out"`
 
 	Force bool `glazed.parameter:"force"`
+
+	CloudInputSettings
 }
 
 var _ glazecmds.BareCommand = &RenderV6Command{}
@@ -44,6 +45,29 @@ func NewRenderV6Command() (*RenderV6Command, error) {
 		return nil, err
 	}
 
+	flags := []*parameters.ParameterDefinition{
+		parameters.NewParameterDefinition(
+			"out",
+			parameters.ParameterTypeString,
+			parameters.WithDefault(""),
+			parameters.WithHelp("Output PDF path (default: <input>-v6.pdf in current dir)"),
+		),
+		parameters.NewParameterDefinition(
+			"force",
+			parameters.ParameterTypeBool,
+			parameters.WithDefault(false),
+			parameters.WithHelp("Overwrite output file if it exists"),
+		),
+		parameters.NewParameterDefinition(
+			"file",
+			parameters.ParameterTypeString,
+			parameters.WithIsArgument(true),
+			parameters.WithRequired(true),
+			parameters.WithHelp("Path to the V6 .rmdoc file, or a remote cloud path when used with --cloud"),
+		),
+	}
+	flags = append(flags, cloudInputParameterDefinitions()...)
+
 	cmdDesc := glazecmds.NewCommandDescription(
 		"render-v6",
 		glazecmds.WithShort("Render a V6 (cPages) .rmdoc to an annotated PDF (strokes + smart highlights)"),
@@ -57,27 +81,7 @@ Notes:
 - Only supports PDF-backed/notebook cPages archives (not EPUB).
 - This is still a milestone renderer (brush fidelity, typed text output, and PNGs are future work).
 `),
-		glazecmds.WithFlags(
-			parameters.NewParameterDefinition(
-				"out",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Output PDF path (default: <input>-v6.pdf in current dir)"),
-			),
-			parameters.NewParameterDefinition(
-				"force",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Overwrite output file if it exists"),
-			),
-			parameters.NewParameterDefinition(
-				"file",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Path to the V6 .rmdoc file"),
-			),
-		),
+		glazecmds.WithFlags(flags...),
 		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
 	)
 
@@ -89,43 +93,70 @@ func (c *RenderV6Command) Run(ctx context.Context, parsedLayers *layers.ParsedLa
 	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
 		return err
 	}
+	if err := initializeCloudInputSettings(parsedLayers, &s.CloudInputSettings); err != nil {
+		return err
+	}
 
-	doc, err := pkg_rmdoc.OpenFile(ctx, s.File)
+	res, err := c.execute(ctx, s)
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("ok: wrote %s\n", res.Output)
+	return nil
+}
+
+type renderV6Execution struct {
+	Input       string
+	InputSource string
+	Output      string
+	Schema      string
+	Type        string
+	Pages       int
+}
+
+func (c *RenderV6Command) execute(ctx context.Context, s *RenderV6Settings) (*renderV6Execution, error) {
+	input, err := ResolveRMDocInput(ctx, s.File, s.CloudInputSettings)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = input.Cleanup() }()
+
+	doc, err := pkg_rmdoc.OpenFile(ctx, input.LocalPath)
+	if err != nil {
+		return nil, err
+	}
 	if doc.Schema != pkg_rmdoc.SchemaCPages {
-		return errors.Errorf("render-v6 only supports cPages/V6 archives; detected schema=%s", schemaString(doc.Schema))
+		return nil, errors.Errorf("render-v6 only supports cPages/V6 archives; detected schema=%s", schemaString(doc.Schema))
 	}
 	if doc.Type == pkg_rmdoc.DocTypeEPUB {
-		return errors.New("render-v6: epub not supported")
+		return nil, errors.New("render-v6: epub not supported")
 	}
 
 	out := s.Out
 	if out == "" {
-		base := filepath.Base(s.File)
-		ext := filepath.Ext(base)
-		base = base[:len(base)-len(ext)]
-		out = base + "-v6.pdf"
+		out = defaultOutputPath(input.LocalPath, "-v6.pdf")
+	}
+	if err := ensureOutputWritable(out, s.Force); err != nil {
+		return nil, err
 	}
 
-	if !s.Force {
-		if _, err := os.Stat(out); err == nil {
-			return errors.Errorf("output file exists: %s (use --force to overwrite)", out)
-		}
-	}
-
-	res, err := rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfo(ctx, s.File, rmdocrender.V6MergeOptions{})
+	res, err := rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfo(ctx, input.LocalPath, rmdocrender.V6MergeOptions{})
 	if err != nil {
-		return err
+		return nil, err
 	}
-
 	if err := os.WriteFile(out, res.PDF, 0o644); err != nil {
-		return errors.Wrap(err, "write output pdf")
+		return nil, errors.Wrap(err, "write output pdf")
 	}
 
-	fmt.Printf("ok: wrote %s\n", out)
-	return nil
+	return &renderV6Execution{
+		Input:       input.RequestedPath,
+		InputSource: input.Source,
+		Output:      out,
+		Schema:      schemaString(doc.Schema),
+		Type:        docTypeString(doc.Type),
+		Pages:       len(doc.Pages),
+	}, nil
 }
 
 func (c *RenderV6Command) RunIntoGlazeProcessor(
@@ -137,47 +168,22 @@ func (c *RenderV6Command) RunIntoGlazeProcessor(
 	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
 		return err
 	}
-
-	doc, err := pkg_rmdoc.OpenFile(ctx, s.File)
-	if err != nil {
-		return err
-	}
-	if doc.Schema != pkg_rmdoc.SchemaCPages {
-		return errors.Errorf("render-v6 only supports cPages/V6 archives; detected schema=%s", schemaString(doc.Schema))
-	}
-	if doc.Type == pkg_rmdoc.DocTypeEPUB {
-		return errors.New("render-v6: epub not supported")
-	}
-
-	out := s.Out
-	if out == "" {
-		base := filepath.Base(s.File)
-		ext := filepath.Ext(base)
-		base = base[:len(base)-len(ext)]
-		out = base + "-v6.pdf"
-	}
-
-	if !s.Force {
-		if _, err := os.Stat(out); err == nil {
-			return errors.Errorf("output file exists: %s (use --force to overwrite)", out)
-		}
-	}
-
-	res, err := rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfo(ctx, s.File, rmdocrender.V6MergeOptions{})
-	if err != nil {
+	if err := initializeCloudInputSettings(parsedLayers, &s.CloudInputSettings); err != nil {
 		return err
 	}
 
-	if err := os.WriteFile(out, res.PDF, 0o644); err != nil {
-		return errors.Wrap(err, "write output pdf")
+	res, err := c.execute(ctx, s)
+	if err != nil {
+		return err
 	}
 
 	row := types.NewRow(
-		types.MRP("input", s.File),
-		types.MRP("output", out),
-		types.MRP("schema", schemaString(doc.Schema)),
-		types.MRP("type", docTypeString(doc.Type)),
-		types.MRP("pages", len(doc.Pages)),
+		types.MRP("input", res.Input),
+		types.MRP("input_source", res.InputSource),
+		types.MRP("output", res.Output),
+		types.MRP("schema", res.Schema),
+		types.MRP("type", res.Type),
+		types.MRP("pages", res.Pages),
 	)
 	return gp.AddRow(ctx, row)
 }
