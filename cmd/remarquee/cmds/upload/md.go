@@ -34,6 +34,7 @@ type uploadMarkdownSettings struct {
 	PDFEngine       string
 	MainFont        string
 	MonoFont        string
+	Layout          string
 	Geometry        string
 	LatexHeaderFile string
 }
@@ -87,6 +88,7 @@ Safety:
 	cmd.Flags().StringVar(&s.PDFEngine, "pdf-engine", "xelatex", "Pandoc PDF engine (default: xelatex)")
 	cmd.Flags().StringVar(&s.MainFont, "mainfont", "DejaVu Sans", "Main font for PDF generation")
 	cmd.Flags().StringVar(&s.MonoFont, "monofont", "DejaVu Sans Mono", "Monospace font for code blocks")
+	cmd.Flags().StringVar(&s.Layout, "layout", mdpdf.MarkdownLayoutDefault, "Markdown layout preset: default|editor (editor adds wider margins and more annotation-friendly spacing)")
 	cmd.Flags().StringVar(&s.Geometry, "geometry", "margin=1in", "LaTeX geometry setting passed to pandoc (default: margin=1in)")
 	cmd.Flags().StringVar(&s.LatexHeaderFile, "latex-header-file", "", "Optional path to a LaTeX header file to include (overrides built-in header)")
 
@@ -129,15 +131,22 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		seenRemoteKeys[key] = in.AbsPath
 	}
 
-	pandocOpts := mdpdf.DefaultPandocOptions()
-	pandocOpts.PandocPath = s.Pandoc
-	pandocOpts.PDFEngine = s.PDFEngine
-	pandocOpts.MainFont = s.MainFont
-	pandocOpts.MonoFont = s.MonoFont
-	pandocOpts.Geometry = s.Geometry
-	pandocOpts.LatexHeaderFile = s.LatexHeaderFile
+	pandocOpts, err := configureMarkdownPandocOptions(
+		cmd.Flags(),
+		s.Layout,
+		s.Pandoc,
+		s.PDFEngine,
+		s.MainFont,
+		s.MonoFont,
+		s.Geometry,
+		s.LatexHeaderFile,
+	)
+	if err != nil {
+		return err
+	}
 
 	if s.DryRun {
+		fmt.Fprintf(cmd.OutOrStdout(), "DRY: layout=%s\n", mdpdf.NormalizeMarkdownLayout(s.Layout))
 		fmt.Fprintf(cmd.OutOrStdout(), "DRY: remote-dir=%s\n", remoteDir)
 		for _, in := range mdInputs {
 			mdPath := in.AbsPath

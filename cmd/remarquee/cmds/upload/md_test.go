@@ -1,8 +1,10 @@
 package upload
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -157,5 +159,46 @@ func TestRemoteDocKey(t *testing.T) {
 	}
 	if got := remoteDocKey("/ai/test", "", "doc"); got != "/ai/test/doc" {
 		t.Fatalf("unexpected: %q", got)
+	}
+}
+
+func TestUploadMarkdownDryRunShowsEditorLayout(t *testing.T) {
+	td := t.TempDir()
+	md := filepath.Join(td, "draft.md")
+	if err := os.WriteFile(md, []byte("# Draft\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewUploadMarkdownCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"--dry-run", "--pdf-only", "--layout", "editor", md})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out.String(), "DRY: layout=editor") {
+		t.Fatalf("expected dry-run output to mention editor layout, got:\n%s", out.String())
+	}
+}
+
+func TestUploadMarkdownRejectsUnknownLayout(t *testing.T) {
+	td := t.TempDir()
+	md := filepath.Join(td, "draft.md")
+	if err := os.WriteFile(md, []byte("# Draft\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewUploadMarkdownCommand()
+	cmd.SetArgs([]string{"--dry-run", "--pdf-only", "--layout", "wide", md})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for unknown layout")
+	}
+	if !strings.Contains(err.Error(), "unknown markdown layout") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
