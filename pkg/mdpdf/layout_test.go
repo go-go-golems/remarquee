@@ -24,7 +24,7 @@ func TestApplyMarkdownLayoutPresetEditor(t *testing.T) {
 	if opts.Geometry != editorLayoutGeometry {
 		t.Fatalf("expected editor layout geometry %q, got %q", editorLayoutGeometry, opts.Geometry)
 	}
-	if !strings.Contains(opts.ExtraLatexHeader, "\\setstretch{1.18}") {
+	if !strings.Contains(opts.ExtraLatexHeader, "\\setstretch{2.0}") {
 		t.Fatalf("expected editor header to increase line spacing, got %q", opts.ExtraLatexHeader)
 	}
 	if !strings.Contains(opts.ExtraLatexHeader, "\\geometry{"+editorLayoutGeometry+"}") {

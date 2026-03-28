@@ -247,3 +247,24 @@ func TestUploadMarkdownRejectsNameWithMultipleFiles(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestUploadMarkdownRejectsNameWithPathSeparators(t *testing.T) {
+	td := t.TempDir()
+	md := filepath.Join(td, "draft.md")
+	if err := os.WriteFile(md, []byte("# Draft\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, name := range []string{"../report", "nested/report", `nested\report`} {
+		cmd := NewUploadMarkdownCommand()
+		cmd.SetArgs([]string{"--dry-run", "--pdf-only", "--name", name, md})
+
+		err := cmd.Execute()
+		if err == nil {
+			t.Fatalf("expected error for --name=%q", name)
+		}
+		if !strings.Contains(err.Error(), "may not contain path separators") {
+			t.Fatalf("unexpected error for %q: %v", name, err)
+		}
+	}
+}

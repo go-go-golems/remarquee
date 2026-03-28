@@ -301,6 +301,9 @@ func markdownPDFName(in markdownInput, override string, total int) (string, erro
 		if total != 1 {
 			return "", errors.New("--name is only valid when exactly one markdown file is selected")
 		}
+		if strings.ContainsAny(override, `/\`) {
+			return "", errors.New("--name must be a basename and may not contain path separators")
+		}
 		return ensurePDFSuffix(override), nil
 	}
 

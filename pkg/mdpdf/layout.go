@@ -11,13 +11,13 @@ const (
 	MarkdownLayoutEditor  = "editor"
 )
 
-const editorLayoutGeometry = "top=1in,bottom=1.15in,left=1.1in,right=1.9in"
+const editorLayoutGeometry = "top=1in,bottom=1.15in,left=1.1in,right=2.85in"
 
 const editorLayoutLatexHeader = `\usepackage{setspace}
-\setstretch{1.18}
+\setstretch{2.0}
 \setlength{\parskip}{0.7em}
 \setlength{\parindent}{0pt}
-\geometry{top=1in,bottom=1.15in,left=1.1in,right=1.9in}
+\geometry{top=1in,bottom=1.15in,left=1.1in,right=2.85in}
 `
 
 func NormalizeMarkdownLayout(layout string) string {
