@@ -3,15 +3,13 @@ package cloud
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/settings"
-	"github.com/juruen/rmapi/util"
-	"github.com/pkg/errors"
+	"github.com/go-go-golems/remarquee/pkg/rmcloud"
 	"github.com/spf13/cobra"
 )
 
@@ -89,22 +87,15 @@ func (c *GetCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers)
 		return err
 	}
 
-	_, apiCtx, err := createApiCtx(s.AuthSettings)
+	downloaded, err := rmcloud.DownloadDocumentByPath(ctx, rmcloud.AuthSettings{
+		NonInteractive: s.NonInteractive,
+		Reauth:         s.Reauth,
+	}, s.Remote, s.OutDir)
 	if err != nil {
 		return err
 	}
 
-	node, err := apiCtx.Filetree().NodeByPath(s.Remote, nil)
-	if err != nil || node.IsDirectory() {
-		return errors.New("file doesn't exist")
-	}
-
-	outPath := filepath.Join(s.OutDir, fmt.Sprintf("%s.%s", node.Name(), util.RMDOC))
-	if err := apiCtx.FetchDocument(node.Document.ID, outPath); err != nil {
-		return errors.Wrapf(err, "failed to download %s", s.Remote)
-	}
-
-	fmt.Printf("OK: downloaded %s -> %s\n", s.Remote, outPath)
+	fmt.Printf("OK: downloaded %s -> %s\n", s.Remote, downloaded.LocalPath)
 	return nil
 }
 
