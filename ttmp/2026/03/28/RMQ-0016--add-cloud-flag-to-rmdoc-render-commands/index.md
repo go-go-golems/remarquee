@@ -25,8 +25,8 @@ RelatedFiles:
     - Path: pkg/rmdoc/render/v6_merge_background.go
       Note: V6 renderer entrypoint that still takes an archive path
 ExternalSources: []
-Summary: Ticket covering the design, implementation, validation, and delivery of `--cloud` support on `rmdoc render-v6` and `rmdoc render-legacy`, plus an adjacent review of CLI verb cleanup opportunities.
-LastUpdated: 2026-03-28T11:05:08-04:00
+Summary: Ticket covering the design, implementation, validation, delivery, and follow-up bug documentation for `--cloud` support on `rmdoc render-v6` and `rmdoc render-legacy`, plus adjacent CLI review and renderer-debugging notes.
+LastUpdated: 2026-03-28T11:24:17-04:00
 WhatFor: Track the design and completed implementation work for rendering `.rmdoc` files directly from reMarkable cloud paths without forcing a manual `cloud get` step first.
 WhenToUse: Use when implementing, reviewing, or continuing RMQ-0016.
 ---
@@ -43,6 +43,7 @@ The ticket also includes a separate CLI review document because the inspection w
 
 - Design doc: `design-doc/01-design-and-implementation-guide-for-cloud-backed-rmdoc-rendering.md`
 - Analysis doc: `analysis/01-cli-verb-review-and-tightening-recommendations.md`
+- Bug guide: `analysis/02-v6-overlay-y-placement-bug-report-and-fix-guide.md`
 - Diary: `reference/01-diary.md`
 - Tasks: `tasks.md`
 - Changelog: `changelog.md`
@@ -56,6 +57,7 @@ Deliverables produced in this ticket so far:
 - detailed design and implementation guide
 - CLI verb review and tightening recommendations
 - investigation diary
+- V6 overlay Y-placement bug report and fix guide for intern onboarding
 - shared `pkg/rmcloud` download helper extracted and reused by `cloud get`
 - shared `rmdoc` local/cloud input resolver added
 - `render-v6` and `render-legacy` now support `--cloud`

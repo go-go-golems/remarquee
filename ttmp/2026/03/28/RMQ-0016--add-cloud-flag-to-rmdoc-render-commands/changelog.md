@@ -41,3 +41,13 @@ Implemented reusable rmcloud download plumbing and added shared cloud input reso
 - /home/manuel/workspaces/2026-03-28/remarquee-render-cloud/remarquee/cmd/remarquee/cmds/rmdoc/render_v6.go — V6 render command wired to resolver
 - /home/manuel/workspaces/2026-03-28/remarquee-render-cloud/remarquee/pkg/rmcloud/download.go — Reusable remote-download helper
 
+
+## 2026-03-28
+
+Added a detailed intern-facing bug report and fix guide for the V6 PDF-backed overlay Y-placement regression diagnosed after the `--cloud` work. The write-up explains the rendering stack, coordinate systems, reproduction path, root cause, fix, and verification workflow, and anchors the explanation to the actual renderer files changed in commit `24eeb98`.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-28/remarquee-render-cloud/remarquee/ttmp/2026/03/28/RMQ-0016--add-cloud-flag-to-rmdoc-render-commands/analysis/02-v6-overlay-y-placement-bug-report-and-fix-guide.md — New detailed bug report and fixing guide
+- /home/manuel/workspaces/2026-03-28/remarquee-render-cloud/remarquee/pkg/rmdoc/render/v6_merge_background.go — Renderer logic discussed in the guide and fixed in the regression commit
+- /home/manuel/workspaces/2026-03-28/remarquee-render-cloud/remarquee/pkg/rmdoc/render/v6_merge_background_test.go — Focused regression test referenced by the guide
