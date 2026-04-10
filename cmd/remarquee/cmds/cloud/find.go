@@ -178,6 +178,7 @@ func (c *FindCommand) RunIntoGlazeProcessor(ctx context.Context, parsedValues *v
 		}
 	}
 
+	var addRowErr error
 	filetree.WalkTree(startNode, filetree.FileTreeVistor{
 		Visit: func(node *model.Node, _ []string) bool {
 			p := buildPathFromParents(node)
@@ -197,12 +198,17 @@ func (c *FindCommand) RunIntoGlazeProcessor(ctx context.Context, parsedValues *v
 
 			if matchRegexp == nil || matchRegexp.MatchString(p) {
 				if err := gp.AddRow(ctx, row); err != nil {
-					// Log error but continue processing
+					addRowErr = err
+					return filetree.StopVisiting
 				}
 			}
-			return false
+			return filetree.ContinueVisiting
 		},
 	})
+
+	if addRowErr != nil {
+		return addRowErr
+	}
 
 	return nil
 }
