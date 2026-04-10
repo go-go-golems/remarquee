@@ -6,16 +6,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
 	"github.com/pkg/errors"
 )
 
 type CloudInputSettings struct {
-	Cloud          bool `glazed.parameter:"cloud"`
-	NonInteractive bool `glazed.parameter:"non-interactive"`
-	Reauth         bool `glazed.parameter:"reauth"`
+	Cloud          bool `glazed:"cloud"`
+	NonInteractive bool `glazed:"non-interactive"`
+	Reauth         bool `glazed:"reauth"`
 }
 
 type ResolvedRMDocInput struct {
@@ -27,34 +28,34 @@ type ResolvedRMDocInput struct {
 
 var downloadDocumentByPath = rmcloud.DownloadDocumentByPath
 
-func cloudInputParameterDefinitions() []*parameters.ParameterDefinition {
-	return []*parameters.ParameterDefinition{
-		parameters.NewParameterDefinition(
+func cloudInputParameterDefinitions() []*fields.Definition {
+	return []*fields.Definition{
+		fields.New(
 			"cloud",
-			parameters.ParameterTypeBool,
-			parameters.WithDefault(false),
-			parameters.WithHelp("Treat the input path as a remote reMarkable cloud path and download it before rendering"),
+			fields.TypeBool,
+			fields.WithDefault(false),
+			fields.WithHelp("Treat the input path as a remote reMarkable cloud path and download it before rendering"),
 		),
-		parameters.NewParameterDefinition(
+		fields.New(
 			"non-interactive",
-			parameters.ParameterTypeBool,
-			parameters.WithDefault(false),
-			parameters.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
+			fields.TypeBool,
+			fields.WithDefault(false),
+			fields.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
 		),
-		parameters.NewParameterDefinition(
+		fields.New(
 			"reauth",
-			parameters.ParameterTypeBool,
-			parameters.WithDefault(false),
-			parameters.WithHelp("Force re-authentication (re-fetch user token)"),
+			fields.TypeBool,
+			fields.WithDefault(false),
+			fields.WithHelp("Force re-authentication (re-fetch user token)"),
 		),
 	}
 }
 
-func initializeCloudInputSettings(parsedLayers *layers.ParsedLayers, target *CloudInputSettings) error {
+func initializeCloudInputSettings(parsedValues *values.Values, target *CloudInputSettings) error {
 	if target == nil {
 		return errors.New("cloud input settings target is nil")
 	}
-	return parsedLayers.InitializeStruct(layers.DefaultSlug, target)
+	return parsedValues.DecodeSectionInto(schema.DefaultSlug, target)
 }
 
 func ResolveRMDocInput(ctx context.Context, file string, s CloudInputSettings) (*ResolvedRMDocInput, error) {

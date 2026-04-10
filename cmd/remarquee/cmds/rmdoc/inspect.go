@@ -6,8 +6,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -21,18 +22,18 @@ type InspectCommand struct {
 }
 
 type InspectSettings struct {
-	File string `glazed.parameter:"file"`
+	File string `glazed:"file"`
 }
 
 var _ glazecmds.BareCommand = &InspectCommand{}
 var _ glazecmds.GlazeCommand = &InspectCommand{}
 
 func NewInspectCommand() (*InspectCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -48,23 +49,23 @@ Examples:
   remarquee rmdoc inspect file.rmdoc --with-glaze-output --output json
 `),
 		glazecmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"file",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Path to the .rmdoc file"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithRequired(true),
+				fields.WithHelp("Path to the .rmdoc file"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &InspectCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *InspectCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *InspectCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &InspectSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -83,11 +84,11 @@ func (c *InspectCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLay
 
 func (c *InspectCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedValues *values.Values,
 	gp middlewares.Processor,
 ) error {
 	s := &InspectSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -129,8 +130,8 @@ func NewInspectCobraCommand() (*cobra.Command, error) {
 		cli.WithDualMode(true),
 		cli.WithGlazeToggleFlag("with-glaze-output"),
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 	if err != nil {

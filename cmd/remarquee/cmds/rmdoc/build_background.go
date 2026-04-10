@@ -8,8 +8,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	pkg_rmdoc "github.com/go-go-golems/remarquee/pkg/rmdoc"
 	rmdocrender "github.com/go-go-golems/remarquee/pkg/rmdoc/render"
@@ -22,19 +23,19 @@ type BuildBackgroundCommand struct {
 }
 
 type BuildBackgroundSettings struct {
-	File  string `glazed.parameter:"file"`
-	Out   string `glazed.parameter:"out"`
-	Force bool   `glazed.parameter:"force"`
+	File  string `glazed:"file"`
+	Out   string `glazed:"out"`
+	Force bool   `glazed:"force"`
 }
 
 var _ glazecmds.BareCommand = &BuildBackgroundCommand{}
 
 func NewBuildBackgroundCommand() (*BuildBackgroundCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -49,35 +50,35 @@ For PDF-backed docs it copies payload PDF pages and inserts blank pages for Inse
 For notebooks (no payload) it currently creates blank pages using a default size.
 `),
 		glazecmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"out",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Output PDF path (default: <input>-background.pdf in current dir)"),
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Output PDF path (default: <input>-background.pdf in current dir)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"force",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Overwrite output file if it exists"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Overwrite output file if it exists"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"file",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Path to the .rmdoc file"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithRequired(true),
+				fields.WithHelp("Path to the .rmdoc file"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &BuildBackgroundCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *BuildBackgroundCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *BuildBackgroundCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &BuildBackgroundSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -124,8 +125,8 @@ func NewBuildBackgroundCobraCommand() (*cobra.Command, error) {
 
 	return cli.BuildCobraCommand(cmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 }

@@ -12,8 +12,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -27,24 +28,24 @@ type RenderV6PNGCommand struct {
 }
 
 type RenderV6PNGSettings struct {
-	File   string `glazed.parameter:"file"`
-	Pages  string `glazed.parameter:"pages"`
-	OutDir string `glazed.parameter:"out-dir"`
-	PDFOut string `glazed.parameter:"pdf-out"`
+	File   string `glazed:"file"`
+	Pages  string `glazed:"pages"`
+	OutDir string `glazed:"out-dir"`
+	PDFOut string `glazed:"pdf-out"`
 
-	DPI      int    `glazed.parameter:"dpi"`
-	PDFToPPM string `glazed.parameter:"pdftoppm"`
-	Force    bool   `glazed.parameter:"force"`
+	DPI      int    `glazed:"dpi"`
+	PDFToPPM string `glazed:"pdftoppm"`
+	Force    bool   `glazed:"force"`
 }
 
 var _ glazecmds.BareCommand = &RenderV6PNGCommand{}
 
 func NewRenderV6PNGCommand() (*RenderV6PNGCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -61,59 +62,59 @@ Notes:
 - Output PNG names follow: <basename>-v6-page-XXX.png.
 `),
 		glazecmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"file",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Path to the V6 .rmdoc file"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithRequired(true),
+				fields.WithHelp("Path to the V6 .rmdoc file"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"pages",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("1"),
-				parameters.WithHelp("Comma-separated 1-based page numbers to render (e.g. '1,2,5')"),
+				fields.TypeString,
+				fields.WithDefault("1"),
+				fields.WithHelp("Comma-separated 1-based page numbers to render (e.g. '1,2,5')"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"out-dir",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("."),
-				parameters.WithHelp("Directory to write PNGs (and merged PDF) into"),
+				fields.TypeString,
+				fields.WithDefault("."),
+				fields.WithHelp("Directory to write PNGs (and merged PDF) into"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"pdf-out",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Optional path for the merged PDF (default: <out-dir>/<basename>-v6.pdf)"),
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Optional path for the merged PDF (default: <out-dir>/<basename>-v6.pdf)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"dpi",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(200),
-				parameters.WithHelp("Rasterization DPI (pdftoppm)"),
+				fields.TypeInteger,
+				fields.WithDefault(200),
+				fields.WithHelp("Rasterization DPI (pdftoppm)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"pdftoppm",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("pdftoppm"),
-				parameters.WithHelp("pdftoppm executable (poppler rasterizer)"),
+				fields.TypeString,
+				fields.WithDefault("pdftoppm"),
+				fields.WithHelp("pdftoppm executable (poppler rasterizer)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"force",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Overwrite existing PNG/PDF outputs"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Overwrite existing PNG/PDF outputs"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &RenderV6PNGCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *RenderV6PNGCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *RenderV6PNGCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &RenderV6PNGSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -253,8 +254,8 @@ func NewRenderV6PNGCobraCommand() (*cobra.Command, error) {
 		cli.WithDualMode(true),
 		cli.WithGlazeToggleFlag("with-glaze-output"),
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 }
