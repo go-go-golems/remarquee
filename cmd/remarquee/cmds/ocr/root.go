@@ -10,14 +10,14 @@ import (
 	"strings"
 
 	"github.com/go-go-golems/geppetto/pkg/inference/engine/factory"
-	geppettolayers "github.com/go-go-golems/geppetto/pkg/layers"
+	geppettosections "github.com/go-go-golems/geppetto/pkg/sections"
 	aisettings "github.com/go-go-golems/geppetto/pkg/steps/ai/settings"
 	"github.com/go-go-golems/geppetto/pkg/turns"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	cmdmiddlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	glazedsettings "github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -28,12 +28,12 @@ type OcrCommand struct {
 }
 
 type OcrSettings struct {
-	ImagePath string `glazed.parameter:"image"`
+	ImagePath string `glazed:"image"`
 
-	SystemPrompt string `glazed.parameter:"system"`
-	Prompt       string `glazed.parameter:"prompt"`
+	SystemPrompt string `glazed:"system"`
+	Prompt       string `glazed:"prompt"`
 
-	MediaType string `glazed.parameter:"media-type"`
+	MediaType string `glazed:"media-type"`
 }
 
 var _ glazecmds.WriterCommand = (*OcrCommand)(nil)
@@ -43,17 +43,17 @@ const defaultSystemPrompt = "You are an OCR engine. Extract all legible text fro
 const defaultUserPrompt = "OCR this image."
 
 func NewOcrCommand() (*OcrCommand, error) {
-	glazedLayer, err := glazedsettings.NewGlazedParameterLayers()
+	glazedSection, err := glazedsettings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsSection, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
 
 	// Override AI defaults for this command so users get a vision-capable model out of the box.
-	ss, err := aisettings.NewStepSettings()
+	ss, err := aisettings.NewInferenceSettings()
 	if err != nil {
 		return nil, err
 	}
@@ -64,12 +64,14 @@ func NewOcrCommand() (*OcrCommand, error) {
 	temp := 0.0
 	ss.Chat.Temperature = &temp
 
-	geppettoLayers, err := geppettolayers.CreateGeppettoLayers(
-		geppettolayers.WithDefaultsFromStepSettings(ss),
+	geppettoSections, err := geppettosections.CreateGeppettoSections(
+		geppettosections.WithDefaultsFromInferenceSettings(ss),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create geppetto parameter layers")
+		return nil, errors.Wrap(err, "failed to create geppetto sections")
 	}
+
+	sections := append([]schema.Section{glazedSection, commandSettingsSection}, geppettoSections...)
 
 	cmdDesc := glazecmds.NewCommandDescription(
 		"ocr",
@@ -86,43 +88,43 @@ Notes:
   - Use a vision-capable model (default: gpt-4o-mini).
 `),
 		glazecmds.WithArguments(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"image",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Path to the image file to OCR"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithRequired(true),
+				fields.WithHelp("Path to the image file to OCR"),
 			),
 		),
 		glazecmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"system",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(defaultSystemPrompt),
-				parameters.WithHelp("System prompt (OCR instructions)"),
+				fields.TypeString,
+				fields.WithDefault(defaultSystemPrompt),
+				fields.WithHelp("System prompt (OCR instructions)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"prompt",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(defaultUserPrompt),
-				parameters.WithHelp("User prompt to accompany the image"),
+				fields.TypeString,
+				fields.WithDefault(defaultUserPrompt),
+				fields.WithHelp("User prompt to accompany the image"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"media-type",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Override detected media type (e.g. image/png, image/jpeg)"),
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Override detected media type (e.g. image/png, image/jpeg)"),
 			),
 		),
-		glazecmds.WithLayersList(append([]layers.ParameterLayer{glazedLayer, commandSettingsLayer}, geppettoLayers...)...),
+		glazecmds.WithSections(sections...),
 	)
 
 	return &OcrCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *OcrCommand) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error {
+func (c *OcrCommand) RunIntoWriter(ctx context.Context, parsedValues *values.Values, w io.Writer) error {
 	s := &OcrSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -169,7 +171,7 @@ func (c *OcrCommand) RunIntoWriter(ctx context.Context, parsedLayers *layers.Par
 	}
 	turns.AppendBlock(t, turns.NewUserMultimodalBlock(s.Prompt, images))
 
-	engine, err := factory.NewEngineFromParsedLayers(parsedLayers)
+	engine, err := factory.NewEngineFromParsedValues(parsedValues)
 	if err != nil {
 		return errors.Wrap(err, "failed to create geppetto engine (check --ai-api-type/--ai-engine and provider api-key flags)")
 	}
@@ -209,52 +211,8 @@ func NewOcrCobraCommand() (*cobra.Command, error) {
 	}
 
 	return cli.BuildCobraCommand(cmd,
-		cli.WithProfileSettingsLayer(),
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: func(parsedCommandLayers *layers.ParsedLayers, cmd_ *cobra.Command, args []string) ([]cmdmiddlewares.Middleware, error) {
-				// Support pinocchio-style profiles without pulling in deprecated viper middleware.
-				profileSettings := &cli.ProfileSettings{}
-				if err := parsedCommandLayers.InitializeStruct(cli.ProfileSettingsSlug, profileSettings); err != nil {
-					return nil, err
-				}
-
-				xdgConfigPath, err := os.UserConfigDir()
-				if err != nil {
-					return nil, err
-				}
-				defaultProfileFile := fmt.Sprintf("%s/pinocchio/profiles.yaml", xdgConfigPath)
-
-				profileFile := profileSettings.ProfileFile
-				if profileFile == "" {
-					profileFile = defaultProfileFile
-				}
-				profile := profileSettings.Profile
-				if profile == "" {
-					profile = "default"
-				}
-
-				return []cmdmiddlewares.Middleware{
-					// Highest precedence
-					cmdmiddlewares.ParseFromCobraCommand(cmd_, parameters.WithParseStepSource("cobra")),
-					cmdmiddlewares.GatherArguments(args, parameters.WithParseStepSource("arguments")),
-					cmdmiddlewares.UpdateFromEnv("REMARQUEE", parameters.WithParseStepSource("env")),
-					cmdmiddlewares.GatherFlagsFromProfiles(
-						defaultProfileFile,
-						profileFile,
-						profile,
-						"default",
-						parameters.WithParseStepSource("profiles"),
-						parameters.WithParseStepMetadata(map[string]any{
-							"profileFile": profileFile,
-							"profile":     profile,
-						}),
-					),
-					// Lowest precedence
-					cmdmiddlewares.SetFromDefaults(parameters.WithParseStepSource(parameters.SourceDefaults)),
-				}, nil
-			},
-		}),
+		cli.WithCobraShortHelpSections(schema.DefaultSlug),
+		cli.WithCobraMiddlewaresFunc(geppettosections.GetCobraCommandGeppettoMiddlewares),
 	)
 }
 

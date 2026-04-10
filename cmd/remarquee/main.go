@@ -24,7 +24,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-	_ = logging.AddLoggingLayerToRootCommand(rootCmd, "remarquee")
+	_ = logging.AddLoggingSectionToRootCommand(rootCmd, "remarquee")
 
 	setupHelpSystem(rootCmd)
 
