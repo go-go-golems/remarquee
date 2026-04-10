@@ -12,20 +12,31 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: /home/manuel/code/wesen/go-go-golems/remarquee/cmd/remarquee/cmds/cloud/account.go
+    - Path: cmd/remarquee/cmds/cloud/account.go
       Note: First simple cloud command targeted for the migration baseline
-    - Path: /home/manuel/code/wesen/go-go-golems/remarquee/cmd/remarquee/cmds/cloud/find.go
+    - Path: cmd/remarquee/cmds/cloud/find.go
       Note: Representative dual-mode command for preserving structured-output behavior during migration
-    - Path: /home/manuel/code/wesen/go-go-golems/remarquee/cmd/remarquee/cmds/rmdoc/render_v6.go
+    - Path: cmd/remarquee/cmds/ocr/root.go
+      Note: |-
+        OCR is the most complex migration slice because it integrates Geppetto sections and middlewares
+        OCR migrated in Step 4
+    - Path: cmd/remarquee/cmds/rmdoc/input_resolver.go
+      Note: Rmdoc helper migrated in Step 3
+    - Path: cmd/remarquee/cmds/rmdoc/render_v6.go
       Note: Representative rmdoc orchestration command to migrate after the cloud slice
-    - Path: /home/manuel/code/wesen/go-go-golems/remarquee/cmd/remarquee/cmds/ocr/root.go
-      Note: OCR is the most complex migration slice because it integrates Geppetto sections and middlewares
+    - Path: cmd/remarquee/cmds/rmdoc/test_values_helpers_test.go
+      Note: Test migration helper added in Step 3
+    - Path: cmd/remarquee/main.go
+      Note: Final root command cleanup in Step 4
+    - Path: go.mod
+      Note: Dependency bump and tidy noted in Steps 2 and 4
 ExternalSources: []
 Summary: Step-by-step implementation diary for migrating remarquee from Glazed's legacy layers/parameters API to the current schema/fields/values facade API.
 LastUpdated: 2026-04-10T09:40:00-04:00
 WhatFor: Record what changed, why, what failed, what was tricky, and how to validate each migration slice in RMQ-0017.
 WhenToUse: Use when continuing implementation, reviewing commits, or reconstructing the migration/debugging path for RMQ-0017.
 ---
+
 
 # Diary
 
@@ -276,4 +287,258 @@ cd /home/manuel/code/wesen/go-go-golems/remarquee && go get github.com/go-go-gol
 
 ```bash
 cd /home/manuel/code/wesen/go-go-golems/remarquee && go test ./cmd/remarquee/cmds/cloud/...
+```
+
+## Step 3: Migrate the rmdoc command family and tests
+
+The second command-family slice was `rmdoc`. I tackled the shared input resolver and all command files first, then rewrote the tests to use the command descriptions' real default sections instead of fabricating legacy parsed-layer objects by hand.
+
+This step was smoother than the cloud package because the migration pattern was already established. The only substantial extra work was modernizing the tests in a way that would stay aligned with the command schemas over time.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Continue the migration package by package, keeping the history reviewable and the diary current.
+
+**Inferred user intent:** The user wants each major subsystem migrated and validated cleanly before the next one begins.
+
+**Commit (code):** 1341fbb — "Migrate rmdoc commands to glazed facade API"
+
+### What I did
+- Migrated the shared helper and rmdoc command files:
+  - `cmd/remarquee/cmds/rmdoc/input_resolver.go`
+  - `cmd/remarquee/cmds/rmdoc/inspect.go`
+  - `cmd/remarquee/cmds/rmdoc/build_background.go`
+  - `cmd/remarquee/cmds/rmdoc/render_v6.go`
+  - `cmd/remarquee/cmds/rmdoc/render_legacy.go`
+  - `cmd/remarquee/cmds/rmdoc/render_v6_png.go`
+  - `cmd/remarquee/cmds/rmdoc/vlm_validate.go`
+- Applied the same Glazed migration pattern used in the cloud package:
+  - `fields` / `schema` / `values`
+  - `settings.NewGlazedSection()`
+  - `cli.NewCommandSettingsSection()`
+  - `WithSections(...)`
+  - `DecodeSectionInto(...)`
+  - `ShortHelpSections`
+- Migrated the legacy rmdoc tests:
+  - `cmd/remarquee/cmds/rmdoc/render_v6_test.go`
+  - `cmd/remarquee/cmds/rmdoc/render_legacy_test.go`
+- Added a new test helper:
+  - `cmd/remarquee/cmds/rmdoc/test_values_helpers_test.go`
+- The test helper now reuses each command's real default section via `CommandDescription.GetDefaultSection()` and builds `*values.Values` with `values.NewSectionValues(...)`.
+- Validated the package with:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee && go test ./cmd/remarquee/cmds/rmdoc/...
+```
+
+### Why
+- `rmdoc` was the next most self-contained subsystem after `cloud`.
+- Migrating its tests before OCR reduced risk: it gave a high-confidence signal that the shared command/value pattern was correct.
+- Reusing the command description's actual default section in tests avoids a future drift problem where test fixtures no longer match the command schema.
+
+### What worked
+- The command files migrated with the same mechanical pattern as `cloud`.
+- The test helper worked well and significantly simplified the rewritten tests.
+- The package validation succeeded:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee && go test ./cmd/remarquee/cmds/rmdoc/...
+```
+
+### What didn't work
+- The first automated pass missed explicit slice types like:
+
+```go
+[]*parameters.ParameterDefinition
+```
+
+Those had to be migrated manually to:
+
+```go
+[]*fields.Definition
+```
+
+- The mechanical pass also required a follow-up search because it updated constructor calls more reliably than explicit type declarations.
+
+### What I learned
+- The new `values` test-construction approach is better than the old parsed-layer helpers because it can be driven directly from the real command section definitions.
+- Shared helpers like `input_resolver.go` are worth migrating first inside a package because they reduce the number of later manual fixes.
+
+### What was tricky to build
+- The test migration was the trickiest part of this slice. The underlying issue was not just renaming helper functions; the old tests were constructing an entire legacy value stack (`ParameterLayer`, `ParsedParameters`, `ParsedLayers`) that no longer exists. I resolved this by switching mental models: instead of rebuilding the old internal structure, I built `values.SectionValues` from the command's own default section. That made the tests less brittle and kept the field definitions in one place.
+
+### What warrants a second pair of eyes
+- Review `test_values_helpers_test.go` to confirm the test-fixture construction pattern is acceptable as the standard for future command tests.
+- Review `render_v6.go` and `render_legacy.go` to confirm the local/cloud input orchestration behavior stayed untouched.
+
+### What should be done in the future
+- Consider extracting the new test helper pattern into a shared test utility if more command tests are added later.
+
+### Code review instructions
+- Start with:
+  - `cmd/remarquee/cmds/rmdoc/input_resolver.go`
+  - `cmd/remarquee/cmds/rmdoc/render_v6.go`
+  - `cmd/remarquee/cmds/rmdoc/render_legacy.go`
+  - `cmd/remarquee/cmds/rmdoc/test_values_helpers_test.go`
+  - `cmd/remarquee/cmds/rmdoc/render_v6_test.go`
+  - `cmd/remarquee/cmds/rmdoc/render_legacy_test.go`
+- Validate with:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee && go test ./cmd/remarquee/cmds/rmdoc/...
+```
+
+### Technical details
+- The test helper pattern used:
+
+```go
+defaultSection, ok := desc.GetDefaultSection()
+sectionValues, err := values.NewSectionValues(defaultSection,
+    values.WithFieldValue("file", "/tmp/doc.rmdoc"),
+    values.WithFieldValue("out", "/tmp/out.pdf"),
+)
+parsedValues := values.New(values.WithSectionValues(schema.DefaultSlug, sectionValues))
+```
+
+## Step 4: Migrate OCR, finish the entrypoint cleanup, and validate the full repo
+
+The last code slice was OCR plus the final repo-wide cleanup. OCR was the only place where both the Glazed and Geppetto integration surfaces changed together, so I rewrote it directly to the modern sections/middlewares/parsed-values APIs rather than trying to salvage the old shape incrementally.
+
+Once OCR was migrated, the final full-repo test run exposed exactly one additional leftover: the renamed logging helper in `cmd/remarquee/main.go`. Fixing that brought the entire repo green on the upgraded dependency set.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Finish the remaining special-case migration work and prove the whole repository still builds and tests.
+
+**Inferred user intent:** The user wants the migration completed end-to-end, including the awkward final cleanup items that only show up under full-repo validation.
+
+**Commit (code):** 1034de5 — "Migrate OCR and CLI entrypoint to facade API"
+
+### What I did
+- Rewrote `cmd/remarquee/cmds/ocr/root.go` to use:
+  - `fields`, `schema`, `values`
+  - `glazedsettings.NewGlazedSection()`
+  - `cli.NewCommandSettingsSection()`
+  - `geppettosections.CreateGeppettoSections(...)`
+  - `geppettosections.WithDefaultsFromInferenceSettings(...)`
+  - `factory.NewEngineFromParsedValues(...)`
+  - `cli.WithCobraMiddlewaresFunc(geppettosections.GetCobraCommandGeppettoMiddlewares)`
+- Preserved OCR defaults:
+  - model: `gpt-4o-mini`
+  - max response tokens: `4096`
+  - temperature: `0.0`
+- Replaced the remaining legacy logging helper in `cmd/remarquee/main.go`:
+  - `AddLoggingLayerToRootCommand(...)` → `AddLoggingSectionToRootCommand(...)`
+- Ran final housekeeping:
+  - `go mod tidy`
+  - repo-wide legacy symbol grep
+  - representative `--help` smoke checks
+  - full repo test run
+
+### Why
+- OCR was the only command still depending on removed Geppetto and Glazed integration points.
+- The entrypoint logging helper rename was a predictable final leftover from the migration playbook.
+- The full-repo test run was the only honest signal that the migration was really complete.
+
+### What worked
+- The OCR rewrite mapped cleanly onto the current Geppetto examples.
+- `go mod tidy` succeeded once the legacy imports were gone.
+- The repo-wide legacy symbol grep came back clean.
+- Representative `--help` smoke checks succeeded for cloud, rmdoc, and OCR commands.
+- Full validation succeeded:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee && go test ./...
+```
+
+### What didn't work
+- The first OCR/full-repo validation attempt failed because of a missing `go.sum` entry after the dependency bump:
+
+```text
+missing go.sum entry for module providing package github.com/cespare/xxhash/v2
+```
+
+- After `go mod tidy`, the next full-repo run failed on the one remaining renamed helper in `cmd/remarquee/main.go`:
+
+```text
+cmd/remarquee/main.go:27:14: undefined: logging.AddLoggingLayerToRootCommand
+```
+
+- Fix applied:
+
+```go
+logging.AddLoggingSectionToRootCommand(rootCmd, "remarquee")
+```
+
+### What I learned
+- OCR really was the only place where a direct rewrite was easier than a mechanical token replacement.
+- Full-repo validation is essential after an API migration because tiny leftovers like renamed logging helpers may not surface in package-level tests.
+- The final repo-wide grep is a valuable complement to `go test ./...` because it proves there are no quiet legacy references left behind.
+
+### What was tricky to build
+- The hardest part of the OCR migration was preserving behavior while swapping out two integration layers at once. The symptoms were that the old code depended on both removed Glazed packages and removed Geppetto layer helpers, so a naive mechanical rewrite would have been noisy and hard to trust. I solved that by following the current Geppetto example structure directly: create Geppetto sections, seed defaults with `InferenceSettings`, construct the engine from `parsedValues`, and let the shared Geppetto middleware helper handle config/env/profile parsing.
+
+### What warrants a second pair of eyes
+- Review `cmd/remarquee/cmds/ocr/root.go` carefully, especially the decision to switch from the old handwritten middleware chain to `geppettosections.GetCobraCommandGeppettoMiddlewares`.
+- Review `go.mod` / `go.sum` one more time for any surprising transitive churn from the dependency upgrade.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Start with:
+  - `cmd/remarquee/cmds/ocr/root.go`
+  - `cmd/remarquee/main.go`
+  - `go.mod`
+  - `go.sum`
+- Validate with:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee && go test ./...
+```
+
+- Optional smoke checks used during implementation:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee
+for args in \
+  'cloud account --help' \
+  'cloud version --help' \
+  'cloud get --help' \
+  'cloud mkdir --help' \
+  'cloud mv --help' \
+  'cloud rm --help' \
+  'cloud put --help' \
+  'cloud search --help' \
+  'cloud ls --help' \
+  'cloud find --help' \
+  'cloud stat --help' \
+  'cloud refresh --help' \
+  'rmdoc inspect --help' \
+  'rmdoc build-background --help' \
+  'rmdoc render-v6 --help' \
+  'rmdoc render-legacy --help' \
+  'rmdoc render-v6-png --help' \
+  'rmdoc vlm-validate --help' \
+  'ocr --help'
+do
+  go run ./cmd/remarquee $args >/dev/null || exit 1
+done
+```
+
+### Technical details
+- Final legacy-symbol sweep:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee && rg -n "github.com/go-go-golems/glazed/pkg/cmds/layers|github.com/go-go-golems/glazed/pkg/cmds/parameters|github.com/go-go-golems/glazed/pkg/cmds/middlewares|github.com/go-go-golems/geppetto/pkg/layers|glazed\.parameter:|NewGlazedParameterLayers|WithOutputParameterLayerOptions|WithLayersList|InitializeStruct\(|ShortHelpLayers|NewParameterLayer|NewParsedParameters|NewParsedLayers|NewEngineFromParsedLayers|CreateGeppettoLayers|AddLoggingLayerToRootCommand" cmd pkg -g '*.go'
+```
+
+- Final repo validation:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee && go test ./...
 ```

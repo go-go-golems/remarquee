@@ -28,6 +28,9 @@ RelatedFiles:
       Note: |-
         OCR command is the main special case because it integrates Geppetto settings and middleware
         Representative OCR and Geppetto migration seam
+        Final Geppetto sections migration pattern
+    - Path: cmd/remarquee/cmds/rmdoc/input_resolver.go
+      Note: Shared helper migration pattern
     - Path: cmd/remarquee/cmds/rmdoc/render_v6.go
       Note: |-
         Representative rmdoc command with local/cloud orchestration and dual execution helpers
@@ -36,12 +39,17 @@ RelatedFiles:
       Note: |-
         Representative test file still constructing legacy parsed layers directly
         Representative test migration seam
+    - Path: cmd/remarquee/cmds/rmdoc/test_values_helpers_test.go
+      Note: Final test migration pattern
+    - Path: go.mod
+      Note: Dependency bump discovery captured in the guide
 ExternalSources: []
 Summary: Migrate remarquee command construction, settings decoding, test helpers, and OCR/geppetto integration from the removed Glazed layers/parameters API to the current schema/fields/values/sources facade API.
 LastUpdated: 2026-04-10T09:30:00-04:00
 WhatFor: Intern-facing migration guide and execution order for updating remarquee after the hard Glazed facade cutover.
 WhenToUse: Use when implementing RMQ-0017 or reviewing any Glazed migration slice in remarquee.
 ---
+
 
 
 # Implementation guide for migrating remarquee to the new Glazed facade API
@@ -72,6 +80,22 @@ The main migration reference is:
 - `glazed/pkg/doc/tutorials/migrating-to-facade-packages.md`
 
 Use that document as the rename map and checklist. However, **verify exact current helper names against the current Glazed and Geppetto code**, because some docs/examples evolved further after the initial migration playbook was written.
+
+## Important discovery from implementation
+
+This migration is not just a source rewrite. In `remarquee`, the old code was still pinned to older module versions (`glazed v0.7.8`, `geppetto v0.6.0`) that did not expose the new section/value APIs. In practice, the migration required a dependency bump to current released versions before the new code could compile.
+
+The implementation used:
+
+- `github.com/go-go-golems/glazed v1.2.1`
+- `github.com/go-go-golems/geppetto v0.11.9`
+
+That means the safe execution order is:
+
+1. migrate code toward the new API,
+2. upgrade the dependencies,
+3. finish the remaining files that still reference removed packages,
+4. run `go mod tidy` only after those last legacy imports are gone.
 
 Two especially relevant current examples:
 
@@ -340,10 +364,12 @@ Recommended OCR strategy:
 
 1. replace Glazed imports with `schema`, `fields`, and `values`
 2. replace `geppettolayers.CreateGeppettoLayers(...)` with `geppettosections.CreateGeppettoSections(...)`
-3. replace `factory.NewEngineFromParsedLayers(...)` with `factory.NewEngineFromParsedValues(...)`
-4. replace the legacy custom middleware chain with `geppettosections.GetCobraCommandGeppettoMiddlewares` or the modern equivalent demonstrated in current Geppetto examples
-5. keep OCR behavior unchanged while swapping the plumbing
+3. seed OCR defaults with `geppettosections.WithDefaultsFromInferenceSettings(...)`
+4. replace `factory.NewEngineFromParsedLayers(...)` with `factory.NewEngineFromParsedValues(...)`
+5. replace the legacy custom middleware chain with `geppettosections.GetCobraCommandGeppettoMiddlewares`
+6. keep OCR behavior unchanged while swapping the plumbing
 
+This implementation path worked cleanly in practice and did not require an OCR-specific compatibility shim.
 ## Review checklist for each migrated file
 
 For every file touched, confirm all of the following:
