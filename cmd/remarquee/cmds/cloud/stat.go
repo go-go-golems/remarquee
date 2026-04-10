@@ -30,7 +30,14 @@ var _ glazecmds.BareCommand = &StatCommand{}
 var _ glazecmds.GlazeCommand = &StatCommand{}
 
 func NewStatCommand() (*StatCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedParameterLayers(
+		// Default to JSON output in glaze mode for machine-readable structured output
+		settings.WithOutputParameterLayerOptions(
+			layers.WithDefaults(map[string]interface{}{
+				"output": "json",
+			}),
+		),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -45,10 +52,14 @@ func NewStatCommand() (*StatCommand, error) {
 		glazecmds.WithLong(`
 Shows metadata for a remote file or folder in the reMarkable cloud (rmapi-backed).
 
+Use --with-glaze-output for structured output (JSON, YAML, table).
+
 Examples:
   remarquee cloud stat /
   remarquee cloud stat /Books
+  remarquee cloud stat /Books/paper.pdf
   remarquee cloud stat /Books/paper.pdf --with-glaze-output --output json
+  remarquee cloud stat /Books/paper.pdf --with-glaze-output --output yaml
 `),
 		glazecmds.WithFlags(
 			// Auth flags

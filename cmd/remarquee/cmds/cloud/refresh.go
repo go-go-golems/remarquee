@@ -27,7 +27,14 @@ var _ glazecmds.BareCommand = &RefreshCommand{}
 var _ glazecmds.GlazeCommand = &RefreshCommand{}
 
 func NewRefreshCommand() (*RefreshCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedParameterLayers(
+		// Default to JSON output in glaze mode for machine-readable structured output
+		settings.WithOutputParameterLayerOptions(
+			layers.WithDefaults(map[string]interface{}{
+				"output": "json",
+			}),
+		),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -47,11 +54,14 @@ This is the first cloud command because it validates end-to-end connectivity:
 - API context creation (rmapi sync15)
 - remote tree refresh
 
+Use --with-glaze-output for structured output (JSON, YAML, table).
+
 Examples:
   remarquee cloud refresh
   remarquee cloud refresh --non-interactive
   remarquee cloud refresh --reauth
   remarquee cloud refresh --with-glaze-output --output json
+  remarquee cloud refresh --with-glaze-output --output yaml
 `),
 		glazecmds.WithFlags(
 			parameters.NewParameterDefinition(
