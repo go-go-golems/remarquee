@@ -9,7 +9,9 @@ import (
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/juruen/rmapi/filetree"
 	"github.com/juruen/rmapi/model"
 	"github.com/pkg/errors"
@@ -30,6 +32,7 @@ type FindSettings struct {
 }
 
 var _ glazecmds.BareCommand = &FindCommand{}
+var _ glazecmds.GlazeCommand = &FindCommand{}
 
 func NewFindCommand() (*FindCommand, error) {
 	glazedLayer, err := settings.NewGlazedParameterLayers()
@@ -138,6 +141,59 @@ func (c *FindCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers
 	return nil
 }
 
+func (c *FindCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+	s := &FindSettings{}
+	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+		return err
+	}
+
+	_, apiCtx, err := createApiCtx(s.AuthSettings)
+	if err != nil {
+		return err
+	}
+
+	startNode, err := apiCtx.Filetree().NodeByPath(s.Start, nil)
+	if err != nil {
+		return errors.New("start directory doesn't exist")
+	}
+
+	var matchRegexp *regexp.Regexp
+	if s.Pattern != "" {
+		matchRegexp, err = regexp.Compile(s.Pattern)
+		if err != nil {
+			return errors.New("failed to compile regexp")
+		}
+	}
+
+	filetree.WalkTree(startNode, filetree.FileTreeVistor{
+		Visit: func(node *model.Node, _ []string) bool {
+			p := buildPathFromParents(node)
+			modTime, _ := node.LastModified()
+
+			row := types.NewRow(
+				types.MRP("id", node.Id()),
+				types.MRP("name", node.Name()),
+				types.MRP("type", node.Document.Type),
+				types.MRP("is_dir", node.IsDirectory()),
+				types.MRP("path", p),
+				types.MRP("parent_id", node.Document.Parent),
+				types.MRP("version", node.Version()),
+				types.MRP("modified_client", node.Document.ModifiedClient),
+				types.MRP("modified_time", modTime),
+			)
+
+			if matchRegexp == nil || matchRegexp.MatchString(p) {
+				if err := gp.AddRow(ctx, row); err != nil {
+					// Log error but continue processing
+				}
+			}
+			return false
+		},
+	})
+
+	return nil
+}
+
 func NewFindCobraCommand() (*cobra.Command, error) {
 	cmd, err := NewFindCommand()
 	if err != nil {
@@ -145,6 +201,8 @@ func NewFindCobraCommand() (*cobra.Command, error) {
 	}
 
 	return cli.BuildCobraCommand(cmd,
+		cli.WithDualMode(true),
+		cli.WithGlazeToggleFlag("with-glaze-output"),
 		cli.WithParserConfig(cli.CobraParserConfig{
 			ShortHelpLayers: []string{layers.DefaultSlug},
 			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
