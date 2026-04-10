@@ -6,8 +6,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/juruen/rmapi/model"
 	"github.com/pkg/errors"
@@ -21,18 +22,18 @@ type MvCommand struct {
 type MvSettings struct {
 	AuthSettings
 
-	Src string `glazed.parameter:"src"`
-	Dst string `glazed.parameter:"dst"`
+	Src string `glazed:"src"`
+	Dst string `glazed:"dst"`
 }
 
 var _ glazecmds.BareCommand = &MvCommand{}
 
 func NewMvCommand() (*MvCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -53,43 +54,43 @@ Examples:
 `),
 		glazecmds.WithFlags(
 			// Auth flags
-			parameters.NewParameterDefinition(
+			fields.New(
 				"non-interactive",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"reauth",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Force re-authentication (re-fetch user token)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Force re-authentication (re-fetch user token)"),
 			),
 
-			parameters.NewParameterDefinition(
+			fields.New(
 				"src",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Source remote path (can include patterns)"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithRequired(true),
+				fields.WithHelp("Source remote path (can include patterns)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"dst",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Destination path or directory"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithRequired(true),
+				fields.WithHelp("Destination path or directory"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &MvCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *MvCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *MvCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &MvSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -166,8 +167,8 @@ func NewMvCobraCommand() (*cobra.Command, error) {
 
 	return cli.BuildCobraCommand(cmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 }

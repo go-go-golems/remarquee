@@ -6,8 +6,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
 	"github.com/spf13/cobra"
@@ -20,18 +21,18 @@ type GetCommand struct {
 type GetSettings struct {
 	AuthSettings
 
-	Remote string `glazed.parameter:"remote"`
-	OutDir string `glazed.parameter:"out-dir"`
+	Remote string `glazed:"remote"`
+	OutDir string `glazed:"out-dir"`
 }
 
 var _ glazecmds.BareCommand = &GetCommand{}
 
 func NewGetCommand() (*GetCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -48,42 +49,42 @@ Examples:
 `),
 		glazecmds.WithFlags(
 			// Auth flags
-			parameters.NewParameterDefinition(
+			fields.New(
 				"non-interactive",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"reauth",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Force re-authentication (re-fetch user token)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Force re-authentication (re-fetch user token)"),
 			),
 
-			parameters.NewParameterDefinition(
+			fields.New(
 				"out-dir",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("."),
-				parameters.WithHelp("Output directory for the downloaded .rmdoc"),
+				fields.TypeString,
+				fields.WithDefault("."),
+				fields.WithHelp("Output directory for the downloaded .rmdoc"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"remote",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Remote path to download (must be a file)"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithRequired(true),
+				fields.WithHelp("Remote path to download (must be a file)"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &GetCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *GetCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *GetCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &GetSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -107,8 +108,8 @@ func NewGetCobraCommand() (*cobra.Command, error) {
 
 	return cli.BuildCobraCommand(cmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 }

@@ -6,8 +6,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -27,10 +28,10 @@ var _ glazecmds.BareCommand = &RefreshCommand{}
 var _ glazecmds.GlazeCommand = &RefreshCommand{}
 
 func NewRefreshCommand() (*RefreshCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers(
+	glazedLayer, err := settings.NewGlazedSection(
 		// Default to JSON output in glaze mode for machine-readable structured output
-		settings.WithOutputParameterLayerOptions(
-			layers.WithDefaults(map[string]interface{}{
+		settings.WithOutputSectionOptions(
+			schema.WithDefaults(map[string]interface{}{
 				"output": "json",
 			}),
 		),
@@ -38,7 +39,7 @@ func NewRefreshCommand() (*RefreshCommand, error) {
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -64,28 +65,28 @@ Examples:
   remarquee cloud refresh --with-glaze-output --output yaml
 `),
 		glazecmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"non-interactive",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"reauth",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Force re-authentication (re-fetch user token)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Force re-authentication (re-fetch user token)"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &RefreshCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *RefreshCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *RefreshCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	settings_ := &RefreshSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings_); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, settings_); err != nil {
 		return err
 	}
 
@@ -105,11 +106,11 @@ func (c *RefreshCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLay
 
 func (c *RefreshCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedValues *values.Values,
 	gp middlewares.Processor,
 ) error {
 	settings_ := &RefreshSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings_); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, settings_); err != nil {
 		return err
 	}
 
@@ -143,8 +144,8 @@ func NewRefreshCobraCommand() (*cobra.Command, error) {
 		cli.WithDualMode(true),
 		cli.WithGlazeToggleFlag("with-glaze-output"),
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 	if err != nil {

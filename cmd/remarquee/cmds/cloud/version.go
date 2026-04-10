@@ -6,8 +6,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/juruen/rmapi/version"
 	"github.com/spf13/cobra"
@@ -24,11 +25,11 @@ type VersionSettings struct {
 var _ glazecmds.BareCommand = &VersionCommand{}
 
 func NewVersionCommand() (*VersionCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -41,26 +42,26 @@ Shows the bundled rmapi library version.
 `),
 		glazecmds.WithFlags(
 			// Auth flags (kept consistent with other cloud commands, though version doesn't require auth)
-			parameters.NewParameterDefinition(
+			fields.New(
 				"non-interactive",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"reauth",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Force re-authentication (re-fetch user token)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Force re-authentication (re-fetch user token)"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &VersionCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *VersionCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *VersionCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	fmt.Printf("rmapi_version=%s\n", version.Version)
 	return nil
 }
@@ -73,8 +74,8 @@ func NewVersionCobraCommand() (*cobra.Command, error) {
 
 	return cli.BuildCobraCommand(cmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 }

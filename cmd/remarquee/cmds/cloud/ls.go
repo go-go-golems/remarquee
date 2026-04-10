@@ -9,8 +9,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -27,25 +28,25 @@ type LsSettings struct {
 	AuthSettings
 
 	// Arguments
-	Path string `glazed.parameter:"path"`
+	Path string `glazed:"path"`
 
 	// Flags (mirrors rmapi ls options)
-	Long          bool `glazed.parameter:"long"`
-	Compact       bool `glazed.parameter:"compact"`
-	Reverse       bool `glazed.parameter:"reverse"`
-	DirFirst      bool `glazed.parameter:"group-directories"`
-	ByTime        bool `glazed.parameter:"time"`
-	ShowTemplates bool `glazed.parameter:"show-templates"`
+	Long          bool `glazed:"long"`
+	Compact       bool `glazed:"compact"`
+	Reverse       bool `glazed:"reverse"`
+	DirFirst      bool `glazed:"group-directories"`
+	ByTime        bool `glazed:"time"`
+	ShowTemplates bool `glazed:"show-templates"`
 }
 
 var _ glazecmds.BareCommand = &LsCommand{}
 var _ glazecmds.GlazeCommand = &LsCommand{}
 
 func NewLsCommand() (*LsCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers(
+	glazedLayer, err := settings.NewGlazedSection(
 		// Default to JSON output in glaze mode for machine-readable structured output
-		settings.WithOutputParameterLayerOptions(
-			layers.WithDefaults(map[string]interface{}{
+		settings.WithOutputSectionOptions(
+			schema.WithDefaults(map[string]interface{}{
 				"output": "json",
 			}),
 		),
@@ -53,7 +54,7 @@ func NewLsCommand() (*LsCommand, error) {
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -77,81 +78,81 @@ Examples:
 `),
 		glazecmds.WithFlags(
 			// Auth flags
-			parameters.NewParameterDefinition(
+			fields.New(
 				"non-interactive",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"reauth",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Force re-authentication (re-fetch user token)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Force re-authentication (re-fetch user token)"),
 			),
 
 			// ls flags
-			parameters.NewParameterDefinition(
+			fields.New(
 				"compact",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Compact output (just names, / suffix for directories)"),
-				parameters.WithShortFlag("c"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Compact output (just names, / suffix for directories)"),
+				fields.WithShortFlag("c"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"long",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Long output (includes modified time)"),
-				parameters.WithShortFlag("l"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Long output (includes modified time)"),
+				fields.WithShortFlag("l"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"reverse",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Reverse sort order"),
-				parameters.WithShortFlag("r"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Reverse sort order"),
+				fields.WithShortFlag("r"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"group-directories",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Group directories first"),
-				parameters.WithShortFlag("d"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Group directories first"),
+				fields.WithShortFlag("d"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"time",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Sort by modified time"),
-				parameters.WithShortFlag("t"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Sort by modified time"),
+				fields.WithShortFlag("t"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"show-templates",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Include template files (rmapi hides these by default)"),
-				parameters.WithShortFlag("s"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Include template files (rmapi hides these by default)"),
+				fields.WithShortFlag("s"),
 			),
 
 			// Argument: path
-			parameters.NewParameterDefinition(
+			fields.New(
 				"path",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithDefault("/"),
-				parameters.WithHelp("Remote path (folder or pattern). Defaults to '/'"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithDefault("/"),
+				fields.WithHelp("Remote path (folder or pattern). Defaults to '/'"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &LsCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *LsCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *LsCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &LsSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -176,9 +177,9 @@ func (c *LsCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) 
 	return nil
 }
 
-func (c *LsCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *LsCommand) RunIntoGlazeProcessor(ctx context.Context, parsedValues *values.Values, gp middlewares.Processor) error {
 	s := &LsSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -228,8 +229,8 @@ func NewLsCobraCommand() (*cobra.Command, error) {
 		cli.WithDualMode(true),
 		cli.WithGlazeToggleFlag("with-glaze-output"),
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 }
