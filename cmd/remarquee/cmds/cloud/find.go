@@ -35,7 +35,14 @@ var _ glazecmds.BareCommand = &FindCommand{}
 var _ glazecmds.GlazeCommand = &FindCommand{}
 
 func NewFindCommand() (*FindCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedParameterLayers(
+		// Default to JSON output in glaze mode for machine-readable structured output
+		settings.WithOutputParameterLayerOptions(
+			layers.WithDefaults(map[string]interface{}{
+				"output": "json",
+			}),
+		),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -50,6 +57,8 @@ func NewFindCommand() (*FindCommand, error) {
 		glazecmds.WithLong(`
 Find entries recursively (rmapi-backed).
 
+Use --with-glaze-output for structured output (JSON, YAML, CSV, table).
+
 Arguments:
   [start]   Start directory (default: /)
   [pattern] Optional regexp to match against the formatted output path
@@ -59,6 +68,9 @@ Examples:
   remarquee cloud find /Books
   remarquee cloud find /Books ".*pdf$"
   remarquee cloud find /Books "Selfish"
+  remarquee cloud find /Books --with-glaze-output --output json
+  remarquee cloud find /Books --with-glaze-output --output yaml
+  remarquee cloud find /Books --with-glaze-output --fields name,type,path
 `),
 		glazecmds.WithFlags(
 			// Auth flags
