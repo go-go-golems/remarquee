@@ -7,8 +7,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -23,17 +24,17 @@ type StatCommand struct {
 type StatSettings struct {
 	AuthSettings
 
-	Path string `glazed.parameter:"path"`
+	Path string `glazed:"path"`
 }
 
 var _ glazecmds.BareCommand = &StatCommand{}
 var _ glazecmds.GlazeCommand = &StatCommand{}
 
 func NewStatCommand() (*StatCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers(
+	glazedLayer, err := settings.NewGlazedSection(
 		// Default to JSON output in glaze mode for machine-readable structured output
-		settings.WithOutputParameterLayerOptions(
-			layers.WithDefaults(map[string]interface{}{
+		settings.WithOutputSectionOptions(
+			schema.WithDefaults(map[string]interface{}{
 				"output": "json",
 			}),
 		),
@@ -41,7 +42,7 @@ func NewStatCommand() (*StatCommand, error) {
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -63,37 +64,37 @@ Examples:
 `),
 		glazecmds.WithFlags(
 			// Auth flags
-			parameters.NewParameterDefinition(
+			fields.New(
 				"non-interactive",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"reauth",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Force re-authentication (re-fetch user token)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Force re-authentication (re-fetch user token)"),
 			),
 
 			// Argument: path
-			parameters.NewParameterDefinition(
+			fields.New(
 				"path",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Remote path to inspect"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithRequired(true),
+				fields.WithHelp("Remote path to inspect"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &StatCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *StatCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *StatCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &StatSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -130,9 +131,9 @@ func (c *StatCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers
 	return nil
 }
 
-func (c *StatCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *StatCommand) RunIntoGlazeProcessor(ctx context.Context, parsedValues *values.Values, gp middlewares.Processor) error {
 	s := &StatSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -181,8 +182,8 @@ func NewStatCobraCommand() (*cobra.Command, error) {
 		cli.WithDualMode(true),
 		cli.WithGlazeToggleFlag("with-glaze-output"),
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 }

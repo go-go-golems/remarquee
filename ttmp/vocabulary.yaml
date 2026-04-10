@@ -21,6 +21,14 @@ topics:
       description: PDF, image, or annotation rendering behavior
     - slug: rmdoc
       description: reMarkable .rmdoc container parsing and rendering
+    - slug: remarquee
+      description: Repository-wide remarquee CLI and library work
+    - slug: glazed
+      description: Glazed CLI framework and command/schema/value APIs
+    - slug: go
+      description: Go language implementation work
+    - slug: migration
+      description: Planned or in-progress codebase migrations and API cutovers
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

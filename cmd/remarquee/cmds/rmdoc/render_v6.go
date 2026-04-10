@@ -7,8 +7,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -24,10 +25,10 @@ type RenderV6Command struct {
 }
 
 type RenderV6Settings struct {
-	File string `glazed.parameter:"file"`
-	Out  string `glazed.parameter:"out"`
+	File string `glazed:"file"`
+	Out  string `glazed:"out"`
 
-	Force bool `glazed.parameter:"force"`
+	Force bool `glazed:"force"`
 
 	CloudInputSettings
 }
@@ -36,34 +37,34 @@ var _ glazecmds.BareCommand = &RenderV6Command{}
 var _ glazecmds.GlazeCommand = &RenderV6Command{}
 
 func NewRenderV6Command() (*RenderV6Command, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
 
-	flags := []*parameters.ParameterDefinition{
-		parameters.NewParameterDefinition(
+	flags := []*fields.Definition{
+		fields.New(
 			"out",
-			parameters.ParameterTypeString,
-			parameters.WithDefault(""),
-			parameters.WithHelp("Output PDF path (default: <input>-v6.pdf in current dir)"),
+			fields.TypeString,
+			fields.WithDefault(""),
+			fields.WithHelp("Output PDF path (default: <input>-v6.pdf in current dir)"),
 		),
-		parameters.NewParameterDefinition(
+		fields.New(
 			"force",
-			parameters.ParameterTypeBool,
-			parameters.WithDefault(false),
-			parameters.WithHelp("Overwrite output file if it exists"),
+			fields.TypeBool,
+			fields.WithDefault(false),
+			fields.WithHelp("Overwrite output file if it exists"),
 		),
-		parameters.NewParameterDefinition(
+		fields.New(
 			"file",
-			parameters.ParameterTypeString,
-			parameters.WithIsArgument(true),
-			parameters.WithRequired(true),
-			parameters.WithHelp("Path to the V6 .rmdoc file, or a remote cloud path when used with --cloud"),
+			fields.TypeString,
+			fields.WithIsArgument(true),
+			fields.WithRequired(true),
+			fields.WithHelp("Path to the V6 .rmdoc file, or a remote cloud path when used with --cloud"),
 		),
 	}
 	flags = append(flags, cloudInputParameterDefinitions()...)
@@ -82,18 +83,18 @@ Notes:
 - This is still a milestone renderer (brush fidelity, typed text output, and PNGs are future work).
 `),
 		glazecmds.WithFlags(flags...),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &RenderV6Command{CommandDescription: cmdDesc}, nil
 }
 
-func (c *RenderV6Command) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *RenderV6Command) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &RenderV6Settings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
-	if err := initializeCloudInputSettings(parsedLayers, &s.CloudInputSettings); err != nil {
+	if err := initializeCloudInputSettings(parsedValues, &s.CloudInputSettings); err != nil {
 		return err
 	}
 
@@ -161,14 +162,14 @@ func (c *RenderV6Command) execute(ctx context.Context, s *RenderV6Settings) (*re
 
 func (c *RenderV6Command) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedValues *values.Values,
 	gp middlewares.Processor,
 ) error {
 	s := &RenderV6Settings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
-	if err := initializeCloudInputSettings(parsedLayers, &s.CloudInputSettings); err != nil {
+	if err := initializeCloudInputSettings(parsedValues, &s.CloudInputSettings); err != nil {
 		return err
 	}
 
@@ -198,8 +199,8 @@ func NewRenderV6CobraCommand() (*cobra.Command, error) {
 		cli.WithDualMode(true),
 		cli.WithGlazeToggleFlag("with-glaze-output"),
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 	if err != nil {

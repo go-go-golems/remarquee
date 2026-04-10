@@ -22,14 +22,15 @@ jobs:
         with:
           fetch-depth: 0
       - run: git fetch --force --tags
-      - uses: actions/setup-go@v6
+      - name: Set up Go
+        uses: actions/setup-go@v6
         with:
-          go-version: '>=1.19.5'
+          go-version-file: go.mod
           cache: true
       - name: Generate frontend assets
-        run: go generate ./cmd/remarquee-ui
+        run: go generate ./...
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.4.0
-          args: --timeout=5m
+          version-file: .golangci-lint-version
+          args: --timeout=5m ./cmd/... ./pkg/...

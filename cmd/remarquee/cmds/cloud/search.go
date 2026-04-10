@@ -8,8 +8,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/juruen/rmapi/filetree"
 	"github.com/juruen/rmapi/model"
@@ -24,26 +25,26 @@ type SearchCommand struct {
 type SearchSettings struct {
 	AuthSettings
 
-	Query string `glazed.parameter:"query"`
-	Start string `glazed.parameter:"start"`
+	Query string `glazed:"query"`
+	Start string `glazed:"start"`
 
-	Regex         bool   `glazed.parameter:"regex"`
-	CaseSensitive bool   `glazed.parameter:"case-sensitive"`
-	MatchTarget   string `glazed.parameter:"match"`
-	Compact       bool   `glazed.parameter:"compact"`
-	IncludeTemps  bool   `glazed.parameter:"include-templates"`
-	TypeFilter    string `glazed.parameter:"type"`
-	Limit         int    `glazed.parameter:"limit"`
+	Regex         bool   `glazed:"regex"`
+	CaseSensitive bool   `glazed:"case-sensitive"`
+	MatchTarget   string `glazed:"match"`
+	Compact       bool   `glazed:"compact"`
+	IncludeTemps  bool   `glazed:"include-templates"`
+	TypeFilter    string `glazed:"type"`
+	Limit         int    `glazed:"limit"`
 }
 
 var _ glazecmds.BareCommand = &SearchCommand{}
 
 func NewSearchCommand() (*SearchCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -62,85 +63,85 @@ Examples:
 `),
 		glazecmds.WithFlags(
 			// Auth flags
-			parameters.NewParameterDefinition(
+			fields.New(
 				"non-interactive",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"reauth",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Force re-authentication (re-fetch user token)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Force re-authentication (re-fetch user token)"),
 			),
 
-			parameters.NewParameterDefinition(
+			fields.New(
 				"query",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Search query (substring by default, regex with --regex)"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithRequired(true),
+				fields.WithHelp("Search query (substring by default, regex with --regex)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"start",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("/"),
-				parameters.WithHelp("Start directory (default: /)"),
+				fields.TypeString,
+				fields.WithDefault("/"),
+				fields.WithHelp("Start directory (default: /)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"regex",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Treat query as a regexp"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Treat query as a regexp"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"case-sensitive",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Use case-sensitive matching (substring or regex)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Use case-sensitive matching (substring or regex)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"match",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("path"),
-				parameters.WithHelp("Match target: path or name"),
+				fields.TypeString,
+				fields.WithDefault("path"),
+				fields.WithHelp("Match target: path or name"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"compact",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithShortFlag("c"),
-				parameters.WithHelp("Compact output (no [d]/[f] prefix; / suffix for directories)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithShortFlag("c"),
+				fields.WithHelp("Compact output (no [d]/[f] prefix; / suffix for directories)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"include-templates",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Include template entries in results"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Include template entries in results"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"type",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Optional filter: dir, file, or template"),
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Optional filter: dir, file, or template"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"limit",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(0),
-				parameters.WithHelp("Stop after N matches (0 = no limit)"),
+				fields.TypeInteger,
+				fields.WithDefault(0),
+				fields.WithHelp("Stop after N matches (0 = no limit)"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &SearchCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *SearchCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *SearchCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &SearchSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -252,8 +253,8 @@ func NewSearchCobraCommand() (*cobra.Command, error) {
 
 	return cli.BuildCobraCommand(cmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 }

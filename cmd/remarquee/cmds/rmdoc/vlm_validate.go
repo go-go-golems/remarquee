@@ -12,8 +12,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	rmdocrender "github.com/go-go-golems/remarquee/pkg/rmdoc/render"
 	"github.com/pkg/errors"
@@ -25,35 +26,35 @@ type VLMValidateCommand struct {
 }
 
 type VLMValidateSettings struct {
-	PDFA string `glazed.parameter:"pdf-a"`
-	PDFB string `glazed.parameter:"pdf-b"`
+	PDFA string `glazed:"pdf-a"`
+	PDFB string `glazed:"pdf-b"`
 
-	ImageA string `glazed.parameter:"image-a"`
-	ImageB string `glazed.parameter:"image-b"`
+	ImageA string `glazed:"image-a"`
+	ImageB string `glazed:"image-b"`
 
-	RMDocA string `glazed.parameter:"rmdoc-a"`
-	RMDocB string `glazed.parameter:"rmdoc-b"`
+	RMDocA string `glazed:"rmdoc-a"`
+	RMDocB string `glazed:"rmdoc-b"`
 
-	Pages string `glazed.parameter:"pages"`
+	Pages string `glazed:"pages"`
 
-	OutDir string `glazed.parameter:"out-dir"`
+	OutDir string `glazed:"out-dir"`
 
-	Rasterizer string `glazed.parameter:"rasterizer"`
-	DPI        int    `glazed.parameter:"dpi"`
-	PDFToPPM   string `glazed.parameter:"pdftoppm"`
+	Rasterizer string `glazed:"rasterizer"`
+	DPI        int    `glazed:"dpi"`
+	PDFToPPM   string `glazed:"pdftoppm"`
 
-	Pinocchio string `glazed.parameter:"pinocchio"`
-	Prompt    string `glazed.parameter:"prompt"`
+	Pinocchio string `glazed:"pinocchio"`
+	Prompt    string `glazed:"prompt"`
 }
 
 var _ glazecmds.BareCommand = &VLMValidateCommand{}
 
 func NewVLMValidateCommand() (*VLMValidateCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -74,94 +75,94 @@ Notes:
 - Inputs can be provided as PDFs, PNGs, or .rmdoc files. For .rmdoc inputs, pages are rendered to PNGs using the V6 merge pipeline.
 `),
 		glazecmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"pdf-a",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithHelp("Path to PDF A (e.g. remarquee output)"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithHelp("Path to PDF A (e.g. remarquee output)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"pdf-b",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Optional path to PDF B (e.g. reference output)"),
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Optional path to PDF B (e.g. reference output)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"image-a",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Path to PNG A (skip PDF rendering)"),
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Path to PNG A (skip PDF rendering)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"image-b",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Path to PNG B (skip PDF rendering)"),
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Path to PNG B (skip PDF rendering)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"rmdoc-a",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Path to .rmdoc A (render V6 pages to PNGs)"),
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Path to .rmdoc A (render V6 pages to PNGs)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"rmdoc-b",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Path to .rmdoc B (render V6 pages to PNGs)"),
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Path to .rmdoc B (render V6 pages to PNGs)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"pages",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("1"),
-				parameters.WithHelp("Comma-separated 1-based page numbers to render (for PDF or .rmdoc inputs)"),
+				fields.TypeString,
+				fields.WithDefault("1"),
+				fields.WithHelp("Comma-separated 1-based page numbers to render (for PDF or .rmdoc inputs)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"out-dir",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Directory to write PNGs to (default: temp dir)"),
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Directory to write PNGs to (default: temp dir)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"rasterizer",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("poppler"),
-				parameters.WithHelp("PDF->image rasterizer: poppler (pdftoppm) or unidoc (unidoc currently disabled due to type check errors)"),
+				fields.TypeString,
+				fields.WithDefault("poppler"),
+				fields.WithHelp("PDF->image rasterizer: poppler (pdftoppm) or unidoc (unidoc currently disabled due to type check errors)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"dpi",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(200),
-				parameters.WithHelp("Rasterization DPI (poppler only)"),
+				fields.TypeInteger,
+				fields.WithDefault(200),
+				fields.WithHelp("Rasterization DPI (poppler only)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"pdftoppm",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("pdftoppm"),
-				parameters.WithHelp("pdftoppm executable (poppler rasterizer)"),
+				fields.TypeString,
+				fields.WithDefault("pdftoppm"),
+				fields.WithHelp("pdftoppm executable (poppler rasterizer)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"pinocchio",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("pinocchio"),
-				parameters.WithHelp("Pinocchio executable (default: pinocchio)"),
+				fields.TypeString,
+				fields.WithDefault("pinocchio"),
+				fields.WithHelp("Pinocchio executable (default: pinocchio)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"prompt",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("Describe these images. Check for missing/misaligned strokes, missing highlights, missing typed text, incorrect page size, and missing template background. If two PDFs are included, compare A vs B and list differences."),
-				parameters.WithHelp("Prompt to send to the VLM"),
+				fields.TypeString,
+				fields.WithDefault("Describe these images. Check for missing/misaligned strokes, missing highlights, missing typed text, incorrect page size, and missing template background. If two PDFs are included, compare A vs B and list differences."),
+				fields.WithHelp("Prompt to send to the VLM"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &VLMValidateCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *VLMValidateCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *VLMValidateCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &VLMValidateSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -330,8 +331,8 @@ func NewVLMValidateCobraCommand() (*cobra.Command, error) {
 	return cli.BuildCobraCommand(cmd,
 		cli.WithDualMode(false),
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 }

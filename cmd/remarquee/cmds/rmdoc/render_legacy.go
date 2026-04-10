@@ -6,8 +6,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -23,13 +24,13 @@ type RenderLegacyCommand struct {
 }
 
 type RenderLegacySettings struct {
-	File string `glazed.parameter:"file"`
-	Out  string `glazed.parameter:"out"`
+	File string `glazed:"file"`
+	Out  string `glazed:"out"`
 
-	Force           bool `glazed.parameter:"force"`
-	AddPageNumbers  bool `glazed.parameter:"add-page-numbers"`
-	AllPages        bool `glazed.parameter:"all-pages"`
-	AnnotationsOnly bool `glazed.parameter:"annotations-only"`
+	Force           bool `glazed:"force"`
+	AddPageNumbers  bool `glazed:"add-page-numbers"`
+	AllPages        bool `glazed:"all-pages"`
+	AnnotationsOnly bool `glazed:"annotations-only"`
 
 	CloudInputSettings
 }
@@ -38,52 +39,52 @@ var _ glazecmds.BareCommand = &RenderLegacyCommand{}
 var _ glazecmds.GlazeCommand = &RenderLegacyCommand{}
 
 func NewRenderLegacyCommand() (*RenderLegacyCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
 
-	flags := []*parameters.ParameterDefinition{
-		parameters.NewParameterDefinition(
+	flags := []*fields.Definition{
+		fields.New(
 			"out",
-			parameters.ParameterTypeString,
-			parameters.WithDefault(""),
-			parameters.WithHelp("Output PDF path (default: <input>-annotations.pdf in current dir)"),
+			fields.TypeString,
+			fields.WithDefault(""),
+			fields.WithHelp("Output PDF path (default: <input>-annotations.pdf in current dir)"),
 		),
-		parameters.NewParameterDefinition(
+		fields.New(
 			"force",
-			parameters.ParameterTypeBool,
-			parameters.WithDefault(false),
-			parameters.WithHelp("Overwrite output file if it exists"),
+			fields.TypeBool,
+			fields.WithDefault(false),
+			fields.WithHelp("Overwrite output file if it exists"),
 		),
-		parameters.NewParameterDefinition(
+		fields.New(
 			"add-page-numbers",
-			parameters.ParameterTypeBool,
-			parameters.WithDefault(false),
-			parameters.WithHelp("Add page numbers"),
+			fields.TypeBool,
+			fields.WithDefault(false),
+			fields.WithHelp("Add page numbers"),
 		),
-		parameters.NewParameterDefinition(
+		fields.New(
 			"all-pages",
-			parameters.ParameterTypeBool,
-			parameters.WithDefault(false),
-			parameters.WithHelp("Include pages without annotations"),
+			fields.TypeBool,
+			fields.WithDefault(false),
+			fields.WithHelp("Include pages without annotations"),
 		),
-		parameters.NewParameterDefinition(
+		fields.New(
 			"annotations-only",
-			parameters.ParameterTypeBool,
-			parameters.WithDefault(false),
-			parameters.WithHelp("Export annotations only (no background PDF)"),
+			fields.TypeBool,
+			fields.WithDefault(false),
+			fields.WithHelp("Export annotations only (no background PDF)"),
 		),
-		parameters.NewParameterDefinition(
+		fields.New(
 			"file",
-			parameters.ParameterTypeString,
-			parameters.WithIsArgument(true),
-			parameters.WithRequired(true),
-			parameters.WithHelp("Path to the legacy .rmdoc/.zip file, or a remote cloud path when used with --cloud"),
+			fields.TypeString,
+			fields.WithIsArgument(true),
+			fields.WithRequired(true),
+			fields.WithHelp("Path to the legacy .rmdoc/.zip file, or a remote cloud path when used with --cloud"),
 		),
 	}
 	flags = append(flags, cloudInputParameterDefinitions()...)
@@ -99,18 +100,18 @@ Notes:
 - For cPages/V6 documents, this will return an error (V6 rendering not implemented yet).
 `),
 		glazecmds.WithFlags(flags...),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &RenderLegacyCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *RenderLegacyCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *RenderLegacyCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &RenderLegacySettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
-	if err := initializeCloudInputSettings(parsedLayers, &s.CloudInputSettings); err != nil {
+	if err := initializeCloudInputSettings(parsedValues, &s.CloudInputSettings); err != nil {
 		return err
 	}
 
@@ -178,14 +179,14 @@ func (c *RenderLegacyCommand) execute(ctx context.Context, s *RenderLegacySettin
 
 func (c *RenderLegacyCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedValues *values.Values,
 	gp middlewares.Processor,
 ) error {
 	s := &RenderLegacySettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
-	if err := initializeCloudInputSettings(parsedLayers, &s.CloudInputSettings); err != nil {
+	if err := initializeCloudInputSettings(parsedValues, &s.CloudInputSettings); err != nil {
 		return err
 	}
 
@@ -214,8 +215,8 @@ func NewRenderLegacyCobraCommand() (*cobra.Command, error) {
 		cli.WithDualMode(true),
 		cli.WithGlazeToggleFlag("with-glaze-output"),
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 	if err != nil {

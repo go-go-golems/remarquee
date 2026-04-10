@@ -6,8 +6,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/juruen/rmapi/util"
 	"github.com/pkg/errors"
@@ -21,21 +22,21 @@ type PutCommand struct {
 type PutSettings struct {
 	AuthSettings
 
-	Local        string `glazed.parameter:"local"`
-	RemoteDir    string `glazed.parameter:"remote-dir"`
-	Force        bool   `glazed.parameter:"force"`
-	ContentOnly  bool   `glazed.parameter:"content-only"`
-	CoverpageStr string `glazed.parameter:"coverpage"`
+	Local        string `glazed:"local"`
+	RemoteDir    string `glazed:"remote-dir"`
+	Force        bool   `glazed:"force"`
+	ContentOnly  bool   `glazed:"content-only"`
+	CoverpageStr string `glazed:"coverpage"`
 }
 
 var _ glazecmds.BareCommand = &PutCommand{}
 
 func NewPutCommand() (*PutCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -59,62 +60,62 @@ Examples:
 `),
 		glazecmds.WithFlags(
 			// Auth flags
-			parameters.NewParameterDefinition(
+			fields.New(
 				"non-interactive",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Do not prompt for one-time code; fail if tokens are missing"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"reauth",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Force re-authentication (re-fetch user token)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Force re-authentication (re-fetch user token)"),
 			),
 
-			parameters.NewParameterDefinition(
+			fields.New(
 				"force",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Overwrite existing file (recreates document)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Overwrite existing file (recreates document)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"content-only",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Replace PDF content only (preserves document metadata)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Replace PDF content only (preserves document metadata)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"coverpage",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(""),
-				parameters.WithHelp("Set coverpage (0 to disable, 1 to set first page as cover)"),
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Set coverpage (0 to disable, 1 to set first page as cover)"),
 			),
 
-			parameters.NewParameterDefinition(
+			fields.New(
 				"local",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithRequired(true),
-				parameters.WithHelp("Local file to upload"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithRequired(true),
+				fields.WithHelp("Local file to upload"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"remote-dir",
-				parameters.ParameterTypeString,
-				parameters.WithIsArgument(true),
-				parameters.WithDefault("/"),
-				parameters.WithHelp("Remote directory to upload into (default: /)"),
+				fields.TypeString,
+				fields.WithIsArgument(true),
+				fields.WithDefault("/"),
+				fields.WithHelp("Remote directory to upload into (default: /)"),
 			),
 		),
-		glazecmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &PutCommand{CommandDescription: cmdDesc}, nil
 }
 
-func (c *PutCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *PutCommand) Run(ctx context.Context, parsedValues *values.Values) error {
 	s := &PutSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
 		return err
 	}
 
@@ -203,8 +204,8 @@ func NewPutCobraCommand() (*cobra.Command, error) {
 
 	return cli.BuildCobraCommand(cmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 }

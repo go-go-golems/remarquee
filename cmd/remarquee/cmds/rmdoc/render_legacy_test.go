@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
 )
 
@@ -21,22 +19,13 @@ func TestRenderLegacyCommand_Smoke(t *testing.T) {
 	tmp := t.TempDir()
 	out := filepath.Join(tmp, "out.pdf")
 
-	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default")
-	if err != nil {
-		t.Fatalf("NewParameterLayer: %v", err)
-	}
+	parsedValues := newDefaultParsedValues(t, cmd.CommandDescription, map[string]interface{}{
+		"file":  filepath.Join(repoRootFromThisFile(t), "cmd", "remarquee-ui", "testdata", "legacy-pdf-a4.zip"),
+		"out":   out,
+		"force": true,
+	})
 
-	pp := parameters.NewParsedParameters()
-	pp.Set("file", &parameters.ParsedParameter{Value: filepath.Join(repoRootFromThisFile(t), "cmd", "remarquee-ui", "testdata", "legacy-pdf-a4.zip")})
-	pp.Set("out", &parameters.ParsedParameter{Value: out})
-	pp.Set("force", &parameters.ParsedParameter{Value: true})
-
-	parsedLayers := layers.NewParsedLayers(layers.WithParsedLayer(layers.DefaultSlug, &layers.ParsedLayer{
-		Layer:      defaultLayer,
-		Parameters: pp,
-	}))
-
-	if err := cmd.Run(context.Background(), parsedLayers); err != nil {
+	if err := cmd.Run(context.Background(), parsedValues); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 
@@ -86,24 +75,15 @@ func TestRenderLegacyCommand_CloudSmoke(t *testing.T) {
 	tmp := t.TempDir()
 	out := filepath.Join(tmp, "out.pdf")
 
-	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default")
-	if err != nil {
-		t.Fatalf("NewParameterLayer: %v", err)
-	}
+	parsedValues := newDefaultParsedValues(t, cmd.CommandDescription, map[string]interface{}{
+		"file":            "/Archive/CloudLegacy",
+		"out":             out,
+		"force":           true,
+		"cloud":           true,
+		"non-interactive": true,
+	})
 
-	pp := parameters.NewParsedParameters()
-	pp.Set("file", &parameters.ParsedParameter{Value: "/Archive/CloudLegacy"})
-	pp.Set("out", &parameters.ParsedParameter{Value: out})
-	pp.Set("force", &parameters.ParsedParameter{Value: true})
-	pp.Set("cloud", &parameters.ParsedParameter{Value: true})
-	pp.Set("non-interactive", &parameters.ParsedParameter{Value: true})
-
-	parsedLayers := layers.NewParsedLayers(layers.WithParsedLayer(layers.DefaultSlug, &layers.ParsedLayer{
-		Layer:      defaultLayer,
-		Parameters: pp,
-	}))
-
-	if err := cmd.Run(context.Background(), parsedLayers); err != nil {
+	if err := cmd.Run(context.Background(), parsedValues); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 

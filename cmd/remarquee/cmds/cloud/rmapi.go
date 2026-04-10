@@ -6,8 +6,8 @@ import (
 )
 
 type AuthSettings struct {
-	NonInteractive bool `glazed.parameter:"non-interactive"`
-	Reauth         bool `glazed.parameter:"reauth"`
+	NonInteractive bool `glazed:"non-interactive"`
+	Reauth         bool `glazed:"reauth"`
 }
 
 func createApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
