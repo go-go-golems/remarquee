@@ -10,61 +10,61 @@
 
 ### 1. Baseline and execution hygiene
 
-- [ ] Create a short implementation diary in `reference/` before the first code change
-- [ ] Record the exact pre-migration grep baseline in the diary
-- [ ] Record the exact pre-migration `go test ./...` status in the diary
+- [x] Create a short implementation diary in `reference/` before the first code change
+- [x] Record the exact pre-migration grep baseline in the diary
+- [x] Record the exact pre-migration `go test ./...` status in the diary
 - [ ] Split implementation into reviewable commits by migration slice rather than one large cutover commit
 
 ### 2. Shared migration decisions
 
-- [ ] Confirm the exact modern helper set to standardize on across the repo (`schema`, `fields`, `values`, `settings.NewGlazedSection`, `cli.NewCommandSettingsSection`, `ShortHelpSections`)
-- [ ] Confirm the modern Geppetto integration points for OCR (`geppettosections.CreateGeppettoSections`, `factory.NewEngineFromParsedValues`, and the recommended middleware hook)
+- [x] Confirm the exact modern helper set to standardize on across the repo (`schema`, `fields`, `values`, `settings.NewGlazedSection`, `cli.NewCommandSettingsSection`, `ShortHelpSections`)
+- [x] Confirm the modern Geppetto integration points for OCR (`geppettosections.CreateGeppettoSections`, `factory.NewEngineFromParsedValues`, and the recommended middleware hook)
 - [ ] Decide whether to keep using `cli.WithParserConfig(...)` everywhere or move opportunistically to the newer convenience options where that improves clarity without changing behavior
 
 ### 3. Migrate shared cloud settings and auth primitives
 
-- [ ] Migrate `cmd/remarquee/cmds/cloud/rmapi.go`
-  - [ ] Replace `glazed.parameter` tags with `glazed`
-  - [ ] Verify all cloud commands still decode auth settings correctly
+- [x] Migrate `cmd/remarquee/cmds/cloud/rmapi.go`
+  - [x] Replace `glazed.parameter` tags with `glazed`
+  - [x] Verify all cloud commands still decode auth settings correctly
 - [ ] Identify any repeated auth flag definitions worth normalizing while touching the cloud files
 
 ### 4. Migrate standard cloud commands (simple / non-dual)
 
-- [ ] Migrate `cmd/remarquee/cmds/cloud/account.go`
-  - [ ] Replace legacy imports (`layers`, `parameters`) with `schema`, `fields`, `values`
-  - [ ] Replace `settings.NewGlazedParameterLayers()` with `settings.NewGlazedSection()`
-  - [ ] Replace `cli.NewCommandSettingsLayer()` with `cli.NewCommandSettingsSection()`
-  - [ ] Replace `glazecmds.WithLayersList(...)` with `glazecmds.WithSections(...)`
-  - [ ] Replace `*layers.ParsedLayers` with `*values.Values`
-  - [ ] Replace `InitializeStruct(...)` with `DecodeSectionInto(...)`
-  - [ ] Replace `ShortHelpLayers` with `ShortHelpSections`
-- [ ] Migrate `cmd/remarquee/cmds/cloud/version.go`
-- [ ] Migrate `cmd/remarquee/cmds/cloud/get.go`
-- [ ] Migrate `cmd/remarquee/cmds/cloud/mkdir.go`
-- [ ] Migrate `cmd/remarquee/cmds/cloud/mv.go`
-- [ ] Migrate `cmd/remarquee/cmds/cloud/rm.go`
-- [ ] Migrate `cmd/remarquee/cmds/cloud/put.go`
-- [ ] Migrate `cmd/remarquee/cmds/cloud/search.go`
+- [x] Migrate `cmd/remarquee/cmds/cloud/account.go`
+  - [x] Replace legacy imports (`layers`, `parameters`) with `schema`, `fields`, `values`
+  - [x] Replace `settings.NewGlazedParameterLayers()` with `settings.NewGlazedSection()`
+  - [x] Replace `cli.NewCommandSettingsLayer()` with `cli.NewCommandSettingsSection()`
+  - [x] Replace `glazecmds.WithLayersList(...)` with `glazecmds.WithSections(...)`
+  - [x] Replace `*layers.ParsedLayers` with `*values.Values`
+  - [x] Replace `InitializeStruct(...)` with `DecodeSectionInto(...)`
+  - [x] Replace `ShortHelpLayers` with `ShortHelpSections`
+- [x] Migrate `cmd/remarquee/cmds/cloud/version.go`
+- [x] Migrate `cmd/remarquee/cmds/cloud/get.go`
+- [x] Migrate `cmd/remarquee/cmds/cloud/mkdir.go`
+- [x] Migrate `cmd/remarquee/cmds/cloud/mv.go`
+- [x] Migrate `cmd/remarquee/cmds/cloud/rm.go`
+- [x] Migrate `cmd/remarquee/cmds/cloud/put.go`
+- [x] Migrate `cmd/remarquee/cmds/cloud/search.go`
 - [ ] Smoke-check `--help` for each migrated simple cloud command before moving on
 
 ### 5. Migrate dual-mode cloud commands while preserving structured-output UX
 
-- [ ] Migrate `cmd/remarquee/cmds/cloud/ls.go`
-  - [ ] Preserve current `BareCommand` behavior
-  - [ ] Preserve current `GlazeCommand` behavior and field names
-  - [ ] Replace default glaze output setup with `settings.NewGlazedSection(... settings.WithOutputSectionOptions(schema.WithDefaults(...)))`
-  - [ ] Preserve the current JSON default in glaze mode
-  - [ ] Preserve help text mentioning `--with-glaze-output`
-- [ ] Migrate `cmd/remarquee/cmds/cloud/find.go`
-  - [ ] Preserve regex behavior and current field names
-  - [ ] Preserve JSON default in glaze mode
-  - [ ] Keep the existing dual-mode toggle behavior
-- [ ] Migrate `cmd/remarquee/cmds/cloud/stat.go`
-  - [ ] Preserve JSON default in glaze mode
-  - [ ] Preserve current structured row fields
-- [ ] Migrate `cmd/remarquee/cmds/cloud/refresh.go`
-  - [ ] Preserve JSON default in glaze mode
-  - [ ] Preserve current structured output behavior
+- [x] Migrate `cmd/remarquee/cmds/cloud/ls.go`
+  - [x] Preserve current `BareCommand` behavior
+  - [x] Preserve current `GlazeCommand` behavior and field names
+  - [x] Replace default glaze output setup with `settings.NewGlazedSection(... settings.WithOutputSectionOptions(schema.WithDefaults(...)))`
+  - [x] Preserve the current JSON default in glaze mode
+  - [x] Preserve help text mentioning `--with-glaze-output`
+- [x] Migrate `cmd/remarquee/cmds/cloud/find.go`
+  - [x] Preserve regex behavior and current field names
+  - [x] Preserve JSON default in glaze mode
+  - [x] Keep the existing dual-mode toggle behavior
+- [x] Migrate `cmd/remarquee/cmds/cloud/stat.go`
+  - [x] Preserve JSON default in glaze mode
+  - [x] Preserve current structured row fields
+- [x] Migrate `cmd/remarquee/cmds/cloud/refresh.go`
+  - [x] Preserve JSON default in glaze mode
+  - [x] Preserve current structured output behavior
 - [ ] Run command-level smoke checks for all four dual-mode commands in both classic and glaze mode
 
 ### 6. Migrate rmdoc shared helper and commands

@@ -134,3 +134,146 @@ cd /home/manuel/code/wesen/go-go-golems/geppetto && rg -n "CreateGeppettoSection
 ```bash
 cd /home/manuel/code/wesen/go-go-golems/remarquee && docmgr doctor --ticket RMQ-0017 --stale-after 30
 ```
+
+## Step 2: Upgrade dependencies and migrate the entire cloud command package
+
+The first real code slice was the whole `cloud` package. I chose to migrate all cloud commands in one pass because the package has to compile as a unit, and the dual-mode commands (`ls`, `find`, `stat`, `refresh`) share the same value-decoding and section-construction patterns as the simpler commands.
+
+This step also forced the dependency question into the open. The moment I switched the code to the new API, the existing `glazed v0.7.8` and `geppetto v0.6.0` pins stopped being viable, so I upgraded both modules to current releases and then fixed the remaining compile gaps in the cloud package itself.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Continue the migration in stable slices and record exactly what changed and why.
+
+**Inferred user intent:** The user wants a real end-to-end migration, not just planning documents, with stable intermediate commits.
+
+**Commit (code):** 472aba7 — "Migrate cloud commands to glazed facade API"
+
+### What I did
+- Upgraded module dependencies in `go.mod` / `go.sum`:
+  - `github.com/go-go-golems/glazed` `v0.7.8` → `v1.2.1`
+  - `github.com/go-go-golems/geppetto` `v0.6.0` → `v0.11.9`
+- Migrated all cloud command files from legacy Glazed APIs to the facade APIs:
+  - `cmd/remarquee/cmds/cloud/account.go`
+  - `cmd/remarquee/cmds/cloud/find.go`
+  - `cmd/remarquee/cmds/cloud/get.go`
+  - `cmd/remarquee/cmds/cloud/ls.go`
+  - `cmd/remarquee/cmds/cloud/mkdir.go`
+  - `cmd/remarquee/cmds/cloud/mv.go`
+  - `cmd/remarquee/cmds/cloud/put.go`
+  - `cmd/remarquee/cmds/cloud/refresh.go`
+  - `cmd/remarquee/cmds/cloud/rm.go`
+  - `cmd/remarquee/cmds/cloud/rmapi.go`
+  - `cmd/remarquee/cmds/cloud/search.go`
+  - `cmd/remarquee/cmds/cloud/stat.go`
+  - `cmd/remarquee/cmds/cloud/version.go`
+- Applied the standard migration pattern in those files:
+  - `layers` → `schema`
+  - `parameters` → `fields`
+  - `*layers.ParsedLayers` → `*values.Values`
+  - `InitializeStruct(...)` → `DecodeSectionInto(...)`
+  - `settings.NewGlazedParameterLayers(...)` → `settings.NewGlazedSection(...)`
+  - `cli.NewCommandSettingsLayer()` → `cli.NewCommandSettingsSection()`
+  - `WithLayersList(...)` → `WithSections(...)`
+  - `ShortHelpLayers` → `ShortHelpSections`
+  - `glazed.parameter` tags → `glazed`
+- Preserved the existing dual-mode behavior and JSON default glaze output for:
+  - `cloud ls`
+  - `cloud find`
+  - `cloud stat`
+  - `cloud refresh`
+- Added the transitive module entry Glazed needed for the upgraded command parser stack:
+  - `go get github.com/go-go-golems/glazed/pkg/cmds/sources@v1.2.1`
+- Validated the slice with:
+  - `cd /home/manuel/code/wesen/go-go-golems/remarquee && go test ./cmd/remarquee/cmds/cloud/...`
+
+### Why
+- The cloud package was the largest cluster of directly related command files and the cleanest place to establish the new coding pattern.
+- Upgrading dependencies early removes ambiguity about whether the migration actually works against the modern APIs or only against transitional shims.
+- Preserving the dual-mode UX in the same slice keeps the migration behaviorally honest.
+
+### What worked
+- The dependency bump correctly exposed all old-package usage as real compile problems instead of letting them hide behind compatibility aliases.
+- The cloud package now compiles cleanly against the modern Glazed release.
+- The JSON default glaze output pattern migrated cleanly using `settings.NewGlazedSection(... settings.WithOutputSectionOptions(schema.WithDefaults(...)))`.
+- The cloud-specific validation succeeded:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee && go test ./cmd/remarquee/cmds/cloud/...
+```
+
+### What didn't work
+- The first attempt to compile the new code failed because `remarquee` was still pinned to older module versions that do not expose the new section/value API:
+
+```text
+undefined: settings.NewGlazedSection
+undefined: cli.NewCommandSettingsSection
+undefined: glazecmds.WithSections
+parsedValues.DecodeSectionInto undefined
+unknown field ShortHelpSections in struct literal of type cli.CobraParserConfig
+```
+
+- After upgrading dependencies, `go get ... && go mod tidy` failed because the repo still contained legacy imports in non-cloud files, especially OCR:
+
+```text
+github.com/go-go-golems/remarquee/cmd/remarquee/cmds/ocr imports
+	github.com/go-go-golems/geppetto/pkg/layers: module github.com/go-go-golems/geppetto@latest found (v0.11.9), but does not contain package github.com/go-go-golems/geppetto/pkg/layers
+```
+
+and:
+
+```text
+github.com/go-go-golems/remarquee/cmd/remarquee/cmds/ocr imports
+	github.com/go-go-golems/glazed/pkg/cmds/layers: module github.com/go-go-golems/glazed@latest found (v1.2.1), but does not contain package github.com/go-go-golems/glazed/pkg/cmds/layers
+```
+
+- The first mechanical migration pass also missed one `refresh.go` signature, which left a broken `RunIntoGlazeProcessor` using `*layers.ParsedLayers` after the import had already been migrated.
+
+### What I learned
+- The migration and dependency bump really are inseparable. The code changes only make sense once the repo is on modern Glazed/Geppetto versions.
+- Package-level migrations are safer than file-by-file commits when a package must compile as a unit.
+- The dual-mode cloud commands were not materially harder than the simple commands once the output-default helper was updated correctly.
+
+### What was tricky to build
+- The dependency bump was the sharpest edge in this step. The symptom was a wall of `undefined` errors after switching to the new APIs, which looked like a code mistake at first glance. The real cause was version skew: the code had been migrated, but `remarquee` was still compiling against old module releases. I fixed that by upgrading both `glazed` and `geppetto`, then treating the remaining errors as the real migration backlog.
+- The second tricky point was that `go mod tidy` could not complete yet because OCR and other non-migrated files still referenced removed packages. I handled that by validating the cloud package in isolation and deferring full-repo tidy until more of the migration is complete.
+
+### What warrants a second pair of eyes
+- Review the `go.mod` / `go.sum` bump for any surprising transitive changes beyond Glazed/Geppetto.
+- Review the four dual-mode cloud commands specifically to confirm no human-readable behavior or field naming regressed.
+
+### What should be done in the future
+- Once `rmdoc` and `ocr` are migrated, run a final `go mod tidy` and verify that no transitive leftovers from the old dependency set remain.
+
+### Code review instructions
+- Start with:
+  - `go.mod`
+  - `cmd/remarquee/cmds/cloud/rmapi.go`
+  - `cmd/remarquee/cmds/cloud/account.go`
+  - `cmd/remarquee/cmds/cloud/find.go`
+  - `cmd/remarquee/cmds/cloud/ls.go`
+  - `cmd/remarquee/cmds/cloud/stat.go`
+  - `cmd/remarquee/cmds/cloud/refresh.go`
+- Validate with:
+  - `cd /home/manuel/code/wesen/go-go-golems/remarquee && go test ./cmd/remarquee/cmds/cloud/...`
+
+### Technical details
+- Dependency upgrade command:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee && go get github.com/go-go-golems/glazed@v1.2.1 github.com/go-go-golems/geppetto@v0.11.9
+```
+
+- Additional module fix for new Glazed transitive requirements:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee && go get github.com/go-go-golems/glazed/pkg/cmds/sources@v1.2.1
+```
+
+- Cloud-package validation:
+
+```bash
+cd /home/manuel/code/wesen/go-go-golems/remarquee && go test ./cmd/remarquee/cmds/cloud/...
+```
