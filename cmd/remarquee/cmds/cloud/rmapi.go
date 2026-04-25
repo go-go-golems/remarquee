@@ -19,5 +19,7 @@ func createApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
 		return nil, nil, err
 	}
 
+	rmcloud.WrapTransportWithLogging(apiCtx)
+
 	return userInfo, apiCtx, nil
 }

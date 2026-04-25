@@ -1,9 +1,12 @@
 package rmcloud
 
 import (
+	"reflect"
+	"strings"
+
 	"github.com/juruen/rmapi/api"
 	"github.com/pkg/errors"
-	"strings"
+	"github.com/rs/zerolog/log"
 )
 
 const authRetries = 3
@@ -15,6 +18,33 @@ const authRetries = 3
 type AuthSettings struct {
 	NonInteractive bool
 	Reauth         bool
+}
+
+// forceSchemaV4 uses reflection to set the underlying sync15 HashTree.SchemaVersion to "4"
+// when it is empty. This avoids the global side-effect of os.Setenv and works around the
+// rmapi bug where an empty SchemaVersion defaults to V3, causing 400 "invalid hash" from
+// the reMarkable cloud.
+func forceSchemaV4(apiCtx api.ApiCtx) {
+	v := reflect.ValueOf(apiCtx)
+	if v.Kind() != reflect.Ptr || v.IsNil() {
+		return
+	}
+	v = v.Elem()
+
+	hashTreeField := v.FieldByName("hashTree")
+	if !hashTreeField.IsValid() || hashTreeField.IsNil() {
+		return
+	}
+
+	schemaVersionField := hashTreeField.Elem().FieldByName("SchemaVersion")
+	if !schemaVersionField.IsValid() {
+		return
+	}
+
+	if schemaVersionField.String() == "" {
+		schemaVersionField.SetString("4")
+		log.Debug().Msg("rmcloud: set HashTree.SchemaVersion to 4 via reflection")
+	}
 }
 
 // CreateApiCtx creates an rmapi ApiCtx using rmapi's token bootstrap logic.
@@ -42,6 +72,8 @@ func CreateApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
 			lastErr = errors.Wrap(err, "failed to create rmapi api context")
 			continue
 		}
+
+		forceSchemaV4(apiCtx)
 
 		return userInfo, apiCtx, nil
 	}
