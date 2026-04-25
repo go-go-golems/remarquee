@@ -212,7 +212,7 @@ func NewOcrCobraCommand() (*cobra.Command, error) {
 
 	return cli.BuildCobraCommand(cmd,
 		cli.WithCobraShortHelpSections(schema.DefaultSlug),
-		cli.WithCobraMiddlewaresFunc(geppettosections.GetCobraCommandGeppettoMiddlewares),
+		cli.WithCobraMiddlewaresFunc(cli.CobraCommandDefaultMiddlewares),
 	)
 }
 

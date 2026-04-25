@@ -284,7 +284,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 			apiCtx.Filetree().DeleteNode(existingNode)
 		}
 
-		document, err := apiCtx.UploadDocument(dstNode.Id(), outPDF, true, nil)
+		document, err := apiCtx.UploadDocument(dstNode.Id(), outPDF, true, nil, nil, nil, nil)
 		if err != nil {
 			return errors.Wrapf(err, "failed to upload file [%s]", outPDF)
 		}
