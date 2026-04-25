@@ -3,6 +3,7 @@ package rmcloud
 import (
 	"reflect"
 	"strings"
+	"unsafe"
 
 	"github.com/juruen/rmapi/api"
 	"github.com/pkg/errors"
@@ -42,6 +43,12 @@ func forceSchemaV4(apiCtx api.ApiCtx) {
 	}
 
 	if schemaVersionField.String() == "" {
+		// Values reached through unexported fields are not settable by default.
+		// Create a new, settable Value backed by the same memory address.
+		schemaVersionField = reflect.NewAt(
+			schemaVersionField.Type(),
+			unsafe.Pointer(schemaVersionField.UnsafeAddr()),
+		).Elem()
 		schemaVersionField.SetString("4")
 		log.Debug().Msg("rmcloud: set HashTree.SchemaVersion to 4 via reflection")
 	}

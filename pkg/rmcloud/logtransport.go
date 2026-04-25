@@ -40,14 +40,19 @@ func (l *loggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 		return resp, err
 	}
 
-	// Read body for logging (and restore)
+	// Read full body so downstream rmapi code sees the complete response,
+	// then log only the first maxLoggedBody bytes as a preview.
 	var bodyStr string
 	if resp.Body != nil {
-		bodyBytes, readErr := io.ReadAll(io.LimitReader(resp.Body, maxLoggedBody))
+		bodyBytes, readErr := io.ReadAll(resp.Body)
 		if readErr == nil {
-			bodyStr = string(bodyBytes)
+			if len(bodyBytes) > maxLoggedBody {
+				bodyStr = string(bodyBytes[:maxLoggedBody]) + "…"
+			} else {
+				bodyStr = string(bodyBytes)
+			}
 		}
-		// Reconstruct the body so the caller can still read it
+		// Reconstruct the body from the FULL read so the caller isn't truncated.
 		resp.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 	}
 
