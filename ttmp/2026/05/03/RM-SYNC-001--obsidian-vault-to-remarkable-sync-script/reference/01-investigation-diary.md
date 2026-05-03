@@ -12,6 +12,10 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: cmd/remarquee/cmds/upload/sync_plan.go
+      Note: Pure planner added during implementation Step 9
+    - Path: cmd/remarquee/cmds/upload/sync_plan_test.go
+      Note: Unit tests added during implementation Step 9
     - Path: ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/reference/01-investigation-diary.md
       Note: Chronological continuation notes for the resumed ticket work
     - Path: ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md
@@ -20,10 +24,11 @@ RelatedFiles:
       Note: Topic vocabulary fix that made docmgr doctor pass
 ExternalSources: []
 Summary: Chronological investigation of the Obsidian-to-reMarkable sync problem, remarquee capabilities, gaps, and prototype script.
-LastUpdated: 2026-05-03T18:25:00-04:00
+LastUpdated: 2026-05-03T18:45:00-04:00
 WhatFor: Record investigation steps, commands run, failures, and learnings for future reference.
 WhenToUse: When continuing this work or reviewing why design decisions were made.
 ---
+
 
 
 # Diary
@@ -388,3 +393,71 @@ I treated this turn as a cleanup and orientation pass: verify the facts, fix the
 - Verification commands used this step:
   - `docmgr doctor --ticket RM-SYNC-001 --stale-after 30`
   - `remarquee cloud ls /ai/2026/05/03/RM-SYNC-001 --long --non-interactive`
+
+## Step 9: Add Pure Sync Planning Helpers and Tests
+
+I started implementation with the non-mutating core: given local Markdown inputs and a path-keyed remote index, decide which files should upload, skip, become stale, or count as remote orphans. This keeps the hard sync semantics testable without authenticating to reMarkable or running pandoc.
+
+The key design decision was to use full remote document keys, not leaf names. This deliberately improves on the bash prototype, where two notes named `note.md` in different folders could collide.
+
+### Prompt Context
+
+**User prompt (verbatim):** "alright, upate the doc, add detailed tasks for the ticket, and then work on them one by one, committing at appropriate intervals, and keeping a diary."
+
+**Assistant interpretation:** Expand the ticket into actionable tasks, then begin implementing them in focused commits while maintaining diary and docmgr bookkeeping.
+
+**Inferred user intent:** Move from investigation/design into tracked implementation, with reviewable commits and a durable handoff record.
+
+**Commit (code):** pending at time of diary entry — planned commit after tests and docmgr updates.
+
+### What I did
+- Added `cmd/remarquee/cmds/upload/sync_plan.go`.
+- Added sync action constants for `upload`, `skip`, `stale`, and `orphan`.
+- Added a pure `buildSyncPlan` helper that compares `markdownInput` values with a remote index keyed by full remote path.
+- Added `buildSyncLocalDocs` to compute PDF name, document name, destination directory, remote key, and local mtime.
+- Added duplicate remote-key detection for flatten/collision cases.
+- Added `cmd/remarquee/cmds/upload/sync_plan_test.go` with tests for upload/skip, directory-preserving keys, flatten collisions, mtime stale detection, and orphan detection.
+- Ran `gofmt -w cmd/remarquee/cmds/upload/sync_plan.go cmd/remarquee/cmds/upload/sync_plan_test.go`.
+- Ran `go test ./cmd/remarquee/cmds/upload -count=1` → passed.
+- Checked off tasks 12 and 13.
+
+### Why
+- `upload sync` needs a deterministic delta planner before any CLI wiring or remote mutations.
+- Keeping planning pure makes correctness review much easier and avoids needing rmapi credentials in unit tests.
+- Full remote-path keys are necessary to preserve directory semantics and avoid basename collisions.
+
+### What worked
+- Existing helpers from `md.go` (`markdownPDFName`, `joinRemoteDir`, `remoteDocKey`, and `markdownInput.RelDir`) were reusable.
+- The pure test setup was small and fast: no pandoc, no rmapi, no network.
+- The planner cleanly separated optional features: `CompareMTime` controls stale detection, and `DeleteOrphans` controls orphan reporting.
+
+### What didn't work
+- N/A for this step; the first implementation and tests passed.
+
+### What I learned
+- The current `md.go` already has enough path helper structure to support a native sync implementation without a large refactor first.
+- The path-key distinction is the most important semantic improvement over the bash prototype.
+
+### What was tricky to build
+- The planner needs to compute the same remote document identity that upload execution will later use. The remote document name is the PDF basename without `.pdf`, matching the existing `upload md` behavior through `util.DocPathToName`.
+- Stale detection must be opt-in because remote timestamps may be missing or semantically different from local source mtimes. The planner only marks stale when `CompareMTime` is enabled, the remote mtime is known, and local mtime is newer.
+
+### What warrants a second pair of eyes
+- Confirm the remote key should remain extensionless (`/path/doc`) rather than include `.pdf`. This matches existing remarquee document naming, but it is a critical invariant.
+- Confirm whether a remote directory at the expected document key should be reported as `stale` or as a dedicated conflict action in a later iteration.
+
+### What should be done in the future
+- Wire the planner into a real `remarquee upload sync` command.
+- Build the remote index from rmapi filetree nodes.
+- Add dry-run output tests once CLI wiring exists.
+
+### Code review instructions
+- Start with `cmd/remarquee/cmds/upload/sync_plan.go` and review `buildSyncPlan` before looking at tests.
+- Review `TestBuildSyncPlan_PreserveDirsUsesFullRemotePath` to confirm the intended key semantics.
+- Validate with `go test ./cmd/remarquee/cmds/upload -count=1`.
+
+### Technical details
+- New files:
+  - `cmd/remarquee/cmds/upload/sync_plan.go`
+  - `cmd/remarquee/cmds/upload/sync_plan_test.go`
+- Validation command: `go test ./cmd/remarquee/cmds/upload -count=1`

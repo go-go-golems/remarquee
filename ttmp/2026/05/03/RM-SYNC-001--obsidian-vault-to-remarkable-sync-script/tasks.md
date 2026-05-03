@@ -13,8 +13,8 @@
 - [x] Run docmgr doctor and fix any issues
 - [x] Upload ticket docs to reMarkable
 - [x] Diagnose sync performance (pandoc bottleneck, sequential processing, rmapi tree refresh)
-- [ ] Implement sync planning helpers for local/remote key computation
-- [ ] Add unit tests for sync planning: upload, skip, stale, orphan, preserve-dirs, flatten
+- [x] Implement sync planning helpers for local/remote key computation
+- [x] Add unit tests for sync planning: upload, skip, stale, orphan, preserve-dirs, flatten
 - [ ] Implement `remarquee upload sync` command with dry-run delta reporting
 - [ ] Wire `upload sync` into the upload command tree
 - [ ] Validate `upload sync --dry-run` against temporary markdown fixtures

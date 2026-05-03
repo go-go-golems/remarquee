@@ -23,3 +23,14 @@ Resumed RM-SYNC-001, fixed docmgr vocabulary hygiene for obsidian/sync topics, r
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked doctor and reMarkable upload verification tasks complete
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/vocabulary.yaml — Added obsidian and sync topic vocabulary entries for doctor validation
 
+
+## 2026-05-03
+
+Implemented pure sync planning helpers and unit tests for upload/skip/stale/orphan decisions using full remote path keys.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync_plan.go — Pure sync planning model and delta classification helpers
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync_plan_test.go — Unit coverage for sync plan actions and path-key behavior
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked sync planning helper and test tasks complete
+
