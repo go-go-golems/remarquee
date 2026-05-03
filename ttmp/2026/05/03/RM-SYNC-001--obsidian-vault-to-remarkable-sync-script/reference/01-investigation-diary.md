@@ -30,7 +30,7 @@ RelatedFiles:
       Note: Topic vocabulary fix that made docmgr doctor pass
 ExternalSources: []
 Summary: Chronological investigation of the Obsidian-to-reMarkable sync problem, remarquee capabilities, gaps, and prototype script.
-LastUpdated: 2026-05-03T19:35:00-04:00
+LastUpdated: 2026-05-03T19:45:00-04:00
 WhatFor: Record investigation steps, commands run, failures, and learnings for future reference.
 WhenToUse: When continuing this work or reviewing why design decisions were made.
 ---
@@ -669,3 +669,62 @@ This is a small refactor, but it reduces the chance that sync execution diverges
   - `cmd/remarquee/cmds/upload/md.go`
   - `cmd/remarquee/cmds/upload/sync.go`
 - Validation command: `go test ./cmd/remarquee/cmds/upload -count=1`
+
+## Step 13: Attempt Live Dry-Run Validation and Record Build Blocker
+
+I tried to validate the new `upload sync --dry-run` command with a temporary Markdown fixture and a disposable remote directory. This is the right next check after unit-level plan-output tests because it exercises the actual Cobra command, auth setup, and remote index path.
+
+The attempt did not reach the new sync command. `go run ./cmd/remarquee ...` fails earlier because the repository currently has an unrelated dependency/build mismatch in the full CLI package.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 9)
+
+**Assistant interpretation:** Continue task execution and record blockers rather than silently skipping failed validation.
+
+**Inferred user intent:** Keep the ticket honest about what was validated and what still needs attention.
+
+**Commit (code):** N/A — validation attempt and documentation only.
+
+### What I did
+- Created a temporary Markdown fixture with `mktemp -d` and `test.md`.
+- Ran:
+  - `go run ./cmd/remarquee upload sync --dry-run --non-interactive --remote-dir /ai/2026/05/03/RM-SYNC-001-dry-run-test "$tmp"`
+- The command failed during build before running sync.
+- Left task 16 open because live CLI dry-run validation has not succeeded.
+
+### Why
+- Unit tests validate the planner and output formatting, but a real CLI dry-run should validate command wiring, auth, and rmapi tree indexing.
+
+### What worked
+- Targeted package validation still passes with `go test ./cmd/remarquee/cmds/upload -count=1`.
+
+### What didn't work
+- `go run ./cmd/remarquee ...` failed with:
+  ```text
+  # github.com/go-go-golems/geppetto/pkg/sections
+  ../../../../go/pkg/mod/github.com/go-go-golems/geppetto@v0.11.9/pkg/sections/profile_sections.go:175:34: undefined: glazedConfig.ResolveAppConfigPath
+  ../../../../go/pkg/mod/github.com/go-go-golems/geppetto@v0.11.9/pkg/sections/sections.go:207:34: undefined: glazedConfig.ResolveAppConfigPath
+  ```
+
+### What I learned
+- The upload package can be compiled and tested in isolation, but the top-level `cmd/remarquee` package is currently blocked by an unrelated dependency mismatch.
+- Task 16 should remain open until either the build mismatch is fixed or a prebuilt binary containing this branch's changes is available.
+
+### What was tricky to build
+- This was a validation blocker, not a build change. The tricky part is that package-level confidence is good, but end-to-end CLI confidence is still missing.
+
+### What warrants a second pair of eyes
+- Someone familiar with the current glazed/geppetto dependency matrix should inspect why `geppetto@v0.11.9` expects `glazedConfig.ResolveAppConfigPath`.
+
+### What should be done in the future
+- Fix the top-level CLI build or use a known-good dependency set.
+- Re-run task 16 against a disposable remote directory.
+
+### Code review instructions
+- Do not consider task 16 complete from unit tests alone.
+- Re-run the exact `go run ./cmd/remarquee upload sync --dry-run ...` command once the top-level build works.
+
+### Technical details
+- Blocking command: `go run ./cmd/remarquee upload sync --dry-run --non-interactive --remote-dir /ai/2026/05/03/RM-SYNC-001-dry-run-test "$tmp"`
+- Passing fallback validation: `go test ./cmd/remarquee/cmds/upload -count=1`

@@ -69,3 +69,12 @@ Refactored shared PDF upload-to-remote behavior out of upload md and upload sync
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/upload_helpers.go — Shared uploadPDFToRemote helper for mkdir/cache/upload/add-document behavior
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked shared upload behavior refactor complete
 
+
+## 2026-05-03
+
+Attempted live upload sync dry-run validation with a temporary markdown fixture; blocked because go run ./cmd/remarquee currently fails on an unrelated geppetto/glazed dependency mismatch.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/reference/01-investigation-diary.md — Recorded blocked CLI validation attempt and exact error
+
