@@ -3,6 +3,7 @@ package upload
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/juruen/rmapi/api"
 	"github.com/juruen/rmapi/filetree"
 	"github.com/juruen/rmapi/model"
+	"github.com/juruen/rmapi/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -51,7 +53,7 @@ Plan a one-way sync from local Markdown files to reMarkable PDF documents.
 Inputs match upload md: pass markdown files (*.md) and/or directories, and directories are scanned recursively.
 The sync command builds a remote index before conversion so it can report which files would upload, skip, or become stale without running pandoc for unchanged files.
 
-Current implementation supports dry-run planning. Mutating upload execution will be added after the plan output is stable.
+Use --dry-run to inspect the delta without converting or uploading. Without --dry-run, only files classified as UPLOAD are converted and uploaded. STALE files require --force before they are replaced.
 `),
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -89,10 +91,6 @@ func runUploadSync(ctx context.Context, cmd *cobra.Command, s *uploadSyncSetting
 		s.PreserveDirs = false
 	}
 
-	if !s.DryRun {
-		return errors.New("upload sync execution is not implemented yet; rerun with --dry-run to inspect the sync plan")
-	}
-
 	mdInputs, err := collectMarkdownInputs(args)
 	if err != nil {
 		return err
@@ -106,7 +104,7 @@ func runUploadSync(ctx context.Context, cmd *cobra.Command, s *uploadSyncSetting
 		return err
 	}
 
-	if _, err := configureMarkdownPandocOptions(
+	pandocOpts, err := configureMarkdownPandocOptions(
 		cmd.Flags(),
 		s.Layout,
 		s.Pandoc,
@@ -115,7 +113,8 @@ func runUploadSync(ctx context.Context, cmd *cobra.Command, s *uploadSyncSetting
 		s.MonoFont,
 		s.Geometry,
 		s.LatexHeaderFile,
-	); err != nil {
+	)
+	if err != nil {
 		return err
 	}
 
@@ -144,7 +143,87 @@ func runUploadSync(ctx context.Context, cmd *cobra.Command, s *uploadSyncSetting
 	}
 
 	printSyncPlan(cmd, remoteDir, plan)
-	_ = ctx
+	if s.DryRun {
+		return nil
+	}
+
+	return executeSyncPlan(ctx, cmd, apiCtx, plan, pandocOpts, s.Force, s.PreserveDirs)
+}
+
+func executeSyncPlan(ctx context.Context, cmd *cobra.Command, apiCtx api.ApiCtx, plan syncPlan, pandocOpts mdpdf.PandocOptions, force bool, preserveDirs bool) error {
+	dstNodeCache := map[string]*model.Node{}
+
+	tmpDir, err := os.MkdirTemp("", "remarquee-upload-sync-")
+	if err != nil {
+		return errors.Wrap(err, "failed to create temp directory")
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	for _, item := range plan.Items {
+		switch item.Action {
+		case syncActionSkip:
+			continue
+		case syncActionOrphan:
+			fmt.Fprintf(cmd.OutOrStdout(), "SKIP-ORPHAN: %s (orphan deletion is not implemented yet)\n", item.Remote.Path)
+			continue
+		case syncActionStale:
+			if !force {
+				fmt.Fprintf(cmd.OutOrStdout(), "SKIP-STALE: %s (use --force to overwrite)\n", item.Local.RemoteKey)
+				continue
+			}
+			if item.Remote == nil || item.Remote.Node == nil {
+				return errors.Errorf("cannot overwrite stale document %s: missing remote node", item.Local.RemoteKey)
+			}
+			remoteNode, ok := item.Remote.Node.(*model.Node)
+			if !ok {
+				return errors.Errorf("cannot overwrite stale document %s: unexpected remote node type", item.Local.RemoteKey)
+			}
+			if remoteNode.IsDirectory() {
+				return errors.Errorf("cannot overwrite directory %q", item.Local.RemoteKey)
+			}
+			if err := apiCtx.DeleteEntry(remoteNode, false, false); err != nil {
+				return errors.Wrap(err, "failed to delete stale remote file")
+			}
+			apiCtx.Filetree().DeleteNode(remoteNode)
+		case syncActionUpload:
+			// Continue below and upload the new document.
+		}
+
+		if item.Local == nil {
+			continue
+		}
+
+		outPDF := filepath.Join(tmpDir, item.Local.PDFName)
+		if preserveDirs {
+			outPDF = filepath.Join(tmpDir, item.Local.Input.RelDir(), item.Local.PDFName)
+			if err := os.MkdirAll(filepath.Dir(outPDF), 0o755); err != nil {
+				return errors.Wrap(err, "failed to create temp directory structure")
+			}
+		}
+
+		if err := mdpdf.ConvertMarkdownFileToPDF(ctx, item.Local.Input.AbsPath, outPDF, pandocOpts); err != nil {
+			return err
+		}
+
+		docName, _ := util.DocPathToName(outPDF)
+		dstNode, ok := dstNodeCache[item.Local.RemoteDir]
+		if !ok {
+			node, err := rmcloud.MkdirAll(apiCtx, item.Local.RemoteDir)
+			if err != nil {
+				return err
+			}
+			dstNode = node
+			dstNodeCache[item.Local.RemoteDir] = node
+		}
+
+		document, err := apiCtx.UploadDocument(dstNode.Id(), outPDF, true, nil, nil, nil, nil)
+		if err != nil {
+			return errors.Wrapf(err, "failed to upload file [%s]", outPDF)
+		}
+		apiCtx.Filetree().AddDocument(document)
+		fmt.Fprintf(cmd.OutOrStdout(), "OK: uploaded %s -> %s\n", docName, item.Local.RemoteDir)
+	}
+
 	return nil
 }
 
@@ -169,6 +248,7 @@ func buildSyncRemoteIndex(apiCtx api.ApiCtx, remoteDir string) (map[string]syncR
 				Path:         p,
 				IsDir:        node.IsDirectory(),
 				ModifiedTime: modTime,
+				Node:         node,
 			}
 			return filetree.ContinueVisiting
 		},

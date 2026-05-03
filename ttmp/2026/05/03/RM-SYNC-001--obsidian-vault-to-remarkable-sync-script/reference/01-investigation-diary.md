@@ -28,7 +28,7 @@ RelatedFiles:
       Note: Topic vocabulary fix that made docmgr doctor pass
 ExternalSources: []
 Summary: Chronological investigation of the Obsidian-to-reMarkable sync problem, remarquee capabilities, gaps, and prototype script.
-LastUpdated: 2026-05-03T19:05:00-04:00
+LastUpdated: 2026-05-03T19:20:00-04:00
 WhatFor: Record investigation steps, commands run, failures, and learnings for future reference.
 WhenToUse: When continuing this work or reviewing why design decisions were made.
 ---
@@ -536,4 +536,72 @@ This keeps the first CLI commit non-mutating. Actual conversion, upload, overwri
 ### Technical details
 - New file: `cmd/remarquee/cmds/upload/sync.go`
 - Modified file: `cmd/remarquee/cmds/upload/root.go`
+- Validation command: `go test ./cmd/remarquee/cmds/upload -count=1`
+
+## Step 11: Enable Sync Plan Execution for Upload and Stale Items
+
+After the dry-run command was in place, I added the first mutating execution path. The command now prints the plan first, then, when not in `--dry-run`, converts and uploads only items classified as `UPLOAD`. Items classified as `STALE` are skipped unless `--force` is supplied, in which case the existing remote document is deleted before uploading the replacement.
+
+I intentionally left orphan deletion non-mutating for now. Deleting remote documents has higher risk than uploading missing PDFs, so it should remain a separate reviewed step.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 9)
+
+**Assistant interpretation:** Continue implementing the ticket tasks one at a time and commit focused increments.
+
+**Inferred user intent:** Turn the sync design into functional CLI behavior while keeping risky mutations explicit and reviewable.
+
+**Commit (code):** pending at time of diary entry — planned commit after tests and docmgr updates.
+
+### What I did
+- Updated `runUploadSync` so non-dry-run execution is allowed.
+- Added `executeSyncPlan` in `cmd/remarquee/cmds/upload/sync.go`.
+- Reused `mdpdf.ConvertMarkdownFileToPDF`, `rmcloud.MkdirAll`, `apiCtx.UploadDocument`, and `apiCtx.Filetree().AddDocument` from the existing `upload md` flow.
+- Added forced stale replacement behavior using `apiCtx.DeleteEntry` and `apiCtx.Filetree().DeleteNode` before upload.
+- Kept orphan deletion as a printed `SKIP-ORPHAN` message because deletion semantics need separate review.
+- Added a node handle to `syncRemoteEntry` so execution can delete stale remote documents when forced.
+- Ran `gofmt` and `go test ./cmd/remarquee/cmds/upload -count=1` → passed.
+- Added and checked task 17 for sync execution.
+
+### Why
+- A useful sync command must eventually mutate the remote by uploading the computed delta.
+- Uploading missing files is comparatively low risk; stale replacement is guarded by `--force` because it deletes existing documents and annotations.
+- Orphan deletion should not sneak into the same commit as upload execution.
+
+### What worked
+- The existing `upload md` upload sequence translated cleanly: temp PDF, mkdir destination, upload, add document to local filetree.
+- The planner's `RemoteDir` and `PDFName` fields avoided recomputing path behavior during execution.
+- Targeted upload-package tests still pass.
+
+### What didn't work
+- I did not run a live upload execution in this step; validation was limited to compilation and package tests. A live test should use a disposable remote folder.
+
+### What I learned
+- The sync execution path is now mostly shared by convention rather than by extracted helper. A later refactor should pull common conversion/upload routines out of `md.go` and `sync.go`.
+- Carrying a raw rmapi node through `syncRemoteEntry` is pragmatic but slightly weakly typed because the pure planner file avoids importing rmapi.
+
+### What was tricky to build
+- Stale execution needs both the remote metadata and the concrete rmapi node. The pure planner originally only needed metadata, so execution required adding a node handle without making all planner tests depend on rmapi.
+- The command prints a plan before mutating. That is helpful for transparency, but reviewers should confirm the output is not too noisy for large syncs.
+
+### What warrants a second pair of eyes
+- Review `executeSyncPlan` for annotation-loss safety around `--force`.
+- Decide whether `syncRemoteEntry.Node interface{}` should become a typed rmapi node by moving planner types into `sync.go`, or whether this loose coupling is acceptable.
+- Confirm orphan deletion should require a separate flag beyond `--delete-orphans`, likely `--force` as well.
+
+### What should be done in the future
+- Run a live test against a disposable remote target.
+- Refactor shared upload execution helpers with `upload md`.
+- Implement orphan deletion only after confirming UX and safety rules.
+
+### Code review instructions
+- Review `executeSyncPlan` in `cmd/remarquee/cmds/upload/sync.go`.
+- Pay special attention to stale handling and `--force` semantics.
+- Validate with `go test ./cmd/remarquee/cmds/upload -count=1`.
+
+### Technical details
+- Modified files:
+  - `cmd/remarquee/cmds/upload/sync.go`
+  - `cmd/remarquee/cmds/upload/sync_plan.go`
 - Validation command: `go test ./cmd/remarquee/cmds/upload -count=1`

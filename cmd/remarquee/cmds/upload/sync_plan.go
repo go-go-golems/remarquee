@@ -41,6 +41,7 @@ type syncRemoteEntry struct {
 	Path         string
 	IsDir        bool
 	ModifiedTime time.Time
+	Node         interface{}
 }
 
 type syncPlanItem struct {

@@ -46,3 +46,14 @@ Added the upload sync Cobra command, wired it under upload, and implemented dry-
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync_plan_test.go — Added command registration and plan output tests
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked upload sync command and wiring tasks complete
 
+
+## 2026-05-03
+
+Enabled upload sync execution for upload items and forced stale replacements, while keeping orphan deletion explicitly non-mutating for now.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync.go — Executes sync plans by converting/uploading upload items and force-overwriting stale items
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync_plan.go — Remote entries now carry node handles for stale replacement execution
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Added and checked sync execution task
+

@@ -18,6 +18,7 @@
 - [x] Implement `remarquee upload sync` command with dry-run delta reporting
 - [x] Wire `upload sync` into the upload command tree
 - [ ] Validate `upload sync --dry-run` against temporary markdown fixtures
+- [x] Implement `upload sync` execution for upload/stale delta items
 - [ ] Refactor or document shared upload-md/sync conversion behavior
 - [ ] Add `--workers N` parallel conversion to `upload md`
 - [ ] Add mtime comparison and orphaned-file cleanup to sync execution
