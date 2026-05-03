@@ -13,7 +13,6 @@ import (
 	"github.com/juruen/rmapi/api"
 	"github.com/juruen/rmapi/filetree"
 	"github.com/juruen/rmapi/model"
-	"github.com/juruen/rmapi/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -205,23 +204,9 @@ func executeSyncPlan(ctx context.Context, cmd *cobra.Command, apiCtx api.ApiCtx,
 			return err
 		}
 
-		docName, _ := util.DocPathToName(outPDF)
-		dstNode, ok := dstNodeCache[item.Local.RemoteDir]
-		if !ok {
-			node, err := rmcloud.MkdirAll(apiCtx, item.Local.RemoteDir)
-			if err != nil {
-				return err
-			}
-			dstNode = node
-			dstNodeCache[item.Local.RemoteDir] = node
+		if err := uploadPDFToRemote(cmd, apiCtx, dstNodeCache, item.Local.RemoteDir, outPDF, item.Local.PDFName); err != nil {
+			return err
 		}
-
-		document, err := apiCtx.UploadDocument(dstNode.Id(), outPDF, true, nil, nil, nil, nil)
-		if err != nil {
-			return errors.Wrapf(err, "failed to upload file [%s]", outPDF)
-		}
-		apiCtx.Filetree().AddDocument(document)
-		fmt.Fprintf(cmd.OutOrStdout(), "OK: uploaded %s -> %s\n", docName, item.Local.RemoteDir)
 	}
 
 	return nil

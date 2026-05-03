@@ -57,3 +57,15 @@ Enabled upload sync execution for upload items and forced stale replacements, wh
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync_plan.go — Remote entries now carry node handles for stale replacement execution
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Added and checked sync execution task
 
+
+## 2026-05-03
+
+Refactored shared PDF upload-to-remote behavior out of upload md and upload sync into a common helper.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/md.go — Reuses shared PDF upload helper
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync.go — Reuses shared PDF upload helper during sync execution
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/upload_helpers.go — Shared uploadPDFToRemote helper for mkdir/cache/upload/add-document behavior
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked shared upload behavior refactor complete
+

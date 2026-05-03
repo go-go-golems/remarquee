@@ -20,6 +20,8 @@ RelatedFiles:
       Note: Pure planner added during implementation Step 9
     - Path: cmd/remarquee/cmds/upload/sync_plan_test.go
       Note: Unit tests added during implementation Step 9
+    - Path: cmd/remarquee/cmds/upload/upload_helpers.go
+      Note: Shared upload helper added during implementation Step 12
     - Path: ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/reference/01-investigation-diary.md
       Note: Chronological continuation notes for the resumed ticket work
     - Path: ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md
@@ -28,10 +30,11 @@ RelatedFiles:
       Note: Topic vocabulary fix that made docmgr doctor pass
 ExternalSources: []
 Summary: Chronological investigation of the Obsidian-to-reMarkable sync problem, remarquee capabilities, gaps, and prototype script.
-LastUpdated: 2026-05-03T19:20:00-04:00
+LastUpdated: 2026-05-03T19:35:00-04:00
 WhatFor: Record investigation steps, commands run, failures, and learnings for future reference.
 WhenToUse: When continuing this work or reviewing why design decisions were made.
 ---
+
 
 
 
@@ -604,4 +607,65 @@ I intentionally left orphan deletion non-mutating for now. Deleting remote docum
 - Modified files:
   - `cmd/remarquee/cmds/upload/sync.go`
   - `cmd/remarquee/cmds/upload/sync_plan.go`
+- Validation command: `go test ./cmd/remarquee/cmds/upload -count=1`
+
+## Step 12: Refactor Shared PDF Upload Helper
+
+I extracted the common “upload this already-converted PDF to a remote directory” behavior into one helper. Both `upload md` and `upload sync` need the same sequence: ensure the destination folder exists, cache the destination node, call `UploadDocument`, add the document to the local filetree, and print the success line.
+
+This is a small refactor, but it reduces the chance that sync execution diverges from established upload behavior.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 9)
+
+**Assistant interpretation:** Continue the implementation checklist, including refactors that keep the new sync path aligned with existing upload behavior.
+
+**Inferred user intent:** Keep the implementation maintainable and avoid duplicating upload mechanics.
+
+**Commit (code):** pending at time of diary entry — planned commit after tests and docmgr updates.
+
+### What I did
+- Added `cmd/remarquee/cmds/upload/upload_helpers.go`.
+- Added `uploadPDFToRemote`, which wraps destination mkdir/cache, `UploadDocument`, filetree update, and success output.
+- Updated `upload md` to call the helper after its existing post-conversion existence check.
+- Updated `upload sync` to call the same helper during execution.
+- Ran `gofmt` and `go test ./cmd/remarquee/cmds/upload -count=1` → passed.
+- Checked off task 18.
+
+### Why
+- The sync command should not fork core upload semantics from `upload md`.
+- A shared helper makes future changes to upload behavior easier to apply consistently.
+
+### What worked
+- The helper boundary was clean because both callers already had the destination path, output PDF path, and destination-node cache.
+- Existing upload package tests continued to pass.
+
+### What didn't work
+- First test run after the refactor failed due to an unused `github.com/juruen/rmapi/util` import in `sync.go`. Removing that import fixed the build.
+
+### What I learned
+- `upload sync` now reuses actual upload mechanics, but conversion and temp-file layout are still duplicated with `upload md`.
+
+### What was tricky to build
+- The helper must not include the existence check because `upload md` and `upload sync` decide existence at different points. `upload md` still checks after conversion; `upload sync` checks before conversion through the plan.
+
+### What warrants a second pair of eyes
+- Confirm the helper name and scope are acceptable, or whether it should become a more general “converted document uploader” abstraction.
+- Review output consistency: the helper prints `OK: uploaded <label> -> <dst>` for both `md` and `sync`.
+
+### What should be done in the future
+- Consider extracting conversion/temp-file handling too, especially before adding `--workers`.
+- Keep existence planning separate from upload execution.
+
+### Code review instructions
+- Review `cmd/remarquee/cmds/upload/upload_helpers.go` first.
+- Then inspect the reduced upload blocks in `md.go` and `sync.go`.
+- Validate with `go test ./cmd/remarquee/cmds/upload -count=1`.
+
+### Technical details
+- New file: `cmd/remarquee/cmds/upload/upload_helpers.go`
+- Modified files:
+  - `cmd/remarquee/cmds/upload/md.go`
+  - `cmd/remarquee/cmds/upload/sync.go`
 - Validation command: `go test ./cmd/remarquee/cmds/upload -count=1`
