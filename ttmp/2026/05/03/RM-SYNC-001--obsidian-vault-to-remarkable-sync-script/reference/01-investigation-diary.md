@@ -12,6 +12,8 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: ../../../../../../../go.work
+      Note: Workspace selection of local glazed caused top-level CLI build mismatch; GOWORK=off validated sync dry-run
     - Path: cmd/remarquee/cmds/upload/root.go
       Note: upload sync command wiring added during implementation Step 10
     - Path: cmd/remarquee/cmds/upload/sync.go
@@ -30,10 +32,11 @@ RelatedFiles:
       Note: Topic vocabulary fix that made docmgr doctor pass
 ExternalSources: []
 Summary: Chronological investigation of the Obsidian-to-reMarkable sync problem, remarquee capabilities, gaps, and prototype script.
-LastUpdated: 2026-05-03T19:45:00-04:00
+LastUpdated: 2026-05-03T19:55:00-04:00
 WhatFor: Record investigation steps, commands run, failures, and learnings for future reference.
 WhenToUse: When continuing this work or reviewing why design decisions were made.
 ---
+
 
 
 
@@ -728,3 +731,67 @@ The attempt did not reach the new sync command. `go run ./cmd/remarquee ...` fai
 ### Technical details
 - Blocking command: `go run ./cmd/remarquee upload sync --dry-run --non-interactive --remote-dir /ai/2026/05/03/RM-SYNC-001-dry-run-test "$tmp"`
 - Passing fallback validation: `go test ./cmd/remarquee/cmds/upload -count=1`
+
+## Step 14: Diagnose Build Issue and Validate Dry-Run with `GOWORK=off`
+
+I investigated the build failure that blocked live dry-run validation. The problem is not in the new sync code. The repository is inside a Go workspace whose `go.work` includes both `./glazed` and `./remarquee`, so the top-level remarquee build uses the local workspace checkout of `glazed` instead of the released `github.com/go-go-golems/glazed v1.2.1` required by `remarquee/go.mod`.
+
+`geppetto v0.11.9` expects `glazed/pkg/config.ResolveAppConfigPath`, but the local workspace version of `glazed` does not currently export that symbol. Disabling workspace mode with `GOWORK=off` makes Go use the version pinned in `remarquee/go.mod`, and the sync dry-run validation succeeds.
+
+### Prompt Context
+
+**User prompt (verbatim):** "what's the build issue?"
+
+**Assistant interpretation:** Explain the build failure observed during validation, identify whether it is caused by the sync changes, and find a practical workaround.
+
+**Inferred user intent:** Understand why validation/commits needed `--no-verify` and whether the branch is broken.
+
+**Commit (code):** pending documentation update only.
+
+### What I did
+- Inspected `remarquee/go.mod`: it requires `github.com/go-go-golems/glazed v1.2.1` and `github.com/go-go-golems/geppetto v0.11.9`.
+- Inspected `/home/manuel/workspaces/2026-05-03/add-upload-sync/go.work`: it uses both `./glazed` and `./remarquee`.
+- Ran `go list -m -json github.com/go-go-golems/glazed github.com/go-go-golems/geppetto` and confirmed workspace mode resolves `glazed` to the local checkout.
+- Ran `GOWORK=off go test ./cmd/remarquee -count=1` → passed.
+- Re-ran live dry-run validation with `GOWORK=off`:
+  - `GOWORK=off go run ./cmd/remarquee upload sync --dry-run --non-interactive --remote-dir /ai/2026/05/03/RM-SYNC-001-dry-run-test "$tmp"`
+- The dry-run succeeded and reported one upload.
+- Checked off task 16.
+
+### Why
+- The earlier validation blocker needed to be classified correctly: sync-code regression vs workspace dependency mismatch.
+- A successful `GOWORK=off` run gives confidence that the new command works when using the module's pinned dependencies.
+
+### What worked
+- `GOWORK=off` restored the expected module dependency set.
+- Dry-run output succeeded:
+  ```text
+  SYNC: remote-dir=/ai/2026/05/03/RM-SYNC-001-dry-run-test
+  SUMMARY: upload=1 skip=0 stale=0 orphan=0
+  UPLOAD: /ai/2026/05/03/RM-SYNC-001-dry-run-test/test <- /tmp/tmp.jd73vAhYoB/test.md
+  ```
+
+### What didn't work
+- Workspace-mode top-level builds still fail while local `./glazed` lacks `ResolveAppConfigPath` expected by `geppetto v0.11.9`.
+
+### What I learned
+- The branch is not blocked when building remarquee as its own module with `GOWORK=off`.
+- The workspace probably represents active glazed development that is temporarily incompatible with the geppetto version used by remarquee.
+
+### What was tricky to build
+- The error looked like a normal dependency compile failure inside geppetto, but the real cause was workspace module selection. `go list -m -json` made the resolution difference visible.
+
+### What warrants a second pair of eyes
+- Decide whether this workspace should include local `./glazed` for remarquee work, or whether RM-SYNC-001 should be developed with `GOWORK=off` until glazed/geppetto are reconciled.
+
+### What should be done in the future
+- Either restore/export `ResolveAppConfigPath` in local glazed, update geppetto to the new glazed API, or remove `./glazed` from this workspace for remarquee-only work.
+
+### Code review instructions
+- For this branch, validate remarquee commands with `GOWORK=off` unless intentionally testing the local glazed checkout.
+- Re-run `GOWORK=off go test ./cmd/remarquee/cmds/upload -count=1` and `GOWORK=off go run ./cmd/remarquee upload sync --dry-run ...`.
+
+### Technical details
+- Workspace file: `/home/manuel/workspaces/2026-05-03/add-upload-sync/go.work`
+- Module file: `/home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/go.mod`
+- Workaround: prefix builds with `GOWORK=off`.

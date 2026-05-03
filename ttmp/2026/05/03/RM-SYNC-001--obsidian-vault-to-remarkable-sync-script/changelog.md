@@ -78,3 +78,13 @@ Attempted live upload sync dry-run validation with a temporary markdown fixture;
 
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/reference/01-investigation-diary.md — Recorded blocked CLI validation attempt and exact error
 
+
+## 2026-05-03
+
+Diagnosed the live dry-run build issue as go.work selecting local glazed; validated upload sync dry-run successfully with GOWORK=off.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/go.work — Workspace file that selects local glazed and triggers the geppetto/glazed mismatch
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked dry-run validation complete after GOWORK=off run
+
