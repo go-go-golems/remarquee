@@ -1,8 +1,10 @@
 package upload
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -114,6 +116,40 @@ func TestBuildSyncPlan_CompareMTimeMarksStale(t *testing.T) {
 	}
 	if got := plan.Count(syncActionStale); got != 1 {
 		t.Fatalf("expected 1 stale item, got %d: %#v", got, plan.Items)
+	}
+}
+
+func TestNewUploadCommandRegistersSync(t *testing.T) {
+	cmd := NewUploadCommand()
+	for _, child := range cmd.Commands() {
+		if child.Name() == "sync" {
+			return
+		}
+	}
+	t.Fatal("expected upload root command to register sync subcommand")
+}
+
+func TestPrintSyncPlanSummary(t *testing.T) {
+	td := t.TempDir()
+	note := writeMarkdownFixture(t, td, "note.md")
+	plan, err := buildSyncPlan([]markdownInput{{AbsPath: note, RelPath: "note.md"}}, nil, syncPlanSettings{
+		RemoteDir:    "/ai/sync",
+		PreserveDirs: true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	cmd := NewUploadSyncCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	printSyncPlan(cmd, "/ai/sync", plan)
+
+	if !strings.Contains(out.String(), "SUMMARY: upload=1 skip=0 stale=0 orphan=0") {
+		t.Fatalf("expected summary in output, got:\n%s", out.String())
+	}
+	if !strings.Contains(out.String(), "UPLOAD: /ai/sync/note <- "+note) {
+		t.Fatalf("expected upload line in output, got:\n%s", out.String())
 	}
 }
 

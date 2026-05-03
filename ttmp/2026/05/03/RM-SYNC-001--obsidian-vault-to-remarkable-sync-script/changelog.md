@@ -34,3 +34,15 @@ Implemented pure sync planning helpers and unit tests for upload/skip/stale/orph
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync_plan_test.go — Unit coverage for sync plan actions and path-key behavior
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked sync planning helper and test tasks complete
 
+
+## 2026-05-03
+
+Added the upload sync Cobra command, wired it under upload, and implemented dry-run plan reporting backed by the sync planner and remote index construction.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/root.go — Registered the upload sync subcommand
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync.go — New upload sync command
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync_plan_test.go — Added command registration and plan output tests
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked upload sync command and wiring tasks complete
+

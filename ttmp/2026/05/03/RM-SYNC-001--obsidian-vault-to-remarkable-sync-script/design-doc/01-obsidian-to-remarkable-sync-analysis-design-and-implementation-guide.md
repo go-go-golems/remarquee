@@ -16,6 +16,10 @@ RelatedFiles:
       Note: Remote tree recursive listing with structured JSON output
     - Path: ../../../../../../../go-go-golems/remarquee/cmd/remarquee/cmds/upload/md.go
       Note: Core upload logic with existence check after conversion (inefficient)
+    - Path: cmd/remarquee/cmds/upload/root.go
+      Note: Command tree registration for upload sync
+    - Path: cmd/remarquee/cmds/upload/sync.go
+      Note: Phase 2 upload sync command and dry-run plan reporting
     - Path: cmd/remarquee/cmds/upload/sync_plan.go
       Note: Implementation of sync planning model from Phase 1
     - Path: cmd/remarquee/cmds/upload/sync_plan_test.go
@@ -28,6 +32,7 @@ LastUpdated: 2026-05-03T14:00:00-04:00
 WhatFor: Onboard a new intern to the remarquee/Obsidian/reMarkable sync problem space and proposed solution.
 WhenToUse: When implementing the sync script or extending remarquee with a native sync command.
 ---
+
 
 
 
