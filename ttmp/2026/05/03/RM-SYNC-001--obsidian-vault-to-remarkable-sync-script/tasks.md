@@ -24,3 +24,4 @@
 - [ ] Add mtime comparison and orphaned-file cleanup to sync execution
 - [ ] Investigate rmapi tree refresh suppression for bulk uploads
 
+- [x] Migrate remarquee Cobra commands to Glazed config plan loading API

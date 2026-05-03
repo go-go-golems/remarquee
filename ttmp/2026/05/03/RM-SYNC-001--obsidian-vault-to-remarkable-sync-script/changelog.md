@@ -88,3 +88,16 @@ Diagnosed the live dry-run build issue as go.work selecting local glazed; valida
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/go.work — Workspace file that selects local glazed and triggers the geppetto/glazed mismatch
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked dry-run validation complete after GOWORK=off run
 
+
+## 2026-05-03
+
+Migrated remarquee Glazed/Cobra commands to the new ConfigPlanBuilder-based config loading API, added a shared appconfig parser config, and updated Glazed/Geppetto module versions so workspace builds use compatible APIs.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/cloud/ls.go — Representative cloud command migrated from custom default middleware to app config parser config
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/ocr/root.go — OCR command migrated to app config parser config
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/rmdoc/render_v6.go — Representative rmdoc command migrated to app config parser config
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/internal/appconfig/parser.go — Shared CobraParserConfig with AppName and ConfigPlanBuilder for remarquee config discovery
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/go.mod — Updated Glazed and Geppetto versions for the new config plan API
+

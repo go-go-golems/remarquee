@@ -7,9 +7,9 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig"
 	"github.com/juruen/rmapi/version"
 	"github.com/spf13/cobra"
 )
@@ -73,9 +73,6 @@ func NewVersionCobraCommand() (*cobra.Command, error) {
 	}
 
 	return cli.BuildCobraCommand(cmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpSections: []string{schema.DefaultSlug},
-			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
-		}),
+		cli.WithParserConfig(appconfig.DefaultParserConfig()),
 	)
 }

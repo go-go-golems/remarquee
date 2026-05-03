@@ -19,6 +19,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	glazedsettings "github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -211,8 +212,7 @@ func NewOcrCobraCommand() (*cobra.Command, error) {
 	}
 
 	return cli.BuildCobraCommand(cmd,
-		cli.WithCobraShortHelpSections(schema.DefaultSlug),
-		cli.WithCobraMiddlewaresFunc(cli.CobraCommandDefaultMiddlewares),
+		cli.WithParserConfig(appconfig.DefaultParserConfig()),
 	)
 }
 

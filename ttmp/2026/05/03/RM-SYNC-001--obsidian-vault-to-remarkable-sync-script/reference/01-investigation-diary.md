@@ -12,6 +12,8 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: ../../../../../../../glazed/pkg/doc/tutorials/migrating-from-viper-to-config-files.md
+      Note: Source migration guide read before implementation
     - Path: ../../../../../../../go.work
       Note: Workspace selection of local glazed caused top-level CLI build mismatch; GOWORK=off validated sync dry-run
     - Path: cmd/remarquee/cmds/upload/root.go
@@ -24,6 +26,10 @@ RelatedFiles:
       Note: Unit tests added during implementation Step 9
     - Path: cmd/remarquee/cmds/upload/upload_helpers.go
       Note: Shared upload helper added during implementation Step 12
+    - Path: cmd/remarquee/internal/appconfig/parser.go
+      Note: Shared ConfigPlanBuilder migration helper added during Step 15
+    - Path: go.mod
+      Note: Glazed/Geppetto versions updated for new config API
     - Path: ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/reference/01-investigation-diary.md
       Note: Chronological continuation notes for the resumed ticket work
     - Path: ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md
@@ -32,10 +38,11 @@ RelatedFiles:
       Note: Topic vocabulary fix that made docmgr doctor pass
 ExternalSources: []
 Summary: Chronological investigation of the Obsidian-to-reMarkable sync problem, remarquee capabilities, gaps, and prototype script.
-LastUpdated: 2026-05-03T19:55:00-04:00
+LastUpdated: 2026-05-03T20:20:00-04:00
 WhatFor: Record investigation steps, commands run, failures, and learnings for future reference.
 WhenToUse: When continuing this work or reviewing why design decisions were made.
 ---
+
 
 
 
@@ -795,3 +802,86 @@ I investigated the build failure that blocked live dry-run validation. The probl
 - Workspace file: `/home/manuel/workspaces/2026-05-03/add-upload-sync/go.work`
 - Module file: `/home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/go.mod`
 - Workaround: prefix builds with `GOWORK=off`.
+
+## Step 15: Migrate remarquee Commands to Glazed Config Plan Loading
+
+The user pointed out that the correct fix was not to keep working around the workspace build with `GOWORK=off`, but to read Glazed's migration guide and update remarquee to the new config-file loading API. I read `glazed/pkg/doc/tutorials/migrating-from-viper-to-config-files.md` and applied its `CobraParserConfig{AppName, ConfigPlanBuilder}` pattern to remarquee's Glazed-backed commands.
+
+This resolves the earlier workspace mismatch in the intended direction: remarquee now uses the explicit config plan API exposed by the local Glazed checkout, and the Geppetto dependency was updated to a version compatible with that API.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ACtually read @glazed/pkg/doc/tutorials/migrating-from-viper-to-config-files.md  and update remarquee to use the new config file loading API"
+
+**Assistant interpretation:** Stop treating the build failure as merely a workspace workaround, read the Glazed migration guide, and migrate remarquee command parsing to the new explicit config-plan loading model.
+
+**Inferred user intent:** Make remarquee compatible with current Glazed rather than disabling the workspace or relying on older pinned dependencies.
+
+**Commit (code):** pending at time of diary entry — planned commit after validation and docmgr updates.
+
+### What I did
+- Read `glazed/pkg/doc/tutorials/migrating-from-viper-to-config-files.md`.
+- Added `cmd/remarquee/internal/appconfig/parser.go`.
+- Implemented `appconfig.DefaultParserConfig()` with:
+  - `AppName: "remarquee"` for `REMARQUEE_...` env loading.
+  - `ConfigPlanBuilder: BuildConfigPlan` for explicit config file discovery.
+  - default short-help section preservation.
+- Implemented a config plan with system, XDG, home, and explicit config-file layers:
+  - `SystemAppConfig("remarquee")`
+  - `XDGAppConfig("remarquee")`
+  - `HomeAppConfig("remarquee")`
+  - `ExplicitFile(cs.ConfigFile)`
+- Migrated cloud, rmdoc, and OCR Glazed/Cobra command builders from `CobraCommandDefaultMiddlewares` to `appconfig.DefaultParserConfig()`.
+- Updated dependencies with `GOWORK=off go get github.com/go-go-golems/glazed@v1.2.7 github.com/go-go-golems/geppetto@v0.11.17` so the standalone module also has the new API.
+- Ran targeted tests in workspace mode and with `GOWORK=off`; both pass for the relevant packages.
+- Re-ran live `upload sync --dry-run` in workspace mode; it now succeeds without `GOWORK=off`.
+- Added and checked task 22.
+
+### Why
+- The migration guide says config discovery is no longer automatic and should be represented with an explicit `ConfigPlanBuilder`.
+- The old `MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares` path bypassed the built-in env/config-aware parser chain.
+- Updating remarquee to the new API is better than disabling the workspace because it keeps remarquee aligned with the active local Glazed checkout.
+
+### What worked
+- Workspace-mode targeted tests now pass:
+  - `go test ./cmd/remarquee/cmds/upload ./cmd/remarquee/cmds/cloud ./cmd/remarquee/cmds/rmdoc ./cmd/remarquee/cmds/ocr ./cmd/remarquee -count=1`
+- `GOWORK=off` targeted tests also pass with updated module versions.
+- Live dry-run validation now works without `GOWORK=off`:
+  ```text
+  SYNC: remote-dir=/ai/2026/05/03/RM-SYNC-001-config-api-test
+  SUMMARY: upload=1 skip=0 stale=0 orphan=0
+  UPLOAD: /ai/2026/05/03/RM-SYNC-001-config-api-test/test <- /tmp/tmp.QIGCr4RSfD/test.md
+  ```
+
+### What didn't work
+- Full `go test ./... -count=1` still fails because `cmd/remarquee-ui/embed.go` expects `frontend/dist`, which is not present in this checkout. This is separate from the config API migration.
+
+### What I learned
+- Supplying a custom `MiddlewaresFunc` disables Glazed's built-in env/config-aware parser path. To use the new API, commands should leave `MiddlewaresFunc` nil and set `AppName` plus `ConfigPlanBuilder`.
+- The new explicit config plan also preserves `--config-file` via the command-settings section.
+
+### What was tricky to build
+- The migration touches many command builders, but the behavior should stay centralized. A shared internal helper avoids repeating the config-plan builder across every cloud/rmdoc command.
+- Standalone module validation initially failed because `glazed v1.2.1` did not expose the new plan API. Updating to `glazed v1.2.7` and `geppetto v0.11.17` fixed that.
+
+### What warrants a second pair of eyes
+- Confirm the desired config discovery locations for remarquee: system, XDG, home, and explicit file currently follow the migration guide's standard app pattern.
+- Confirm whether upload commands implemented directly with Cobra (not Glazed command descriptions) should also gain any config-file behavior later, or whether this migration should remain scoped to Glazed-backed commands.
+
+### What should be done in the future
+- Add documentation for remarquee config file format. Config files now need section names as top-level YAML keys.
+- Decide whether to build UI assets during full test hooks or exclude `cmd/remarquee-ui` from default tests.
+
+### Code review instructions
+- Start at `cmd/remarquee/internal/appconfig/parser.go`.
+- Then inspect representative call sites such as `cmd/remarquee/cmds/cloud/ls.go`, `cmd/remarquee/cmds/rmdoc/render_v6.go`, and `cmd/remarquee/cmds/ocr/root.go`.
+- Validate with:
+  - `go test ./cmd/remarquee/cmds/upload ./cmd/remarquee/cmds/cloud ./cmd/remarquee/cmds/rmdoc ./cmd/remarquee/cmds/ocr ./cmd/remarquee -count=1`
+  - `GOWORK=off go test ./cmd/remarquee/cmds/upload ./cmd/remarquee/cmds/cloud ./cmd/remarquee/cmds/rmdoc ./cmd/remarquee/cmds/ocr ./cmd/remarquee -count=1`
+
+### Technical details
+- New file: `cmd/remarquee/internal/appconfig/parser.go`
+- Dependency updates:
+  - `github.com/go-go-golems/glazed v1.2.1 → v1.2.7`
+  - `github.com/go-go-golems/geppetto v0.11.9 → v0.11.17`
+- Full test caveat: `go test ./...` still requires `cmd/remarquee-ui/frontend/dist`.
