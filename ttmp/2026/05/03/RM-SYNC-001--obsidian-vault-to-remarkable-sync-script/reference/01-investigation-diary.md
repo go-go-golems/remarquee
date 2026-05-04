@@ -48,7 +48,7 @@ RelatedFiles:
       Note: Topic vocabulary fix that made docmgr doctor pass
 ExternalSources: []
 Summary: Chronological investigation of the Obsidian-to-reMarkable sync problem, remarquee capabilities, gaps, and prototype script.
-LastUpdated: 2026-05-03T21:00:00-04:00
+LastUpdated: 2026-05-03T21:15:00-04:00
 WhatFor: Record investigation steps, commands run, failures, and learnings for future reference.
 WhenToUse: When continuing this work or reviewing why design decisions were made.
 ---
@@ -1043,3 +1043,60 @@ This keeps destructive actions opt-in twice for orphans: first include them in t
   - `cmd/remarquee/cmds/upload/sync_plan_test.go`
   - `ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-analysis-design-and-implementation-guide.md`
 - Validation command: `go test ./cmd/remarquee/cmds/upload -count=1`
+
+## Step 18: Investigate rmapi Tree Refresh Suppression
+
+I investigated the last open RM-SYNC-001 task: whether remarquee can suppress the rmapi tree refresh warning/behavior during bulk uploads. The short answer is: not safely from remarquee alone. The warning comes from rmapi's Sync 1.5 root-generation conflict recovery path.
+
+When rmapi writes the root index, the remote can reject the write with `transport.ErrWrongGeneration`. rmapi then mirrors the remote hash tree, logs `remote tree has changed, refresh the file tree`, and retries. Suppressing that mirror/retry externally would risk applying document additions against a stale root tree.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 17)
+
+**Assistant interpretation:** Continue with the remaining RM-SYNC-001 task after implementing stale/orphan cleanup.
+
+**Inferred user intent:** Finish the ticket's open implementation/research checklist and document any remaining architectural constraints.
+
+**Commit (code):** pending documentation update only.
+
+### What I did
+- Searched the active rmapi module for `remote tree has changed`, `UploadDocument`, and `Refresh`.
+- Read `/home/manuel/go/pkg/mod/github.com/ddvk/rmapi@v0.0.0-20260421131258-29d7b039e606/api/sync15/apictx.go`.
+- Confirmed the warning is emitted by `Sync` after `WriteRootIndex` returns `transport.ErrWrongGeneration`.
+- Confirmed `UploadDocument` calls `Sync` once per document addition.
+- Updated the design doc's rmapi refresh section with the investigation result.
+- Checked off task 21.
+
+### Why
+- The ticket previously listed rmapi refresh suppression as an optimization idea. Before implementing a flag or workaround, we needed to know whether the refresh is avoidable or part of correctness.
+
+### What worked
+- The rmapi source made the behavior clear: the warning is conflict recovery, not merely a remarquee path lookup issue.
+- The design doc now records why this is not a safe local-only optimization.
+
+### What didn't work
+- There is no safe remarquee-side `skipRefresh` hook in the current rmapi API.
+- `dstNodeCache` does not address the root-generation conflict path; it only avoids repeated destination lookup/mkdir work.
+
+### What I learned
+- A meaningful fix belongs upstream in rmapi as a bulk/transaction API: upload multiple document blobs, mutate the hash tree for all additions, and write the root index once.
+- Sequential uploads remain the conservative choice in remarquee.
+
+### What was tricky to build
+- The original symptom sounded like a performance warning that could perhaps be suppressed. Reading the source showed it is tied to correctness: rmapi only logs it when the remote root generation changed unexpectedly.
+
+### What warrants a second pair of eyes
+- If bulk upload performance remains a priority, review rmapi's `Sync` and `UploadDocument` internals and design a transaction API there rather than in remarquee.
+
+### What should be done in the future
+- Consider an upstream rmapi proposal for `UploadDocuments` or `SyncBatch`.
+- Benchmark how often `ErrWrongGeneration` occurs in real single-client uploads; if it is frequent without other clients, there may be a deeper rmapi/root-generation issue.
+
+### Code review instructions
+- Read the updated "Optimization Option 3" section in the RM-SYNC-001 design doc.
+- Inspect rmapi `api/sync15/apictx.go`, especially `Sync` and `UploadDocument`.
+
+### Technical details
+- Investigated file: `/home/manuel/go/pkg/mod/github.com/ddvk/rmapi@v0.0.0-20260421131258-29d7b039e606/api/sync15/apictx.go`
+- Updated file: `ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/design-doc/01-obsidian-to-remarkable-sync-analysis-design-and-implementation-guide.md`

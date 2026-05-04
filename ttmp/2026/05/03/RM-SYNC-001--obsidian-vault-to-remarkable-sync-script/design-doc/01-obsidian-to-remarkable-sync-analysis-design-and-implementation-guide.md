@@ -632,18 +632,31 @@ This turns a 30-minute "no-op" re-sync into a **30-second operation** (if only 2
 
 ### Optimization Option 3: Suppress rmapi tree refreshes during bulk upload
 
-The warning `apictx.go:259: remote tree has changed` comes from `juruen/rmapi` inside `UploadDocument`. After every upload, rmapi invalidates its filetree cache. For bulk operations we could:
+**Investigation result:** The observed `apictx.go:259: remote tree has changed, refresh the file tree` warning is emitted by `github.com/ddvk/rmapi/api/sync15.Sync`, not by remarquee's destination lookup code. It happens when `WriteRootIndex(tree.Hash, tree.Generation, notify)` returns `transport.ErrWrongGeneration`. rmapi then mirrors the remote hash tree and retries.
 
-- Patch rmapi to accept a `skipRefresh` hint (upstream change)
-- Or cache the destination `*model.Node` in remarquee and reuse it, avoiding path-by-name lookups
+That means this is a conflict-recovery path for root-generation mismatches, not simply a logging side effect after every upload. remarquee cannot safely suppress it from outside the rmapi API without risking writes based on a stale root generation.
 
-In `md.go`, the code already caches `dstNode`:
+Relevant rmapi flow:
 
 ```go
-dstNodeCache := map[string]*model.Node{}
+func Sync(b *BlobStorage, tree *HashTree, operation func(t *HashTree) error, notify bool) error {
+    err := operation(tree)
+    // upload root index blob...
+    newGeneration, err := b.WriteRootIndex(tree.Hash, tree.Generation, notify)
+    if err == transport.ErrWrongGeneration {
+        err = tree.Mirror(b, concurrent)
+        log.Warning.Println("remote tree has changed, refresh the file tree")
+        // retry
+    }
+}
 ```
 
-But rmapi still refreshes internally. A deeper fix would require changes to the rmapi library itself.
+Practical conclusions:
+
+- `dstNodeCache` in remarquee is still useful, but it only avoids repeated `MkdirAll`/path lookup work; it does not affect rmapi's hash-tree generation conflict handling.
+- A simple `skipRefresh` flag would be unsafe unless rmapi also gained a bulk transaction API that applies multiple additions to one hash tree and performs one `WriteRootIndex`.
+- The best safe optimization would be upstream: add a rmapi bulk operation such as `UploadDocuments(parentId, []sourcePath, notify)` or expose a transaction API that uploads document blobs, mutates the hash tree for all additions, and writes the root index once.
+- Until then, remarquee should keep uploads sequential and treat the warning as evidence of concurrent/remote tree changes, not as an avoidable per-file refresh.
 
 ### Optimization Option 4: Parallel conversion + bulk `cloud put`
 

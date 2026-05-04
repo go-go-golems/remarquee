@@ -125,3 +125,14 @@ Completed sync mtime/orphan cleanup behavior: --compare-mtime marks stale items,
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/design-doc/01-obsidian-to-remarkable-sync-analysis-design-and-implementation-guide.md — Updated Phase 3 implementation status for stale/orphan handling
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked mtime/orphan sync task complete
 
+
+## 2026-05-04
+
+Investigated rmapi tree refresh warnings; documented that they come from sync15 root-generation conflict handling and require an upstream bulk/transaction API rather than a safe remarquee-side suppression flag.
+
+### Related Files
+
+- /home/manuel/go/pkg/mod/github.com/ddvk/rmapi@v0.0.0-20260421131258-29d7b039e606/api/sync15/apictx.go — Source of Sync wrong-generation refresh warning and UploadDocument behavior
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/design-doc/01-obsidian-to-remarkable-sync-analysis-design-and-implementation-guide.md — Documented rmapi refresh suppression investigation result
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked rmapi refresh investigation task complete
+

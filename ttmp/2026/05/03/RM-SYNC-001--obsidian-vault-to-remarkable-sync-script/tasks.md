@@ -22,6 +22,6 @@
 - [x] Refactor or document shared upload-md/sync conversion behavior
 - [x] Add `--workers N` parallel conversion to `upload md`
 - [x] Add mtime comparison and orphaned-file cleanup to sync execution
-- [ ] Investigate rmapi tree refresh suppression for bulk uploads
+- [x] Investigate rmapi tree refresh suppression for bulk uploads
 
 - [x] Migrate remarquee Cobra commands to Glazed config plan loading API
