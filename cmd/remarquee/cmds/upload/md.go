@@ -38,6 +38,7 @@ type uploadMarkdownSettings struct {
 	Layout          string
 	Geometry        string
 	LatexHeaderFile string
+	Workers         int
 }
 
 func NewUploadMarkdownCommand() *cobra.Command {
@@ -80,6 +81,7 @@ Safety:
 	cmd.Flags().BoolVar(&s.PreserveDirs, "preserve-dirs", true, "Recreate the local relative directory structure remotely (default: true)")
 	cmd.Flags().BoolVar(&s.Flatten, "flatten", false, "Upload all files to a single flat directory (overrides --preserve-dirs)")
 	cmd.Flags().StringVar(&s.Name, "name", "", "Custom output document name (only valid when exactly one markdown file is selected)")
+	cmd.Flags().IntVar(&s.Workers, "workers", 1, "Number of parallel pandoc conversions to run before upload (default: 1)")
 
 	// Destination.
 	cmd.Flags().StringVar(&s.Date, "date", "", "Destination date folder under /ai (YYYY/MM/DD or YYYY-MM-DD). Default: today")
@@ -101,6 +103,9 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	// --flatten is a convenience inverse of --preserve-dirs.
 	if s.Flatten {
 		s.PreserveDirs = false
+	}
+	if s.Workers < 1 {
+		return errors.New("--workers must be at least 1")
 	}
 
 	mdInputs, err := collectMarkdownInputs(args)
@@ -154,6 +159,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	if s.DryRun {
 		fmt.Fprintf(cmd.OutOrStdout(), "DRY: layout=%s\n", mdpdf.NormalizeMarkdownLayout(s.Layout))
 		fmt.Fprintf(cmd.OutOrStdout(), "DRY: remote-dir=%s\n", remoteDir)
+		fmt.Fprintf(cmd.OutOrStdout(), "DRY: workers=%d\n", s.Workers)
 		for _, in := range mdInputs {
 			mdPath := in.AbsPath
 			pdfName, err := markdownPDFName(in, s.Name, len(mdInputs))
@@ -192,23 +198,15 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 			return errors.Wrap(err, "failed to create output directory")
 		}
 
-		for _, in := range mdInputs {
-			mdPath := in.AbsPath
-			pdfName, err := markdownPDFName(in, s.Name, len(mdInputs))
-			if err != nil {
-				return err
-			}
-			outPDF := filepath.Join(outDir, pdfName)
-			if s.PreserveDirs {
-				outPDF = filepath.Join(outDir, in.RelDir(), pdfName)
-				if err := os.MkdirAll(filepath.Dir(outPDF), 0o755); err != nil {
-					return errors.Wrap(err, "failed to create output directory")
-				}
-			}
-			if err := mdpdf.ConvertMarkdownFileToPDF(ctx, mdPath, outPDF, pandocOpts); err != nil {
-				return err
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "OK: generated %s\n", outPDF)
+		jobs, err := buildMarkdownConversionJobs(mdInputs, outDir, s.Name, s.PreserveDirs)
+		if err != nil {
+			return err
+		}
+		if err := convertMarkdownJobs(ctx, jobs, s.Workers, pandocOpts); err != nil {
+			return err
+		}
+		for _, job := range jobs {
+			fmt.Fprintf(cmd.OutOrStdout(), "OK: generated %s\n", job.OutPDF)
 		}
 		return nil
 	}
@@ -230,29 +228,28 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	for _, in := range mdInputs {
-		mdPath := in.AbsPath
-		pdfName, err := markdownPDFName(in, s.Name, len(mdInputs))
-		if err != nil {
+	jobs, err := buildMarkdownConversionJobs(mdInputs, tmpDir, s.Name, s.PreserveDirs)
+	if err != nil {
+		return err
+	}
+	if s.Workers > 1 {
+		if err := convertMarkdownJobs(ctx, jobs, s.Workers, pandocOpts); err != nil {
 			return err
 		}
-		outPDF := filepath.Join(tmpDir, pdfName)
-		if s.PreserveDirs {
-			outPDF = filepath.Join(tmpDir, in.RelDir(), pdfName)
-			if err := os.MkdirAll(filepath.Dir(outPDF), 0o755); err != nil {
-				return errors.Wrap(err, "failed to create temp directory structure")
+	}
+
+	for _, job := range jobs {
+		if s.Workers == 1 {
+			if err := mdpdf.ConvertMarkdownFileToPDF(ctx, job.Input.AbsPath, job.OutPDF, pandocOpts); err != nil {
+				return err
 			}
 		}
 
-		if err := mdpdf.ConvertMarkdownFileToPDF(ctx, mdPath, outPDF, pandocOpts); err != nil {
-			return err
-		}
-
-		docName, _ := util.DocPathToName(outPDF)
+		docName, _ := util.DocPathToName(job.OutPDF)
 
 		dst := remoteDir
 		if s.PreserveDirs {
-			dst = joinRemoteDir(remoteDir, in.RelDir())
+			dst = joinRemoteDir(remoteDir, job.Input.RelDir())
 		}
 
 		// Ensure remote directory exists (cache MkdirAll results).
@@ -284,7 +281,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 			apiCtx.Filetree().DeleteNode(existingNode)
 		}
 
-		if err := uploadPDFToRemote(cmd, apiCtx, dstNodeCache, dst, outPDF, pdfName); err != nil {
+		if err := uploadPDFToRemote(cmd, apiCtx, dstNodeCache, dst, job.OutPDF, job.PDFName); err != nil {
 			return err
 		}
 	}

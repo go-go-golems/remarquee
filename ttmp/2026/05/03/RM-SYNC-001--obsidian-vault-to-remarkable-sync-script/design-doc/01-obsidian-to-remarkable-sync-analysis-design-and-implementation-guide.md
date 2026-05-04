@@ -16,6 +16,10 @@ RelatedFiles:
       Note: Remote tree recursive listing with structured JSON output
     - Path: ../../../../../../../go-go-golems/remarquee/cmd/remarquee/cmds/upload/md.go
       Note: Core upload logic with existence check after conversion (inefficient)
+    - Path: cmd/remarquee/cmds/upload/conversion_workers.go
+      Note: Implements the Phase 4 --workers conversion optimization
+    - Path: cmd/remarquee/cmds/upload/md.go
+      Note: upload md workers flag integration
     - Path: cmd/remarquee/cmds/upload/root.go
       Note: Command tree registration for upload sync
     - Path: cmd/remarquee/cmds/upload/sync.go
@@ -34,6 +38,7 @@ LastUpdated: 2026-05-03T14:00:00-04:00
 WhatFor: Onboard a new intern to the remarquee/Obsidian/reMarkable sync problem space and proposed solution.
 WhenToUse: When implementing the sync script or extending remarquee with a native sync command.
 ---
+
 
 
 
@@ -559,6 +564,8 @@ for _, in := range mdInputs {
 
 ### Optimization Option 1: Parallel pandoc workers in `upload md`
 
+**Implemented in this branch:** `remarquee upload md` now has a `--workers N` flag. The implementation parallelizes pandoc/xelatex conversion while keeping rmapi upload and filetree mutation sequential.
+
 Add a `--workers N` flag to `remarquee upload md`. The loop becomes a two-phase pipeline:
 
 ```go
@@ -643,7 +650,7 @@ If we pre-convert all Markdown files to PDFs in parallel (using `xargs -P 8` or 
 
 | Priority | Optimization | Impact | Effort |
 |----------|-------------|--------|--------|
-| 1 | `--workers N` in `upload md` | 8× speedup on first sync | Low (~20 lines) |
+| 1 | `--workers N` in `upload md` | 8× speedup on first sync | Done in branch |
 | 2 | `upload sync` with pre-flight delta | 60× speedup on re-syncs | Medium (new command) |
 | 3 | rmapi refresh suppression | Removes per-upload latency | High (upstream patch) |
 | 4 | `--from-pdf` bulk upload mode | 8× speedup via external parallel | Low (new flag) |

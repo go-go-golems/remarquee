@@ -20,7 +20,7 @@
 - [x] Validate `upload sync --dry-run` against temporary markdown fixtures
 - [x] Implement `upload sync` execution for upload/stale delta items
 - [x] Refactor or document shared upload-md/sync conversion behavior
-- [ ] Add `--workers N` parallel conversion to `upload md`
+- [x] Add `--workers N` parallel conversion to `upload md`
 - [ ] Add mtime comparison and orphaned-file cleanup to sync execution
 - [ ] Investigate rmapi tree refresh suppression for bulk uploads
 

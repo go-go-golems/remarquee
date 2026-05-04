@@ -16,6 +16,12 @@ RelatedFiles:
       Note: Source migration guide read before implementation
     - Path: ../../../../../../../go.work
       Note: Workspace selection of local glazed caused top-level CLI build mismatch; GOWORK=off validated sync dry-run
+    - Path: cmd/remarquee/cmds/upload/conversion_workers.go
+      Note: Worker pool added during Step 16
+    - Path: cmd/remarquee/cmds/upload/md.go
+      Note: workers flag wired into upload md during Step 16
+    - Path: cmd/remarquee/cmds/upload/md_test.go
+      Note: workers tests added during Step 16
     - Path: cmd/remarquee/cmds/upload/root.go
       Note: upload sync command wiring added during implementation Step 10
     - Path: cmd/remarquee/cmds/upload/sync.go
@@ -38,10 +44,11 @@ RelatedFiles:
       Note: Topic vocabulary fix that made docmgr doctor pass
 ExternalSources: []
 Summary: Chronological investigation of the Obsidian-to-reMarkable sync problem, remarquee capabilities, gaps, and prototype script.
-LastUpdated: 2026-05-03T20:20:00-04:00
+LastUpdated: 2026-05-03T20:40:00-04:00
 WhatFor: Record investigation steps, commands run, failures, and learnings for future reference.
 WhenToUse: When continuing this work or reviewing why design decisions were made.
 ---
+
 
 
 
@@ -885,3 +892,76 @@ This resolves the earlier workspace mismatch in the intended direction: remarque
   - `github.com/go-go-golems/glazed v1.2.1 → v1.2.7`
   - `github.com/go-go-golems/geppetto v0.11.9 → v0.11.17`
 - Full test caveat: `go test ./...` still requires `cmd/remarquee-ui/frontend/dist`.
+
+## Step 16: Add `--workers N` Parallel Markdown Conversion
+
+I implemented the high-priority performance follow-up from the ticket: `remarquee upload md` now accepts `--workers N` and can run multiple pandoc/xelatex conversions concurrently. Uploads remain sequential because rmapi filetree mutation is not treated as concurrency-safe.
+
+The implementation keeps `--workers 1` as the default and preserves the old per-file convert/check/upload flow in upload mode. When `--workers` is greater than one, the command pre-converts all selected Markdown files into temporary PDFs in parallel, then performs the existing remote existence checks and uploads in deterministic input order.
+
+### Prompt Context
+
+**User prompt (verbatim):** "add workers"
+
+**Assistant interpretation:** Implement the planned `--workers N` flag for `upload md` so Markdown-to-PDF conversion can be parallelized.
+
+**Inferred user intent:** Improve first-run and large-batch upload performance without waiting for the full sync/orphan cleanup work.
+
+**Commit (code):** pending at time of diary entry — planned commit after validation and docmgr updates.
+
+### What I did
+- Added `Workers int` to `uploadMarkdownSettings`.
+- Added `--workers` flag to `remarquee upload md`, defaulting to `1`.
+- Added validation that `--workers` must be at least 1.
+- Added `cmd/remarquee/cmds/upload/conversion_workers.go` with:
+  - `markdownConversionJob`
+  - `buildMarkdownConversionJobs`
+  - `convertMarkdownJobs`
+- Updated `--pdf-only` mode to use the worker pool.
+- Updated upload mode to pre-convert with the worker pool only when `--workers > 1`; uploads and rmapi mutations remain sequential.
+- Updated dry-run output to include the selected worker count.
+- Added unit tests for invalid worker values, dry-run worker output, and conversion job output paths.
+- Updated the design doc to mark `--workers N` as implemented.
+- Ran `go test ./cmd/remarquee/cmds/upload -count=1` → passed.
+- Checked off task 19.
+
+### Why
+- Pandoc/xelatex conversion was diagnosed as the primary bottleneck for large Obsidian syncs.
+- Conversion is CPU/process-bound and safe to parallelize because each job writes a distinct PDF.
+- rmapi upload stays sequential to avoid filetree cache races and `remote tree has changed` refresh storms.
+
+### What worked
+- The worker pool is isolated from rmapi and therefore easy to reason about.
+- Existing upload package tests still pass.
+- The default behavior remains conservative: `--workers 1`.
+
+### What didn't work
+- N/A for this step; implementation and targeted tests passed.
+
+### What I learned
+- The cleanest boundary is “prepare output paths sequentially, convert in parallel, upload sequentially.” This avoids concurrent directory creation surprises and keeps upload ordering stable.
+
+### What was tricky to build
+- In upload mode, preserving old behavior for `--workers 1` matters because the old command uploaded each file as soon as it converted. For `--workers > 1`, the command intentionally changes to a two-phase convert-then-upload pipeline to get parallelism.
+- The worker dispatch loop needs to stop cleanly when one conversion fails. It uses a cancellable context and a single buffered error channel.
+
+### What warrants a second pair of eyes
+- Review whether pre-converting all files before upload for `--workers > 1` is acceptable for very large batches, since it uses more temporary disk space.
+- Confirm whether `upload sync` should reuse `convertMarkdownJobs` next, so sync delta conversion can also be parallelized.
+
+### What should be done in the future
+- Consider adding `--workers` to `upload sync` execution.
+- Consider progress output for long parallel conversion batches.
+
+### Code review instructions
+- Start with `cmd/remarquee/cmds/upload/conversion_workers.go`.
+- Then inspect `runUploadMarkdown` in `cmd/remarquee/cmds/upload/md.go` for the `--workers` integration points.
+- Validate with `go test ./cmd/remarquee/cmds/upload -count=1`.
+
+### Technical details
+- New file: `cmd/remarquee/cmds/upload/conversion_workers.go`
+- Modified files:
+  - `cmd/remarquee/cmds/upload/md.go`
+  - `cmd/remarquee/cmds/upload/md_test.go`
+  - `ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/design-doc/01-obsidian-to-remarkable-sync-analysis-design-and-implementation-guide.md`
+- Validation command: `go test ./cmd/remarquee/cmds/upload -count=1`

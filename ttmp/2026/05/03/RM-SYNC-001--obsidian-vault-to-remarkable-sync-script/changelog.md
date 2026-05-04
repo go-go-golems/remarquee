@@ -101,3 +101,15 @@ Migrated remarquee Glazed/Cobra commands to the new ConfigPlanBuilder-based conf
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/internal/appconfig/parser.go — Shared CobraParserConfig with AppName and ConfigPlanBuilder for remarquee config discovery
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/go.mod — Updated Glazed and Geppetto versions for the new config plan API
 
+
+## 2026-05-04
+
+Added --workers N to upload md for parallel pandoc conversion in pdf-only and upload modes, keeping rmapi uploads sequential.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/conversion_workers.go — Worker-pool conversion helper for markdown-to-PDF jobs
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/md.go — Added workers flag and integrated parallel conversion before upload
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/md_test.go — Tests for workers flag validation and conversion job path behavior
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked workers task complete
+

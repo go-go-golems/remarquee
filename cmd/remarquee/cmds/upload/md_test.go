@@ -248,6 +248,65 @@ func TestUploadMarkdownRejectsNameWithMultipleFiles(t *testing.T) {
 	}
 }
 
+func TestUploadMarkdownRejectsInvalidWorkers(t *testing.T) {
+	td := t.TempDir()
+	md := filepath.Join(td, "draft.md")
+	if err := os.WriteFile(md, []byte("# Draft\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewUploadMarkdownCommand()
+	cmd.SetArgs([]string{"--dry-run", "--workers", "0", md})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for --workers=0")
+	}
+	if !strings.Contains(err.Error(), "--workers must be at least 1") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestUploadMarkdownDryRunShowsWorkers(t *testing.T) {
+	td := t.TempDir()
+	md := filepath.Join(td, "draft.md")
+	if err := os.WriteFile(md, []byte("# Draft\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewUploadMarkdownCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"--dry-run", "--workers", "4", md})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out.String(), "DRY: workers=4") {
+		t.Fatalf("expected dry-run output to mention workers, got:\n%s", out.String())
+	}
+}
+
+func TestBuildMarkdownConversionJobsPreservesRelativeOutput(t *testing.T) {
+	td := t.TempDir()
+	out := filepath.Join(td, "out")
+	input := markdownInput{AbsPath: filepath.Join(td, "src", "sub", "note.md"), RelPath: filepath.Join("sub", "note.md")}
+
+	jobs, err := buildMarkdownConversionJobs([]markdownInput{input}, out, "", true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(jobs) != 1 {
+		t.Fatalf("expected 1 job, got %d", len(jobs))
+	}
+	want := filepath.Join(out, "sub", "note.pdf")
+	if jobs[0].OutPDF != want {
+		t.Fatalf("expected output %q, got %q", want, jobs[0].OutPDF)
+	}
+}
+
 func TestUploadMarkdownRejectsNameWithPathSeparators(t *testing.T) {
 	td := t.TempDir()
 	md := filepath.Join(td, "draft.md")
