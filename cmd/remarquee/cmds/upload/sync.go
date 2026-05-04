@@ -52,7 +52,7 @@ Plan a one-way sync from local Markdown files to reMarkable PDF documents.
 Inputs match upload md: pass markdown files (*.md) and/or directories, and directories are scanned recursively.
 The sync command builds a remote index before conversion so it can report which files would upload, skip, or become stale without running pandoc for unchanged files.
 
-Use --dry-run to inspect the delta without converting or uploading. Without --dry-run, only files classified as UPLOAD are converted and uploaded. STALE files require --force before they are replaced.
+Use --dry-run to inspect the delta without converting, uploading, or deleting. Without --dry-run, files classified as UPLOAD are converted and uploaded. STALE files require --force before they are replaced. ORPHAN files are deleted only when both --delete-orphans and --force are set.
 `),
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -63,13 +63,13 @@ Use --dry-run to inspect the delta without converting or uploading. Without --dr
 	cmd.Flags().BoolVar(&s.NonInteractive, "non-interactive", false, "Do not prompt for one-time code; fail if tokens are missing")
 	cmd.Flags().BoolVar(&s.Reauth, "reauth", false, "Force re-authentication (re-fetch user token)")
 
-	cmd.Flags().BoolVar(&s.Force, "force", false, "Overwrite stale existing documents when execution is enabled (WARNING: deletes existing document + annotations)")
+	cmd.Flags().BoolVar(&s.Force, "force", false, "Overwrite stale documents and delete orphans when requested (WARNING: deletes existing documents + annotations)")
 	cmd.Flags().BoolVar(&s.DryRun, "dry-run", false, "Print the sync plan, but do not run pandoc or upload")
 	cmd.Flags().BoolVar(&s.PreserveDirs, "preserve-dirs", true, "Recreate the local relative directory structure remotely (default: true)")
 	cmd.Flags().BoolVar(&s.Flatten, "flatten", false, "Upload all files to a single flat directory (overrides --preserve-dirs)")
 	cmd.Flags().StringVar(&s.Name, "name", "", "Custom output document name (only valid when exactly one markdown file is selected)")
 	cmd.Flags().BoolVar(&s.CompareMTime, "compare-mtime", false, "Mark remote documents stale when the local markdown file is newer than the remote document")
-	cmd.Flags().BoolVar(&s.DeleteOrphans, "delete-orphans", false, "Report remote documents with no matching local markdown input")
+	cmd.Flags().BoolVar(&s.DeleteOrphans, "delete-orphans", false, "Report remote documents with no matching local markdown input; delete them during execution only with --force")
 
 	cmd.Flags().StringVar(&s.Date, "date", "", "Destination date folder under /ai (YYYY/MM/DD or YYYY-MM-DD). Default: today")
 	cmd.Flags().StringVar(&s.RemoteDir, "remote-dir", "", "Override remote directory (default: /ai/YYYY/MM/DD/)")
@@ -163,27 +163,23 @@ func executeSyncPlan(ctx context.Context, cmd *cobra.Command, apiCtx api.ApiCtx,
 		case syncActionSkip:
 			continue
 		case syncActionOrphan:
-			fmt.Fprintf(cmd.OutOrStdout(), "SKIP-ORPHAN: %s (orphan deletion is not implemented yet)\n", item.Remote.Path)
+			if !force {
+				fmt.Fprintf(cmd.OutOrStdout(), "SKIP-ORPHAN: %s (use --force with --delete-orphans to delete)\n", item.Remote.Path)
+				continue
+			}
+			if err := deleteSyncRemoteEntry(apiCtx, item.Remote, "orphan remote file"); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "OK: deleted orphan %s\n", item.Remote.Path)
 			continue
 		case syncActionStale:
 			if !force {
 				fmt.Fprintf(cmd.OutOrStdout(), "SKIP-STALE: %s (use --force to overwrite)\n", item.Local.RemoteKey)
 				continue
 			}
-			if item.Remote == nil || item.Remote.Node == nil {
-				return errors.Errorf("cannot overwrite stale document %s: missing remote node", item.Local.RemoteKey)
+			if err := deleteSyncRemoteEntry(apiCtx, item.Remote, "stale remote file"); err != nil {
+				return err
 			}
-			remoteNode, ok := item.Remote.Node.(*model.Node)
-			if !ok {
-				return errors.Errorf("cannot overwrite stale document %s: unexpected remote node type", item.Local.RemoteKey)
-			}
-			if remoteNode.IsDirectory() {
-				return errors.Errorf("cannot overwrite directory %q", item.Local.RemoteKey)
-			}
-			if err := apiCtx.DeleteEntry(remoteNode, false, false); err != nil {
-				return errors.Wrap(err, "failed to delete stale remote file")
-			}
-			apiCtx.Filetree().DeleteNode(remoteNode)
 		case syncActionUpload:
 			// Continue below and upload the new document.
 		}
@@ -209,6 +205,24 @@ func executeSyncPlan(ctx context.Context, cmd *cobra.Command, apiCtx api.ApiCtx,
 		}
 	}
 
+	return nil
+}
+
+func deleteSyncRemoteEntry(apiCtx api.ApiCtx, remote *syncRemoteEntry, label string) error {
+	if remote == nil || remote.Node == nil {
+		return errors.Errorf("cannot delete %s: missing remote node", label)
+	}
+	remoteNode, ok := remote.Node.(*model.Node)
+	if !ok {
+		return errors.Errorf("cannot delete %s: unexpected remote node type", label)
+	}
+	if remoteNode.IsDirectory() {
+		return errors.Errorf("cannot delete directory %q as %s", remote.Path, label)
+	}
+	if err := apiCtx.DeleteEntry(remoteNode, false, false); err != nil {
+		return errors.Wrapf(err, "failed to delete %s", label)
+	}
+	apiCtx.Filetree().DeleteNode(remoteNode)
 	return nil
 }
 

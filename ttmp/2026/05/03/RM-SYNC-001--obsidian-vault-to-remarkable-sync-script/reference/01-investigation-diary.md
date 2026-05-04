@@ -25,11 +25,15 @@ RelatedFiles:
     - Path: cmd/remarquee/cmds/upload/root.go
       Note: upload sync command wiring added during implementation Step 10
     - Path: cmd/remarquee/cmds/upload/sync.go
-      Note: Dry-run upload sync command added during implementation Step 10
+      Note: |-
+        Dry-run upload sync command added during implementation Step 10
+        Stale replacement and orphan deletion safety implemented during Step 17
     - Path: cmd/remarquee/cmds/upload/sync_plan.go
       Note: Pure planner added during implementation Step 9
     - Path: cmd/remarquee/cmds/upload/sync_plan_test.go
-      Note: Unit tests added during implementation Step 9
+      Note: |-
+        Unit tests added during implementation Step 9
+        Help safety tests added during Step 17
     - Path: cmd/remarquee/cmds/upload/upload_helpers.go
       Note: Shared upload helper added during implementation Step 12
     - Path: cmd/remarquee/internal/appconfig/parser.go
@@ -44,10 +48,11 @@ RelatedFiles:
       Note: Topic vocabulary fix that made docmgr doctor pass
 ExternalSources: []
 Summary: Chronological investigation of the Obsidian-to-reMarkable sync problem, remarquee capabilities, gaps, and prototype script.
-LastUpdated: 2026-05-03T20:40:00-04:00
+LastUpdated: 2026-05-03T21:00:00-04:00
 WhatFor: Record investigation steps, commands run, failures, and learnings for future reference.
 WhenToUse: When continuing this work or reviewing why design decisions were made.
 ---
+
 
 
 
@@ -964,4 +969,77 @@ The implementation keeps `--workers 1` as the default and preserves the old per-
   - `cmd/remarquee/cmds/upload/md.go`
   - `cmd/remarquee/cmds/upload/md_test.go`
   - `ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/design-doc/01-obsidian-to-remarkable-sync-analysis-design-and-implementation-guide.md`
+- Validation command: `go test ./cmd/remarquee/cmds/upload -count=1`
+
+## Step 17: Complete Sync Stale and Orphan Cleanup Safety
+
+I finished the remaining sync correctness task around modified files and orphan cleanup. The planner already supported `--compare-mtime` and `--delete-orphans`; this step made the execution behavior explicit and safe: stale documents are only replaced with `--force`, and orphaned remote documents are only deleted when both `--delete-orphans` and `--force` are supplied.
+
+This keeps destructive actions opt-in twice for orphans: first include them in the sync plan, then force deletion during execution.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue working through the remaining RM-SYNC-001 implementation tasks in order.
+
+**Inferred user intent:** Complete the next open sync task after workers, while keeping docmgr bookkeeping and diary updates current.
+
+**Commit (code):** pending at time of diary entry — planned commit after validation and docmgr updates.
+
+### What I did
+- Updated `upload sync` long help to document destructive stale/orphan behavior.
+- Updated `--force` help to cover stale replacement and requested orphan deletion.
+- Updated `--delete-orphans` help to say execution deletion also requires `--force`.
+- Added `deleteSyncRemoteEntry` to share safe remote node deletion logic between stale replacement and orphan deletion.
+- Changed orphan execution from “not implemented” to:
+  - skip unless `--force`
+  - delete remote document when `--delete-orphans` placed it in the plan and `--force` is set
+  - print `OK: deleted orphan <path>` after deletion
+- Refactored stale replacement to use the same deletion helper before converting/uploading the replacement.
+- Added a test that command help documents the `--delete-orphans` + `--force` safety requirement.
+- Updated the design doc Phase 3 section to mark stale/orphan execution implemented.
+- Ran `go test ./cmd/remarquee/cmds/upload -count=1` → passed.
+- Checked off task 20.
+
+### Why
+- Orphan deletion is destructive and can remove remote PDFs/annotations, so it should never happen merely because `--delete-orphans` was present in a dry-run-like plan.
+- Stale overwrite already required `--force`; orphan deletion should follow at least the same safety level.
+
+### What worked
+- Existing planner semantics were sufficient; no plan model changes were needed.
+- The shared deletion helper keeps stale and orphan deletion behavior consistent.
+- Targeted upload package tests pass.
+
+### What didn't work
+- N/A for this step; implementation and targeted tests passed.
+
+### What I learned
+- The flag naming now has a clean safety model:
+  - `--compare-mtime` expands the plan to identify stale documents.
+  - `--delete-orphans` expands the plan to identify orphan documents.
+  - `--force` is required for destructive execution.
+
+### What was tricky to build
+- The implementation must distinguish “include orphans in the plan” from “delete orphans.” The former is controlled by `--delete-orphans`; the latter needs `--force` as an additional guard.
+- The planner intentionally excludes remote directories from orphan items, so execution deletes only document nodes.
+
+### What warrants a second pair of eyes
+- Confirm the UX expectation that `--delete-orphans` alone only reports/skips during execution, and that `--delete-orphans --force` is required to mutate.
+- Review whether stale replacement should print an explicit deletion line before upload, or whether the upload success line is enough.
+
+### What should be done in the future
+- Add live validation against a disposable remote folder with orphan documents.
+- Consider adding an even more explicit `--force-delete-orphans` flag if `--force` feels too broad.
+
+### Code review instructions
+- Start with `deleteSyncRemoteEntry` and the `syncActionOrphan` branch in `cmd/remarquee/cmds/upload/sync.go`.
+- Review command help tests in `cmd/remarquee/cmds/upload/sync_plan_test.go`.
+- Validate with `go test ./cmd/remarquee/cmds/upload -count=1`.
+
+### Technical details
+- Modified files:
+  - `cmd/remarquee/cmds/upload/sync.go`
+  - `cmd/remarquee/cmds/upload/sync_plan_test.go`
+  - `ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-analysis-design-and-implementation-guide.md`
 - Validation command: `go test ./cmd/remarquee/cmds/upload -count=1`

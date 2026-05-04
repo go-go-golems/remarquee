@@ -23,7 +23,9 @@ RelatedFiles:
     - Path: cmd/remarquee/cmds/upload/root.go
       Note: Command tree registration for upload sync
     - Path: cmd/remarquee/cmds/upload/sync.go
-      Note: Phase 2 upload sync command and dry-run plan reporting
+      Note: |-
+        Phase 2 upload sync command and dry-run plan reporting
+        Phase 3 stale/orphan execution behavior
     - Path: cmd/remarquee/cmds/upload/sync_plan.go
       Note: Implementation of sync planning model from Phase 1
     - Path: cmd/remarquee/cmds/upload/sync_plan_test.go
@@ -38,6 +40,7 @@ LastUpdated: 2026-05-03T14:00:00-04:00
 WhatFor: Onboard a new intern to the remarquee/Obsidian/reMarkable sync problem space and proposed solution.
 WhenToUse: When implementing the sync script or extending remarquee with a native sync command.
 ---
+
 
 
 
@@ -678,10 +681,13 @@ This section turns the design into a concrete implementation checklist. The inte
 
 ### Phase 3: Execute upload delta
 
+**Implemented in this branch:** `upload sync` executes upload deltas, supports mtime-based stale detection through `--compare-mtime`, force-overwrites stale documents with `--force`, and deletes orphaned remote documents only when both `--delete-orphans` and `--force` are set.
+
 1. **Convert only the upload set.** After planning, run `mdpdf.ConvertMarkdownFileToPDF` only for files classified as `upload`; optionally include stale files only when overwrite behavior is explicitly requested.
 2. **Create remote directories lazily.** Use `rmcloud.MkdirAll` with a destination-node cache, as `upload md` already does.
 3. **Handle stale documents carefully.** Require `--force` before deleting/replacing an existing remote document. Without `--force`, report stale items but do not mutate them.
-4. **Keep upload execution sequential initially.** rmapi filetree mutation and refresh behavior is a known source of complexity; correctness should come before parallel uploads.
+4. **Handle orphaned documents carefully.** Require `--delete-orphans` to include orphans in the plan and `--force` to actually delete them during execution.
+5. **Keep upload execution sequential initially.** rmapi filetree mutation and refresh behavior is a known source of complexity; correctness should come before parallel uploads.
 
 ### Phase 4: Performance follow-ups
 

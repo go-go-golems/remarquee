@@ -113,3 +113,15 @@ Added --workers N to upload md for parallel pandoc conversion in pdf-only and up
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/md_test.go — Tests for workers flag validation and conversion job path behavior
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked workers task complete
 
+
+## 2026-05-04
+
+Completed sync mtime/orphan cleanup behavior: --compare-mtime marks stale items, --force overwrites stale documents, and --delete-orphans plus --force deletes orphaned remote documents.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync.go — Implements forced stale replacement and forced orphan deletion
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/cmd/remarquee/cmds/upload/sync_plan_test.go — Documents orphan deletion safety in sync command help tests
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/design-doc/01-obsidian-to-remarkable-sync-analysis-design-and-implementation-guide.md — Updated Phase 3 implementation status for stale/orphan handling
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked mtime/orphan sync task complete
+

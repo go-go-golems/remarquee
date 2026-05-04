@@ -129,6 +129,17 @@ func TestNewUploadCommandRegistersSync(t *testing.T) {
 	t.Fatal("expected upload root command to register sync subcommand")
 }
 
+func TestUploadSyncHelpDocumentsForceForOrphanDeletion(t *testing.T) {
+	cmd := NewUploadSyncCommand()
+	help := cmd.Long + "\n" + cmd.Flag("delete-orphans").Usage + "\n" + cmd.Flag("force").Usage
+	if !strings.Contains(help, "ORPHAN files are deleted only when both --delete-orphans and --force are set") {
+		t.Fatalf("expected long help to document orphan deletion safety, got:\n%s", help)
+	}
+	if !strings.Contains(help, "delete them during execution only with --force") {
+		t.Fatalf("expected delete-orphans flag help to mention --force, got:\n%s", help)
+	}
+}
+
 func TestPrintSyncPlanSummary(t *testing.T) {
 	td := t.TempDir()
 	note := writeMarkdownFixture(t, td, "note.md")
