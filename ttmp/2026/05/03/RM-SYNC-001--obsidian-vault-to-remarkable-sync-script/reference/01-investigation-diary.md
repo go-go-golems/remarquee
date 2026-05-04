@@ -54,7 +54,7 @@ RelatedFiles:
       Note: Topic vocabulary fix that made docmgr doctor pass
 ExternalSources: []
 Summary: Chronological investigation of the Obsidian-to-reMarkable sync problem, remarquee capabilities, gaps, and prototype script.
-LastUpdated: 2026-05-04T14:20:00-04:00
+LastUpdated: 2026-05-04T14:40:00-04:00
 WhatFor: Record investigation steps, commands run, failures, and learnings for future reference.
 WhenToUse: When continuing this work or reviewing why design decisions were made.
 ---
@@ -1186,3 +1186,62 @@ The first attempt exposed a real conversion edge case: pandoc fails when remarqu
 - Live upload log: `/tmp/rm-upload-vault-projects-2026.log`
 - Post-upload dry-run log: `/tmp/rm-sync-2026-post-upload-dry-run.txt`
 - Upload command: `go run ./cmd/remarquee upload md --non-interactive --workers 8 --remote-dir /Vault/Projects/2026 --preserve-dirs /home/manuel/code/wesen/obsidian-vault/Projects/2026`
+
+## Step 20: Write Deep-Dive Technical Blog Report and Copy It Into the Ticket
+
+I wrote a long-form technical article in the Obsidian vault that explains RM-SYNC-001 as a complete project: the original problem, the sync planner, preflight delta computation, worker-based conversion, stale/orphan safety, rmapi constraints, the Glazed config migration, the pandoc `#` filename bug, and the live upload result.
+
+The report is written as durable project knowledge rather than as a changelog. It uses prose-first textbook structure, concrete commands, tables, pseudocode, and Mermaid diagrams, and avoids analogies as requested.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, create a detailed proejct report as a deep dive technical blog post, written in a textbook writing style (no analogies though) into the obsidian vault. Then use `cp` to copy it into this ticket."
+
+**Assistant interpretation:** Create a canonical Obsidian article about the completed RM-SYNC-001 project, then copy the same Markdown file into the docmgr ticket workspace using `cp`.
+
+**Inferred user intent:** Preserve the work as a reusable, readable technical report in the vault while also keeping a ticket-local copy for review and archival.
+
+**Commit (code):** pending documentation update only.
+
+### What I did
+- Created the Obsidian vault article:
+  - `/home/manuel/code/wesen/obsidian-vault/Projects/2026/05/04/ARTICLE - Obsidian to reMarkable Sync - Native Delta Upload and Vault Report Pipeline.md`
+- Copied it into the ticket with `cp`:
+  - `ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/reference/02-obsidian-to-remarkable-sync-native-delta-upload-and-vault-report-pipeline.md`
+- Related the ticket copy to the vault article and the core implementation files.
+- Added and checked task 24.
+- Updated the changelog.
+
+### Why
+- The ticket contains detailed design and diary material, but a future reader benefits from a single coherent article that explains the project as a finished system.
+- Keeping the canonical copy in Obsidian makes it discoverable alongside the other 2026 project reports.
+- Keeping a copied ticket-local version makes the ticket self-contained.
+
+### What worked
+- The report could draw directly from the implementation diary, design doc, and live upload evidence.
+- `cp` preserved the exact article content in the ticket reference folder.
+
+### What didn't work
+- N/A for this step; writing and copying succeeded.
+
+### What I learned
+- RM-SYNC-001 now has three useful documentation layers: implementation diary for chronology, design doc for architecture, and article report for durable technical explanation.
+
+### What was tricky to build
+- The article needed to be educational without becoming a duplicate changelog. I structured it around the system concepts: planning before conversion, remote-key identity, safe destructive flags, worker boundaries, rmapi correctness constraints, and live validation.
+
+### What warrants a second pair of eyes
+- Review whether the article should also be uploaded to reMarkable as part of a refreshed RM-SYNC-001 documentation bundle.
+- Review whether the four extra remote documents under `/Vault/Projects/2026` should be inspected in a separate cleanup ticket.
+
+### What should be done in the future
+- Optionally close RM-SYNC-001 after committing the final report docs.
+- Optionally run `remarquee upload bundle` for the final ticket docs if a refreshed tablet copy is desired.
+
+### Code review instructions
+- Read the Obsidian article first; it is the canonical polished report.
+- Confirm the ticket copy was created with `cp` and matches the vault article.
+
+### Technical details
+- Canonical vault article: `/home/manuel/code/wesen/obsidian-vault/Projects/2026/05/04/ARTICLE - Obsidian to reMarkable Sync - Native Delta Upload and Vault Report Pipeline.md`
+- Ticket copy: `ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/reference/02-obsidian-to-remarkable-sync-native-delta-upload-and-vault-report-pipeline.md`

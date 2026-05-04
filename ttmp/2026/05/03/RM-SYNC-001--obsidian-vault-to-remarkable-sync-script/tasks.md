@@ -26,3 +26,4 @@
 
 - [x] Migrate remarquee Cobra commands to Glazed config plan loading API
 - [x] Live-upload Obsidian Projects/2026 vault reports to /Vault/Projects/2026 on reMarkable
+- [x] Write Obsidian deep-dive technical blog report and copy it into ticket

@@ -149,3 +149,14 @@ Live uploaded 265 Obsidian Projects/2026 Markdown reports to reMarkable under /V
 - /tmp/rm-sync-2026-post-upload-dry-run.txt — Post-upload verification showing upload=0 skip=265
 - /tmp/rm-upload-vault-projects-2026.log — Live upload log with 265 OK lines
 
+
+## 2026-05-04
+
+Wrote a textbook-style deep-dive technical blog report in the Obsidian vault and copied it into the RM-SYNC-001 ticket reference folder with cp.
+
+### Related Files
+
+- /home/manuel/code/wesen/obsidian-vault/Projects/2026/05/04/ARTICLE - Obsidian to reMarkable Sync - Native Delta Upload and Vault Report Pipeline.md — Canonical Obsidian vault deep-dive report
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/reference/02-obsidian-to-remarkable-sync-native-delta-upload-and-vault-report-pipeline.md — Ticket copy created with cp
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Added and checked report-writing task
+
