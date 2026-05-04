@@ -12,6 +12,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig"
 	rmapi_annotations "github.com/juruen/rmapi/annotations"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -214,10 +215,7 @@ func NewRenderLegacyCobraCommand() (*cobra.Command, error) {
 	cobraCmd, err := cli.BuildCobraCommand(cmd,
 		cli.WithDualMode(true),
 		cli.WithGlazeToggleFlag("with-glaze-output"),
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpSections: []string{schema.DefaultSlug},
-			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
-		}),
+		cli.WithParserConfig(appconfig.DefaultParserConfig()),
 	)
 	if err != nil {
 		return nil, err

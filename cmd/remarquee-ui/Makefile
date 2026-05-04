@@ -5,12 +5,12 @@ dev-backend:
 	go run . --dev
 
 dev-frontend:
-	cd frontend && npm install && npm run dev
+	cd frontend && corepack pnpm install && corepack pnpm run dev
 
 # Production build: bundle frontend + embed in Go binary
 build:
-	@echo "Building frontend..."
-	cd frontend && npm install && npm run build
+	@echo "Building frontend with Dagger/pnpm..."
+	go generate .
 	@echo "Building Go binary..."
 	go build -o remarquee-ui .
 	@echo "Done: ./remarquee-ui"
@@ -22,13 +22,14 @@ clean:
 
 # Install dependencies
 install:
-	cd frontend && npm install
+	cd frontend && corepack pnpm install
 	go mod download
 
 # Run tests
 test:
+	go generate .
 	go test ./api/...
-	cd frontend && npm run test
+	cd frontend && corepack pnpm run build
 
 # Help
 help:
