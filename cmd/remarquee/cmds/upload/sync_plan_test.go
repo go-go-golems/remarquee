@@ -2,6 +2,7 @@ package upload
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -127,6 +128,15 @@ func TestNewUploadCommandRegistersSync(t *testing.T) {
 		}
 	}
 	t.Fatal("expected upload root command to register sync subcommand")
+}
+
+func TestIsFiletreeNotFoundError(t *testing.T) {
+	if !isFiletreeNotFoundError(errors.New("entry 'missing' doesnt exist")) {
+		t.Fatal("expected rmapi missing-entry error to be classified as not found")
+	}
+	if isFiletreeNotFoundError(errors.New("network timeout")) {
+		t.Fatal("expected non-notfound error to propagate")
+	}
 }
 
 func TestUploadSyncHelpDocumentsForceForOrphanDeletion(t *testing.T) {

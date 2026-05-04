@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/go-go-golems/remarquee/pkg/mdpdf"
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
@@ -231,7 +230,10 @@ func buildSyncRemoteIndex(apiCtx api.ApiCtx, remoteDir string) (map[string]syncR
 
 	startNode, err := apiCtx.Filetree().NodeByPath(remoteDir, nil)
 	if err != nil {
-		return remoteIndex, nil
+		if isFiletreeNotFoundError(err) {
+			return remoteIndex, nil
+		}
+		return nil, errors.Wrapf(err, "failed to inspect remote sync root %q", remoteDir)
 	}
 
 	filetree.WalkTree(startNode, filetree.FileTreeVistor{
@@ -302,15 +304,10 @@ func buildUploadSyncPathFromParents(n *model.Node) string {
 	return "/" + filepath.ToSlash(strings.Join(parts, "/"))
 }
 
-func parseRemoteModifiedTime(value string) time.Time {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return time.Time{}
+func isFiletreeNotFoundError(err error) bool {
+	if err == nil {
+		return false
 	}
-	for _, layout := range []string{time.RFC3339Nano, time.RFC3339} {
-		if t, err := time.Parse(layout, value); err == nil {
-			return t
-		}
-	}
-	return time.Time{}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "doesnt exist") || strings.Contains(msg, "doesn't exist") || strings.Contains(msg, "not found")
 }

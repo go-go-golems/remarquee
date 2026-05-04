@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -106,8 +107,14 @@ func buildWithDagger(ctx context.Context, frontendDir string, distOut string, pn
 }
 
 func buildLocal(ctx context.Context, frontendDir string, distOut string, pnpmVersion string) error {
-	if err := os.RemoveAll(distOut); err != nil {
-		return fmt.Errorf("remove dist: %w", err)
+	defaultDist := filepath.Join(frontendDir, "dist")
+	if err := os.RemoveAll(defaultDist); err != nil {
+		return fmt.Errorf("remove default dist: %w", err)
+	}
+	if filepath.Clean(distOut) != filepath.Clean(defaultDist) {
+		if err := os.RemoveAll(distOut); err != nil {
+			return fmt.Errorf("remove custom dist: %w", err)
+		}
 	}
 
 	commands := [][]string{
@@ -126,8 +133,71 @@ func buildLocal(ctx context.Context, frontendDir string, distOut string, pnpmVer
 			return fmt.Errorf("%s: %w", strings.Join(argv, " "), err)
 		}
 	}
+	if filepath.Clean(distOut) != filepath.Clean(defaultDist) {
+		if err := copyDir(defaultDist, distOut); err != nil {
+			return fmt.Errorf("copy dist to requested output: %w", err)
+		}
+	}
 	log.Printf("exported web dist to %s", distOut)
 	return nil
+}
+
+func copyDir(src string, dst string) error {
+	info, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("source is not a directory: %s", src)
+	}
+	if err := os.MkdirAll(dst, info.Mode()); err != nil {
+		return err
+	}
+	return filepath.WalkDir(src, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		target := filepath.Join(dst, rel)
+		if d.IsDir() {
+			info, err := d.Info()
+			if err != nil {
+				return err
+			}
+			return os.MkdirAll(target, info.Mode())
+		}
+		return copyFile(path, target)
+	})
+}
+
+func copyFile(src string, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = in.Close() }()
+	info, err := in.Stat()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
+	out, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		_ = out.Close()
+		return err
+	}
+	return out.Close()
 }
 
 func packageManagerPNPMVersion(frontendDir string) string {
