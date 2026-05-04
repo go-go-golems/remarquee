@@ -12,6 +12,8 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: ../../../../../../../../../../code/wesen/obsidian-vault/Projects/2026
+      Note: Live-uploaded source tree
     - Path: ../../../../../../../glazed/pkg/doc/tutorials/migrating-from-viper-to-config-files.md
       Note: Source migration guide read before implementation
     - Path: ../../../../../../../go.work
@@ -40,6 +42,10 @@ RelatedFiles:
       Note: Shared ConfigPlanBuilder migration helper added during Step 15
     - Path: go.mod
       Note: Glazed/Geppetto versions updated for new config API
+    - Path: pkg/mdpdf/pandoc.go
+      Note: 'Pandoc temp filename fix for Markdown sources containing #'
+    - Path: pkg/mdpdf/pandoc_test.go
+      Note: 'Regression test for # in Markdown input filenames'
     - Path: ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/reference/01-investigation-diary.md
       Note: Chronological continuation notes for the resumed ticket work
     - Path: ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md
@@ -48,10 +54,11 @@ RelatedFiles:
       Note: Topic vocabulary fix that made docmgr doctor pass
 ExternalSources: []
 Summary: Chronological investigation of the Obsidian-to-reMarkable sync problem, remarquee capabilities, gaps, and prototype script.
-LastUpdated: 2026-05-03T21:15:00-04:00
+LastUpdated: 2026-05-04T14:20:00-04:00
 WhatFor: Record investigation steps, commands run, failures, and learnings for future reference.
 WhenToUse: When continuing this work or reviewing why design decisions were made.
 ---
+
 
 
 
@@ -1100,3 +1107,82 @@ When rmapi writes the root index, the remote can reject the write with `transpor
 ### Technical details
 - Investigated file: `/home/manuel/go/pkg/mod/github.com/ddvk/rmapi@v0.0.0-20260421131258-29d7b039e606/api/sync15/apictx.go`
 - Updated file: `ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/design-doc/01-obsidian-to-remarkable-sync-analysis-design-and-implementation-guide.md`
+
+## Step 19: Live End-to-End Upload to `/Vault/Projects/2026`
+
+I performed the requested live upload of the full Obsidian project-report tree for 2026 to the reMarkable tablet. The source tree contained 265 Markdown files, and the target remote folder was `/Vault/Projects/2026`.
+
+The first attempt exposed a real conversion edge case: pandoc fails when remarquee uses the original Markdown basename for temporary helper files and that basename contains `#`, as in `PROJ - go-minitrace - JS Commands and Structured Query Catalog PR #6.md`. I fixed the converter to use boring temporary helper filenames (`input.md`, `header.tex`, `extra-header.tex`), added a regression test, and then reran the live upload successfully.
+
+### Prompt Context
+
+**User prompt (verbatim):** "do live end to end, upload ~/code/wesen/obsidian-vault/Projects/2026 to the remarkable tablet under /Vault/Projects/2026 so I get all my reports on my tablet."
+
+**Assistant interpretation:** Run the actual sync/upload workflow against the user's Obsidian Projects/2026 directory and place the resulting PDFs on the reMarkable under the requested remote tree.
+
+**Inferred user intent:** Make all 2026 project reports available for reading on the tablet, not just implement tooling.
+
+**Commit (code):** pending at time of diary entry — planned commit after validation and docmgr updates.
+
+### What I did
+- Counted local Markdown files: `find /home/manuel/code/wesen/obsidian-vault/Projects/2026 -type f -name '*.md' | wc -l` → `265`.
+- Ran a preflight dry-run:
+  - `go run ./cmd/remarquee upload sync --dry-run --non-interactive --remote-dir /Vault/Projects/2026 /home/manuel/code/wesen/obsidian-vault/Projects/2026`
+  - Result: `SUMMARY: upload=265 skip=0 stale=0 orphan=0`.
+- Attempted live upload with workers:
+  - `go run ./cmd/remarquee upload md --non-interactive --workers 8 --remote-dir /Vault/Projects/2026 --preserve-dirs /home/manuel/code/wesen/obsidian-vault/Projects/2026`
+- Fixed pandoc temporary filenames in `pkg/mdpdf/pandoc.go` after the `#` filename failure.
+- Added `pkg/mdpdf/pandoc_test.go` regression coverage for Markdown filenames containing `#`.
+- Re-ran the live upload with the same command and captured output in `/tmp/rm-upload-vault-projects-2026.log`.
+- Verified the upload log has 265 `OK: uploaded` lines.
+- Ran a post-upload sync dry-run:
+  - `go run ./cmd/remarquee upload sync --dry-run --non-interactive --remote-dir /Vault/Projects/2026 /home/manuel/code/wesen/obsidian-vault/Projects/2026`
+  - Result: `SUMMARY: upload=0 skip=265 stale=0 orphan=0`.
+- Ran remote count verification:
+  - `go run ./cmd/remarquee cloud find /Vault/Projects/2026 --with-glaze-output --output json --non-interactive | jq '[.[] | select(.is_dir == false)] | length'`
+  - Result: `269` remote documents under that tree; the sync plan specifically matched all 265 local inputs.
+- Added and checked task 23.
+
+### Why
+- The live upload validates the tooling against the real use case and puts the requested reports on the tablet.
+- The post-upload dry-run is the strongest idempotency check: it confirms the sync planner sees every local source as already present remotely.
+
+### What worked
+- After the pandoc filename fix, all 265 project reports uploaded successfully.
+- `--workers 8` made the conversion phase practical for the full vault subset.
+- Directory structure was preserved under `/Vault/Projects/2026/YYYY/MM/DD`.
+- Post-upload dry-run reports zero remaining uploads.
+
+### What didn't work
+- First live upload attempt failed before uploading because pandoc interpreted `#` in a temporary input path as a URI fragment. Exact error:
+  ```text
+  Error: pandoc failed: pandoc: /tmp/remarquee-mdpdf-3439175623/PROJ - go-minitrace - JS Commands and Structured Query Catalog PR : withBinaryFile: does not exist (No such file or directory)
+  : exit status 1
+  ```
+
+### What I learned
+- Temporary tool-facing filenames should not reuse arbitrary user document names. Human-facing output names can keep the original title, but internal helper files should be sanitized or fixed.
+- The post-upload sync dry-run is a useful live verification workflow for future vault syncs.
+
+### What was tricky to build
+- The failing filename was not the final PDF output path; it was an internal temporary Markdown path passed to pandoc. Using stable helper filenames solved it without changing user-visible document names on the tablet.
+
+### What warrants a second pair of eyes
+- Review the pandoc regression test's assumption that pandoc is available in a standard path. It skips if not found, which is appropriate for environments without pandoc but means CI may not exercise the exact conversion path.
+- The remote count is 269 while local matched inputs are 265, suggesting four extra remote documents already exist under `/Vault/Projects/2026`; sync idempotency for the requested source tree is still clean (`skip=265`).
+
+### What should be done in the future
+- Consider running `upload sync --dry-run --delete-orphans` to identify the four extra remote documents, but do not delete them without explicit user confirmation.
+- Consider wiring `--workers` into `upload sync` so future live syncs get both preflight delta and parallel conversion.
+
+### Code review instructions
+- Review `pkg/mdpdf/pandoc.go` for the temporary filename change.
+- Review `pkg/mdpdf/pandoc_test.go` for the hash-filename regression.
+- Validate with `go test ./pkg/mdpdf ./cmd/remarquee/cmds/upload -count=1`.
+
+### Technical details
+- Source: `/home/manuel/code/wesen/obsidian-vault/Projects/2026`
+- Remote target: `/Vault/Projects/2026`
+- Live upload log: `/tmp/rm-upload-vault-projects-2026.log`
+- Post-upload dry-run log: `/tmp/rm-sync-2026-post-upload-dry-run.txt`
+- Upload command: `go run ./cmd/remarquee upload md --non-interactive --workers 8 --remote-dir /Vault/Projects/2026 --preserve-dirs /home/manuel/code/wesen/obsidian-vault/Projects/2026`

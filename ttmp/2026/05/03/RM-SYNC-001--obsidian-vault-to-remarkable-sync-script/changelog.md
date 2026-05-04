@@ -136,3 +136,16 @@ Investigated rmapi tree refresh warnings; documented that they come from sync15 
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/design-doc/01-obsidian-to-remarkable-sync-analysis-design-and-implementation-guide.md — Documented rmapi refresh suppression investigation result
 - /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Marked rmapi refresh investigation task complete
 
+
+## 2026-05-04
+
+Live uploaded 265 Obsidian Projects/2026 Markdown reports to reMarkable under /Vault/Projects/2026; post-upload sync dry-run reports upload=0 skip=265.
+
+### Related Files
+
+- /home/manuel/code/wesen/obsidian-vault/Projects/2026 — Source Markdown tree uploaded to reMarkable
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/pkg/mdpdf/pandoc.go — Fixed pandoc temp helper filenames for source files containing # before live upload
+- /home/manuel/workspaces/2026-05-03/add-upload-sync/remarquee/ttmp/2026/05/03/RM-SYNC-001--obsidian-vault-to-remarkable-sync-script/tasks.md — Added and completed live upload task
+- /tmp/rm-sync-2026-post-upload-dry-run.txt — Post-upload verification showing upload=0 skip=265
+- /tmp/rm-upload-vault-projects-2026.log — Live upload log with 265 OK lines
+
