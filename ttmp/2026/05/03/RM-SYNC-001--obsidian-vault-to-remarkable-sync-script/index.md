@@ -1,7 +1,7 @@
 ---
 Title: Obsidian Vault to reMarkable Sync Script
 Ticket: RM-SYNC-001
-Status: active
+Status: complete
 Topics:
     - remarquee
     - obsidian
@@ -14,10 +14,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-05-03T09:09:38.40626616-04:00
+LastUpdated: 2026-05-04T14:45:22.287881468-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Obsidian Vault to reMarkable Sync Script
 
