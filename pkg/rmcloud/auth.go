@@ -1,6 +1,8 @@
 package rmcloud
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/juruen/rmapi/api"
@@ -87,6 +89,8 @@ func WithAuthRetry(
 	}
 
 	// Auth error: retry once with fresh context.
+	fmt.Fprintln(os.Stderr, "NOTE: auth expired, re-authenticating and retrying...")
+
 	reauthAuth := auth
 	reauthAuth.Reauth = true
 	_, freshCtx, reauthErr := CreateApiCtx(reauthAuth)
