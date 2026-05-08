@@ -1,0 +1,52 @@
+[
+{
+  "count": 50,
+  "failure_mode": "unknown",
+  "percentage": "27.5%"
+}
+, {
+  "count": 47,
+  "failure_mode": "runtime-error",
+  "percentage": "25.8%"
+}
+, {
+  "count": 38,
+  "failure_mode": "pandoc-pdf",
+  "percentage": "20.9%"
+}
+, {
+  "count": 23,
+  "failure_mode": "not-found",
+  "percentage": "12.6%"
+}
+, {
+  "count": 10,
+  "failure_mode": "http-400",
+  "percentage": "5.5%"
+}
+, {
+  "count": 5,
+  "failure_mode": "auth",
+  "percentage": "2.7%"
+}
+, {
+  "count": 4,
+  "failure_mode": "timeout",
+  "percentage": "2.2%"
+}
+, {
+  "count": 2,
+  "failure_mode": "network",
+  "percentage": "1.1%"
+}
+, {
+  "count": 2,
+  "failure_mode": "cli-usage",
+  "percentage": "1.1%"
+}
+, {
+  "count": 1,
+  "failure_mode": "permission",
+  "percentage": "0.5%"
+}
+]
