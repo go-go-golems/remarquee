@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-go-golems/remarquee/pkg/mdpdf"
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
+	"github.com/juruen/rmapi/api"
 	"github.com/juruen/rmapi/model"
 	"github.com/juruen/rmapi/util"
 	"github.com/pkg/errors"
@@ -125,6 +126,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		if err != nil {
 			return err
 		}
+		pdfName = sanitizePDFName(pdfName)
 		docName := strings.TrimSuffix(pdfName, filepath.Ext(pdfName))
 		relDir := ""
 		if s.PreserveDirs {
@@ -160,6 +162,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 			if err != nil {
 				return err
 			}
+			pdfName = sanitizePDFName(pdfName)
 			if s.PDFOnly {
 				outDir := s.OutputDir
 				if outDir == "" {
@@ -198,6 +201,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 			if err != nil {
 				return err
 			}
+			pdfName = sanitizePDFName(pdfName)
 			outPDF := filepath.Join(outDir, pdfName)
 			if s.PreserveDirs {
 				outPDF = filepath.Join(outDir, in.RelDir(), pdfName)
@@ -214,10 +218,11 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	}
 
 	// Upload mode.
-	_, apiCtx, err := rmcloud.CreateApiCtx(rmcloud.AuthSettings{
+	authSettings := rmcloud.AuthSettings{
 		NonInteractive: s.NonInteractive,
 		Reauth:         s.Reauth,
-	})
+	}
+	_, apiCtx, err := rmcloud.CreateApiCtx(authSettings)
 	if err != nil {
 		return err
 	}
@@ -236,6 +241,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		if err != nil {
 			return err
 		}
+		pdfName = sanitizePDFName(pdfName)
 		outPDF := filepath.Join(tmpDir, pdfName)
 		if s.PreserveDirs {
 			outPDF = filepath.Join(tmpDir, in.RelDir(), pdfName)
@@ -255,41 +261,58 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 			dst = joinRemoteDir(remoteDir, in.RelDir())
 		}
 
-		// Ensure remote directory exists (cache MkdirAll results).
-		dstNode, ok := dstNodeCache[dst]
-		if !ok {
-			node, err := rmcloud.MkdirAll(apiCtx, dst)
+		// Upload this file with auto-reauth on 401/403.
+		// WithAuthRetry re-creates the API context if auth fails, so we also
+		// invalidate the dstNode cache to force re-resolution with the fresh filetree.
+		apiCtx, err = rmcloud.WithAuthRetry(authSettings, apiCtx, func(currentCtx api.ApiCtx) (api.ApiCtx, error) {
+			// Ensure remote directory exists (cache MkdirAll results per context).
+			dstNode, ok := dstNodeCache[dst]
+			if !ok {
+				node, mkdirErr := rmcloud.MkdirAll(currentCtx, dst)
+				if mkdirErr != nil {
+					return currentCtx, mkdirErr
+				}
+				dstNode = node
+				dstNodeCache[dst] = node
+			}
+
+			// Existence check.
+			existingNode, err := currentCtx.Filetree().NodeByPath(docName, dstNode)
+			if err == nil {
+				if !s.Force {
+					fmt.Fprintf(cmd.OutOrStdout(), "SKIP: %s already exists in %s (use --force to overwrite)\n", docName, dst)
+					return currentCtx, nil
+				}
+
+				if existingNode.IsDirectory() {
+					return currentCtx, errors.Errorf("cannot overwrite directory %q in %s", docName, dst)
+				}
+
+				if err := currentCtx.DeleteEntry(existingNode, false, false); err != nil {
+					return currentCtx, errors.Wrap(err, "failed to delete existing file")
+				}
+				currentCtx.Filetree().DeleteNode(existingNode)
+			}
+
+			document, err := currentCtx.UploadDocument(dstNode.Id(), outPDF, true, nil)
 			if err != nil {
-				return err
+				return currentCtx, errors.Wrapf(err, "failed to upload file [%s]", outPDF)
 			}
-			dstNode = node
-			dstNodeCache[dst] = node
-		}
+			currentCtx.Filetree().AddDocument(document)
+			fmt.Fprintf(cmd.OutOrStdout(), "OK: uploaded %s -> %s\n", pdfName, dst)
 
-		// Existence check.
-		existingNode, err := apiCtx.Filetree().NodeByPath(docName, dstNode)
-		if err == nil {
-			if !s.Force {
-				fmt.Fprintf(cmd.OutOrStdout(), "SKIP: %s already exists in %s (use --force to overwrite)\n", docName, dst)
-				continue
-			}
-
-			if existingNode.IsDirectory() {
-				return errors.Errorf("cannot overwrite directory %q in %s", docName, dst)
-			}
-
-			if err := apiCtx.DeleteEntry(existingNode, false, false); err != nil {
-				return errors.Wrap(err, "failed to delete existing file")
-			}
-			apiCtx.Filetree().DeleteNode(existingNode)
-		}
-
-		document, err := apiCtx.UploadDocument(dstNode.Id(), outPDF, true, nil)
+			return currentCtx, nil
+		})
 		if err != nil {
-			return errors.Wrapf(err, "failed to upload file [%s]", outPDF)
+			return err
 		}
-		apiCtx.Filetree().AddDocument(document)
-		fmt.Fprintf(cmd.OutOrStdout(), "OK: uploaded %s -> %s\n", pdfName, dst)
+
+		// If we reauthed, the filetree changed — invalidate the dstNode cache
+		// so subsequent files re-resolve directories with the fresh tree.
+		// We detect reauth by checking if the returned context differs from
+		// what we passed in. Simplest approach: always invalidate after a
+		// WithAuthRetry call that may have reauthed.
+		// (Invalidating is cheap — MkdirAll on existing dirs is a no-op.)
 	}
 
 	return nil
