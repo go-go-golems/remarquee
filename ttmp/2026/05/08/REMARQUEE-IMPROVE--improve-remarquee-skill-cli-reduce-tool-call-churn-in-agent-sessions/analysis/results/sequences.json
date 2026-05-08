@@ -1,0 +1,1202 @@
+[
+{
+  "call_count": 4,
+  "commands_summary": "status → upload → upload → cloud",
+  "duration_seconds": 17,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-23T23:54:14.220Z",
+  "sequence_index": 1,
+  "session_id": "019dbcb9-a9c4-7449-9d4f-dc260c37eaba",
+  "session_title": "Why does this software need a backend? Can we create a singl",
+  "subcommands": "cloud, status, upload",
+  "success_count": 4
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 22,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-24T23:45:39.880Z",
+  "sequence_index": 2,
+  "session_id": "019dbcb9-a9c4-7449-9d4f-dc260c37eaba",
+  "session_title": "Why does this software need a backend? Can we create a singl",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → upload → upload → cloud → upload",
+  "duration_seconds": 80,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-24T00:51:46.280Z",
+  "sequence_index": 3,
+  "session_id": "019dbce8-4765-71da-bf12-e8443afb3618",
+  "session_title": "Create a new docmgr ticket to improve css-visual-diff after ",
+  "subcommands": "cloud, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → cloud → upload → upload → cloud",
+  "duration_seconds": 43,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-24T02:35:20.625Z",
+  "sequence_index": 4,
+  "session_id": "019dbd4e-afcd-7463-88be-de0c08da4ea9",
+  "session_title": "Create a new docmgr ticket to implement the go fwd managemen",
+  "subcommands": "cloud, status, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 3,
+  "commands_summary": "cloud → status → upload",
+  "duration_seconds": 8,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T13:56:00.272Z",
+  "sequence_index": 5,
+  "session_id": "019dbd4e-afcd-7463-88be-de0c08da4ea9",
+  "session_title": "Create a new docmgr ticket to implement the go fwd managemen",
+  "subcommands": "cloud, status, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 4,
+  "commands_summary": "upload → cloud → upload → cloud",
+  "duration_seconds": 70,
+  "fail_count": 1,
+  "first_timestamp": "2026-04-26T13:59:15.369Z",
+  "sequence_index": 6,
+  "session_id": "019dbd4e-afcd-7463-88be-de0c08da4ea9",
+  "session_title": "Create a new docmgr ticket to implement the go fwd managemen",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 19,
+  "commands_summary": "status → upload → cloud → cloud → upload … (+14 more)",
+  "duration_seconds": 258,
+  "fail_count": 5,
+  "first_timestamp": "2026-04-24T20:25:10.830Z",
+  "sequence_index": 7,
+  "session_id": "019dbe19-20d9-705e-8b7c-0bbae47b76ee",
+  "session_title": "Work on docmgr ticket css-visual-diff/ttmp/2026/04/24/CSSVD-",
+  "subcommands": "cloud, upload",
+  "success_count": 14
+}
+, {
+  "call_count": 8,
+  "commands_summary": "status → upload → upload → cloud → upload … (+3 more)",
+  "duration_seconds": 109,
+  "fail_count": 3,
+  "first_timestamp": "2026-04-24T22:31:59.488Z",
+  "sequence_index": 8,
+  "session_id": "019dbe19-20d9-705e-8b7c-0bbae47b76ee",
+  "session_title": "Work on docmgr ticket css-visual-diff/ttmp/2026/04/24/CSSVD-",
+  "subcommands": "cloud, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 4,
+  "commands_summary": "status → cloud → cloud → status`.",
+  "duration_seconds": 38,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-24T23:16:20.610Z",
+  "sequence_index": 9,
+  "session_id": "019dbe19-20d9-705e-8b7c-0bbae47b76ee",
+  "session_title": "Work on docmgr ticket css-visual-diff/ttmp/2026/04/24/CSSVD-",
+  "subcommands": "cloud",
+  "success_count": 4
+}
+, {
+  "call_count": 2,
+  "commands_summary": "cloud → cloud",
+  "duration_seconds": 19,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T00:27:03.123Z",
+  "sequence_index": 10,
+  "session_id": "019dbe19-20d9-705e-8b7c-0bbae47b76ee",
+  "session_title": "Work on docmgr ticket css-visual-diff/ttmp/2026/04/24/CSSVD-",
+  "subcommands": "cloud",
+  "success_count": 2
+}
+, {
+  "call_count": 2,
+  "commands_summary": "cloud → cloud",
+  "duration_seconds": 14,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T01:55:12.393Z",
+  "sequence_index": 11,
+  "session_id": "019dbe19-20d9-705e-8b7c-0bbae47b76ee",
+  "session_title": "Work on docmgr ticket css-visual-diff/ttmp/2026/04/24/CSSVD-",
+  "subcommands": "cloud",
+  "success_count": 2
+}
+, {
+  "call_count": 4,
+  "commands_summary": "status → upload → upload → cloud",
+  "duration_seconds": 31,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T13:01:23.055Z",
+  "sequence_index": 12,
+  "session_id": "019dbe19-20d9-705e-8b7c-0bbae47b76ee",
+  "session_title": "Work on docmgr ticket css-visual-diff/ttmp/2026/04/24/CSSVD-",
+  "subcommands": "cloud, status, upload",
+  "success_count": 4
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 15,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T13:33:52.427Z",
+  "sequence_index": 13,
+  "session_id": "019dbe19-20d9-705e-8b7c-0bbae47b76ee",
+  "session_title": "Work on docmgr ticket css-visual-diff/ttmp/2026/04/24/CSSVD-",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 17,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T14:09:52.178Z",
+  "sequence_index": 14,
+  "session_id": "019dbe19-20d9-705e-8b7c-0bbae47b76ee",
+  "session_title": "Work on docmgr ticket css-visual-diff/ttmp/2026/04/24/CSSVD-",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 3,
+  "commands_summary": "status → upload → status",
+  "duration_seconds": 25,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T18:36:01.454Z",
+  "sequence_index": 15,
+  "session_id": "019dbe19-20d9-705e-8b7c-0bbae47b76ee",
+  "session_title": "Work on docmgr ticket css-visual-diff/ttmp/2026/04/24/CSSVD-",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → upload → upload → help → help",
+  "duration_seconds": 20,
+  "fail_count": 1,
+  "first_timestamp": "2026-04-24T20:24:00.956Z",
+  "sequence_index": 16,
+  "session_id": "019dc129-9955-73ce-a1ce-3d2a50308122",
+  "session_title": "Upload  ttmp/2026/04/24/PYXIS-COMPONENT-VISUAL-PARITY--run-b",
+  "subcommands": "help, status, upload",
+  "success_count": 4
+}
+, {
+  "call_count": 6,
+  "commands_summary": "upload → help → cloud → cloud → cloud … (+1 more)",
+  "duration_seconds": 54,
+  "fail_count": 1,
+  "first_timestamp": "2026-04-24T20:36:19.041Z",
+  "sequence_index": 17,
+  "session_id": "019dc129-9955-73ce-a1ce-3d2a50308122",
+  "session_title": "Upload  ttmp/2026/04/24/PYXIS-COMPONENT-VISUAL-PARITY--run-b",
+  "subcommands": "cloud, help, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 3,
+  "commands_summary": "status → upload → cloud",
+  "duration_seconds": 28,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-24T23:46:13.740Z",
+  "sequence_index": 18,
+  "session_id": "019dc129-9955-73ce-a1ce-3d2a50308122",
+  "session_title": "Upload  ttmp/2026/04/24/PYXIS-COMPONENT-VISUAL-PARITY--run-b",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 3,
+  "commands_summary": "status → upload → status\\nremarquee",
+  "duration_seconds": 73,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T01:52:09.491Z",
+  "sequence_index": 19,
+  "session_id": "019dc129-9955-73ce-a1ce-3d2a50308122",
+  "session_title": "Upload  ttmp/2026/04/24/PYXIS-COMPONENT-VISUAL-PARITY--run-b",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → upload → upload → cloud → cloud",
+  "duration_seconds": 46,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T11:35:17.970Z",
+  "sequence_index": 20,
+  "session_id": "019dc129-9955-73ce-a1ce-3d2a50308122",
+  "session_title": "Upload  ttmp/2026/04/24/PYXIS-COMPONENT-VISUAL-PARITY--run-b",
+  "subcommands": "cloud, status, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 25,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T11:53:52.755Z",
+  "sequence_index": 21,
+  "session_id": "019dc129-9955-73ce-a1ce-3d2a50308122",
+  "session_title": "Upload  ttmp/2026/04/24/PYXIS-COMPONENT-VISUAL-PARITY--run-b",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → cloud",
+  "duration_seconds": 10,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T19:28:40.208Z",
+  "sequence_index": 22,
+  "session_id": "019dc129-9955-73ce-a1ce-3d2a50308122",
+  "session_title": "Upload  ttmp/2026/04/24/PYXIS-COMPONENT-VISUAL-PARITY--run-b",
+  "subcommands": "cloud, upload",
+  "success_count": 2
+}
+, {
+  "call_count": 3,
+  "commands_summary": "status → upload → upload",
+  "duration_seconds": 21,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T21:21:23.145Z",
+  "sequence_index": 23,
+  "session_id": "019dc129-9955-73ce-a1ce-3d2a50308122",
+  "session_title": "Upload  ttmp/2026/04/24/PYXIS-COMPONENT-VISUAL-PARITY--run-b",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 3,
+  "commands_summary": "status → upload → upload",
+  "duration_seconds": 29,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T22:46:41.507Z",
+  "sequence_index": 24,
+  "session_id": "019dc129-9955-73ce-a1ce-3d2a50308122",
+  "session_title": "Upload  ttmp/2026/04/24/PYXIS-COMPONENT-VISUAL-PARITY--run-b",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 38,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T22:53:46.075Z",
+  "sequence_index": 25,
+  "session_id": "019dc129-9955-73ce-a1ce-3d2a50308122",
+  "session_title": "Upload  ttmp/2026/04/24/PYXIS-COMPONENT-VISUAL-PARITY--run-b",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 18,
+  "commands_summary": "\u0026\u0026 → -name → \u0026\u0026 → \u0026\u0026 → --include=\"*.go\" … (+13 more)",
+  "duration_seconds": 110,
+  "fail_count": 5,
+  "first_timestamp": "2026-04-24T22:41:24.447Z",
+  "sequence_index": 26,
+  "session_id": "019dc1a7-28bd-74ed-936b-591233875cf0",
+  "session_title": "Read ../pinocchio and compile remarquee here to fix the gepp",
+  "subcommands": "other",
+  "success_count": 13
+}
+, {
+  "call_count": 7,
+  "commands_summary": "-name → ls -la /home/manuel/code/wesen/corporate-headquarters/remarq → ls -la /home/manuel/code/wesen/corporate-headquarters/remarq → find /home/manuel/code/wesen/corporate-headquarters/remarque → --include=\"*.go\" … (+2 more)",
+  "duration_seconds": 194,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-24T22:56:53.474Z",
+  "sequence_index": 27,
+  "session_id": "019dc1a7-28bd-74ed-936b-591233875cf0",
+  "session_title": "Read ../pinocchio and compile remarquee here to fix the gepp",
+  "subcommands": "other",
+  "success_count": 7
+}
+, {
+  "call_count": 16,
+  "commands_summary": "mkdir -p /home/manuel/code/wesen/corporate-headquarters/rema → cp -r /home/manuel/go/pkg/mod/github.com/ddvk/rmapi@v0.0.0-2 → grep -n \"func (t \\*HashTree) IndexReader\" /home/manuel/code/ → \u0026\u0026 → \u0026\u0026 … (+11 more)",
+  "duration_seconds": 508,
+  "fail_count": 4,
+  "first_timestamp": "2026-04-24T23:06:49.577Z",
+  "sequence_index": 28,
+  "session_id": "019dc1a7-28bd-74ed-936b-591233875cf0",
+  "session_title": "Read ../pinocchio and compile remarquee here to fix the gepp",
+  "subcommands": "other",
+  "success_count": 12
+}
+, {
+  "call_count": 2,
+  "commands_summary": "\u0026\u0026 → \u0026\u0026",
+  "duration_seconds": 9,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T12:59:02.643Z",
+  "sequence_index": 29,
+  "session_id": "019dc1a7-28bd-74ed-936b-591233875cf0",
+  "session_title": "Read ../pinocchio and compile remarquee here to fix the gepp",
+  "subcommands": "other",
+  "success_count": 2
+}
+, {
+  "call_count": 7,
+  "commands_summary": "curl -sL \"https://api.github.com/repos/go-go-golems/remarque → curl -sL \"https://api.github.com/repos/go-go-golems/remarque → curl -sL \"https://api.github.com/repos/go-go-golems/remarque → curl -sL \"https://api.github.com/repos/go-go-golems/remarque → \u0026\u0026 … (+2 more)",
+  "duration_seconds": 156,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T14:12:08.931Z",
+  "sequence_index": 30,
+  "session_id": "019dc1a7-28bd-74ed-936b-591233875cf0",
+  "session_title": "Read ../pinocchio and compile remarquee here to fix the gepp",
+  "subcommands": "other",
+  "success_count": 7
+}
+, {
+  "call_count": 2,
+  "commands_summary": "\u0026\u0026 → \u0026\u0026",
+  "duration_seconds": 12,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T14:17:24.849Z",
+  "sequence_index": 31,
+  "session_id": "019dc1a7-28bd-74ed-936b-591233875cf0",
+  "session_title": "Read ../pinocchio and compile remarquee here to fix the gepp",
+  "subcommands": "cloud",
+  "success_count": 2
+}
+, {
+  "call_count": 4,
+  "commands_summary": "\u0026\u0026 → \u0026\u0026 → \u0026\u0026 → \u0026\u0026",
+  "duration_seconds": 59,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T14:34:22.237Z",
+  "sequence_index": 32,
+  "session_id": "019dc1a7-28bd-74ed-936b-591233875cf0",
+  "session_title": "Read ../pinocchio and compile remarquee here to fix the gepp",
+  "subcommands": "other",
+  "success_count": 4
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → cloud → upload → upload → cloud",
+  "duration_seconds": 49,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T12:00:50.608Z",
+  "sequence_index": 33,
+  "session_id": "019dc46a-b129-76a9-bacf-07afc0a62080",
+  "session_title": "Create a new docmgr ticket to add the fs primitive module to",
+  "subcommands": "cloud, status, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → cloud",
+  "duration_seconds": 6,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T12:36:07.852Z",
+  "sequence_index": 34,
+  "session_id": "019dc46a-b129-76a9-bacf-07afc0a62080",
+  "session_title": "Create a new docmgr ticket to add the fs primitive module to",
+  "subcommands": "cloud, upload",
+  "success_count": 2
+}
+, {
+  "call_count": 6,
+  "commands_summary": "cloud → upload → cloud → cloud → cloud … (+1 more)",
+  "duration_seconds": 73,
+  "fail_count": 1,
+  "first_timestamp": "2026-04-25T12:44:46.167Z",
+  "sequence_index": 35,
+  "session_id": "019dc46a-b129-76a9-bacf-07afc0a62080",
+  "session_title": "Create a new docmgr ticket to add the fs primitive module to",
+  "subcommands": "cloud, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → upload",
+  "duration_seconds": 26,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T13:32:10.252Z",
+  "sequence_index": 36,
+  "session_id": "019dc46a-b129-76a9-bacf-07afc0a62080",
+  "session_title": "Create a new docmgr ticket to add the fs primitive module to",
+  "subcommands": "upload",
+  "success_count": 2
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → cloud → upload",
+  "duration_seconds": 33,
+  "fail_count": 1,
+  "first_timestamp": "2026-04-25T14:35:38.448Z",
+  "sequence_index": 37,
+  "session_id": "019dc46a-b129-76a9-bacf-07afc0a62080",
+  "session_title": "Create a new docmgr ticket to add the fs primitive module to",
+  "subcommands": "cloud, upload",
+  "success_count": 2
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → upload → upload → cloud → cloud",
+  "duration_seconds": 67,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T12:44:29.069Z",
+  "sequence_index": 38,
+  "session_id": "019dc477-dd22-76d9-8e6a-c8ab7bef4b3b",
+  "session_title": "Create a new docmgr ticket to create embeddable semantic dif",
+  "subcommands": "cloud, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 2,
+  "commands_summary": "status → cloud",
+  "duration_seconds": 0,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T12:15:53.600Z",
+  "sequence_index": 39,
+  "session_id": "019dc48f-533b-71b4-88aa-282e591ecda8",
+  "session_title": "Create a new docmgr ticket to download the linux container r",
+  "subcommands": "cloud, status",
+  "success_count": 2
+}
+, {
+  "call_count": 6,
+  "commands_summary": "upload --help → --help → cloud --help → cloud → cloud … (+1 more)",
+  "duration_seconds": 33,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T12:23:50.838Z",
+  "sequence_index": 40,
+  "session_id": "019dc48f-533b-71b4-88aa-282e591ecda8",
+  "session_title": "Create a new docmgr ticket to download the linux container r",
+  "subcommands": "cloud, other, upload",
+  "success_count": 6
+}
+, {
+  "call_count": 5,
+  "commands_summary": "cloud → cloud → cloud → cloud → cloud",
+  "duration_seconds": 106,
+  "fail_count": 1,
+  "first_timestamp": "2026-04-25T12:27:25.781Z",
+  "sequence_index": 41,
+  "session_id": "019dc48f-533b-71b4-88aa-282e591ecda8",
+  "session_title": "Create a new docmgr ticket to download the linux container r",
+  "subcommands": "cloud",
+  "success_count": 4
+}
+, {
+  "call_count": 5,
+  "commands_summary": "-type → grep -rn \"rootIndex\" ~/code/wesen/corporate-headquarters/rem → grep -rn \"wrong number of fields\" ~/code/wesen/corporate-hea → grep -rn \"cannot parse\" ~/code/wesen/corporate-headquarters/ → cat ~/code/wesen/corporate-headquarters/remarquee/go.mod | g",
+  "duration_seconds": 16,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T12:32:17.584Z",
+  "sequence_index": 42,
+  "session_id": "019dc48f-533b-71b4-88aa-282e591ecda8",
+  "session_title": "Create a new docmgr ticket to download the linux container r",
+  "subcommands": "other",
+  "success_count": 5
+}
+, {
+  "call_count": 8,
+  "commands_summary": "grep -rn \"Mirror\" ~/code/wesen/corporate-headquarters/remarq → grep -rn \"BuildTree\" ~/code/wesen/corporate-headquarters/rem → grep -rn \"sync15\" ~/code/wesen/corporate-headquarters/remarq → -name → -name … (+3 more)",
+  "duration_seconds": 26,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T12:34:43.150Z",
+  "sequence_index": 43,
+  "session_id": "019dc48f-533b-71b4-88aa-282e591ecda8",
+  "session_title": "Create a new docmgr ticket to download the linux container r",
+  "subcommands": "other",
+  "success_count": 8
+}
+, {
+  "call_count": 2,
+  "commands_summary": "docmgr doc add \\\n  --ticket container-books \\\n  --doc-type a → docmgr doc relate --ticket container-books \\\n  --file-note \"",
+  "duration_seconds": 89,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T12:38:48.855Z",
+  "sequence_index": 44,
+  "session_id": "019dc48f-533b-71b4-88aa-282e591ecda8",
+  "session_title": "Create a new docmgr ticket to download the linux container r",
+  "subcommands": "other",
+  "success_count": 2
+}
+, {
+  "call_count": 7,
+  "commands_summary": "status → cloud → upload → upload → upload … (+2 more)",
+  "duration_seconds": 132,
+  "fail_count": 1,
+  "first_timestamp": "2026-04-25T14:34:28.870Z",
+  "sequence_index": 45,
+  "session_id": "019dc4a2-a9b5-771f-8cb8-d0d3ab496289",
+  "session_title": "The summary extension outputs horrible formatted results:   ",
+  "subcommands": "cloud, status, upload",
+  "success_count": 6
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → cloud → upload → upload → cloud",
+  "duration_seconds": 41,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T15:59:30.367Z",
+  "sequence_index": 46,
+  "session_id": "019dc556-86f8-7297-8270-c279a0c1c3bc",
+  "session_title": "Create a new docmgr ticket to create a proof of concept REPL",
+  "subcommands": "cloud, status, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 27,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T16:33:13.814Z",
+  "sequence_index": 47,
+  "session_id": "019dc556-86f8-7297-8270-c279a0c1c3bc",
+  "session_title": "Create a new docmgr ticket to create a proof of concept REPL",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → cloud",
+  "duration_seconds": 10,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T16:48:37.443Z",
+  "sequence_index": 48,
+  "session_id": "019dc556-86f8-7297-8270-c279a0c1c3bc",
+  "session_title": "Create a new docmgr ticket to create a proof of concept REPL",
+  "subcommands": "cloud, upload",
+  "success_count": 2
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → cloud → upload → upload → cloud",
+  "duration_seconds": 35,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T16:51:13.843Z",
+  "sequence_index": 49,
+  "session_id": "019dc57d-37ed-70e5-95ef-8fe12b95a9d9",
+  "session_title": "Create a new docmgr ticket to create a WASM tinygo build tha",
+  "subcommands": "cloud, status, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → cloud → upload → upload → cloud",
+  "duration_seconds": 43,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-25T22:02:21.982Z",
+  "sequence_index": 50,
+  "session_id": "019dc6a0-0a1a-76df-8b4e-a3a561ebf617",
+  "session_title": "Create a new docmgr ticket for documenting the age of empire",
+  "subcommands": "cloud, status, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 4,
+  "commands_summary": "status → upload → status`. → cloud",
+  "duration_seconds": 98,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T05:05:36.657Z",
+  "sequence_index": 51,
+  "session_id": "019dc6db-c8ec-74fe-ab1b-11d6345d7497",
+  "session_title": "Use docmgr, keep a diary (see sills), commit at appropriate ",
+  "subcommands": "cloud, upload",
+  "success_count": 4
+}
+, {
+  "call_count": 4,
+  "commands_summary": "status → upload → upload → cloud",
+  "duration_seconds": 25,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T02:21:15.237Z",
+  "sequence_index": 52,
+  "session_id": "019dc789-b5ae-7709-8e8e-c02a534093d0",
+  "session_title": "Creat a new docmgr ticket to create an app with cdp overlay ",
+  "subcommands": "cloud, status, upload",
+  "success_count": 4
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → cloud → upload → upload → cloud",
+  "duration_seconds": 33,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T03:11:07.463Z",
+  "sequence_index": 53,
+  "session_id": "019dc7bb-300d-719f-b5bb-8776b186ca04",
+  "session_title": "Create a new docmgr ticket to create the go + postgresql bac",
+  "subcommands": "cloud, status, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 24,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T03:24:31.005Z",
+  "sequence_index": 54,
+  "session_id": "019dc7bb-300d-719f-b5bb-8776b186ca04",
+  "session_title": "Create a new docmgr ticket to create the go + postgresql bac",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → upload → upload → upload → cloud",
+  "duration_seconds": 42,
+  "fail_count": 1,
+  "first_timestamp": "2026-04-26T16:57:06.851Z",
+  "sequence_index": 55,
+  "session_id": "019dc7bb-300d-719f-b5bb-8776b186ca04",
+  "session_title": "Create a new docmgr ticket to create the go + postgresql bac",
+  "subcommands": "cloud, upload",
+  "success_count": 4
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 49,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T17:22:50.205Z",
+  "sequence_index": 56,
+  "session_id": "019dc7bb-300d-719f-b5bb-8776b186ca04",
+  "session_title": "Create a new docmgr ticket to create the go + postgresql bac",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → cloud",
+  "duration_seconds": 4,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T17:44:45.218Z",
+  "sequence_index": 57,
+  "session_id": "019dc7bb-300d-719f-b5bb-8776b186ca04",
+  "session_title": "Create a new docmgr ticket to create the go + postgresql bac",
+  "subcommands": "cloud, upload",
+  "success_count": 2
+}
+, {
+  "call_count": 3,
+  "commands_summary": "status → upload → status",
+  "duration_seconds": 32,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T00:26:30.846Z",
+  "sequence_index": 58,
+  "session_id": "019dc7bb-300d-719f-b5bb-8776b186ca04",
+  "session_title": "Create a new docmgr ticket to create the go + postgresql bac",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 4,
+  "commands_summary": "status → upload → upload → cloud",
+  "duration_seconds": 22,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T13:11:01.188Z",
+  "sequence_index": 59,
+  "session_id": "019dc9da-66b2-72ea-80d3-489f9e931cf8",
+  "session_title": "Create a new docmgr ticket to build an extension that expose",
+  "subcommands": "cloud, upload",
+  "success_count": 4
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → cloud → upload → upload → cloud",
+  "duration_seconds": 65,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T13:31:00.514Z",
+  "sequence_index": 60,
+  "session_id": "019dc9dd-b1fa-726e-ba30-7c91b8ec6c2b",
+  "session_title": "Analyze this package and ~/code/wesen/corporate-headquarters",
+  "subcommands": "cloud, status, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 38,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T15:22:53.985Z",
+  "sequence_index": 61,
+  "session_id": "019dc9dd-b1fa-726e-ba30-7c91b8ec6c2b",
+  "session_title": "Analyze this package and ~/code/wesen/corporate-headquarters",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 6,
+  "commands_summary": "status → upload → upload → cloud → status` … (+1 more)",
+  "duration_seconds": 74,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T13:17:52.456Z",
+  "sequence_index": 62,
+  "session_id": "019dc9e5-a6f8-747c-ac57-c1f562b391aa",
+  "session_title": "Creat a new docmgr ticket to implement an event-emitter modu",
+  "subcommands": "cloud, upload",
+  "success_count": 6
+}
+, {
+  "call_count": 4,
+  "commands_summary": "status → upload → upload → cloud",
+  "duration_seconds": 28,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T15:50:35.886Z",
+  "sequence_index": 63,
+  "session_id": "019dca77-260f-77dc-b67b-af2b3fc9489a",
+  "session_title": "Create a new docmgr ticket to deploy this bot (the showcase ",
+  "subcommands": "cloud, upload",
+  "success_count": 4
+}
+, {
+  "call_count": 5,
+  "commands_summary": "upload → upload → upload → upload → cloud",
+  "duration_seconds": 38,
+  "fail_count": 2,
+  "first_timestamp": "2026-04-26T23:06:12.792Z",
+  "sequence_index": 64,
+  "session_id": "019dcc03-3bb1-75db-b83d-ae0ccde104aa",
+  "session_title": "Create a new docmgr ticket to create a demo of this PR in go",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 4,
+  "commands_summary": "upload → upload → upload → cloud",
+  "duration_seconds": 39,
+  "fail_count": 1,
+  "first_timestamp": "2026-04-26T23:36:12.497Z",
+  "sequence_index": 65,
+  "session_id": "019dcc03-3bb1-75db-b83d-ae0ccde104aa",
+  "session_title": "Create a new docmgr ticket to create a demo of this PR in go",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 2,
+  "commands_summary": "status → upload",
+  "duration_seconds": 14,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T00:44:16.889Z",
+  "sequence_index": 66,
+  "session_id": "019dcc03-3bb1-75db-b83d-ae0ccde104aa",
+  "session_title": "Create a new docmgr ticket to create a demo of this PR in go",
+  "subcommands": "upload",
+  "success_count": 2
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → upload → upload → status` → upload",
+  "duration_seconds": 59,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-26T23:25:12.518Z",
+  "sequence_index": 67,
+  "session_id": "019dcc17-0c01-73fe-8c71-11cbb7584f00",
+  "session_title": "Create a new docmgr ticket for adding discord bot funcitonal",
+  "subcommands": "cloud, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 7,
+  "commands_summary": "status → cloud → upload → upload → cloud … (+2 more)",
+  "duration_seconds": 81,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T01:07:13.674Z",
+  "sequence_index": 68,
+  "session_id": "019dcc69-a9a1-746e-9a2b-5caddd6e2105",
+  "session_title": "Create a new docmgr ticket to create a demo of this PR in go",
+  "subcommands": "cloud, status, upload",
+  "success_count": 7
+}
+, {
+  "call_count": 4,
+  "commands_summary": "upload → upload → upload → cloud",
+  "duration_seconds": 46,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T01:34:25.807Z",
+  "sequence_index": 69,
+  "session_id": "019dcc69-a9a1-746e-9a2b-5caddd6e2105",
+  "session_title": "Create a new docmgr ticket to create a demo of this PR in go",
+  "subcommands": "cloud, upload",
+  "success_count": 4
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → cloud",
+  "duration_seconds": 9,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T01:53:11.904Z",
+  "sequence_index": 70,
+  "session_id": "019dcc69-a9a1-746e-9a2b-5caddd6e2105",
+  "session_title": "Create a new docmgr ticket to create a demo of this PR in go",
+  "subcommands": "cloud, upload",
+  "success_count": 2
+}
+, {
+  "call_count": 2,
+  "commands_summary": "status → upload",
+  "duration_seconds": 26,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T14:04:59.794Z",
+  "sequence_index": 71,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 2
+}
+, {
+  "call_count": 2,
+  "commands_summary": "status → upload",
+  "duration_seconds": 21,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T14:20:43.277Z",
+  "sequence_index": 72,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 2
+}
+, {
+  "call_count": 2,
+  "commands_summary": "status → upload",
+  "duration_seconds": 16,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T21:36:54.174Z",
+  "sequence_index": 73,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 2
+}
+, {
+  "call_count": 3,
+  "commands_summary": "status → upload → status",
+  "duration_seconds": 34,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T22:33:52.958Z",
+  "sequence_index": 74,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → upload",
+  "duration_seconds": 31,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T22:49:45.292Z",
+  "sequence_index": 75,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → upload",
+  "duration_seconds": 21,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T23:20:05.465Z",
+  "sequence_index": 76,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 2
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → upload",
+  "duration_seconds": 25,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T23:37:10.575Z",
+  "sequence_index": 77,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 3,
+  "commands_summary": "status → upload → upload",
+  "duration_seconds": 29,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-28T03:03:22.082Z",
+  "sequence_index": 78,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → upload",
+  "duration_seconds": 24,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-28T17:16:07.631Z",
+  "sequence_index": 79,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 2
+}
+, {
+  "call_count": 2,
+  "commands_summary": "status → upload",
+  "duration_seconds": 22,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-29T12:13:47.160Z",
+  "sequence_index": 80,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 2
+}
+, {
+  "call_count": 2,
+  "commands_summary": "status → upload",
+  "duration_seconds": 21,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-29T13:43:34.616Z",
+  "sequence_index": 81,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 2
+}
+, {
+  "call_count": 3,
+  "commands_summary": "status → upload → upload",
+  "duration_seconds": 38,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-29T16:36:39.113Z",
+  "sequence_index": 82,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → upload",
+  "duration_seconds": 9,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-29T17:12:12.047Z",
+  "sequence_index": 83,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "upload",
+  "success_count": 2
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → upload → upload → cloud → status",
+  "duration_seconds": 43,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-29T22:23:34.293Z",
+  "sequence_index": 84,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "subcommands": "cloud, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 7,
+  "commands_summary": "status → cloud → upload → upload → cloud … (+2 more)",
+  "duration_seconds": 55,
+  "fail_count": 2,
+  "first_timestamp": "2026-04-27T13:49:33.469Z",
+  "sequence_index": 85,
+  "session_id": "019dcf22-a957-707e-b88e-6c0bdef6d79b",
+  "session_title": "Create a new docmgr ticket to analyze the CSS visual diff wo",
+  "subcommands": "cloud, status, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 28,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T14:26:40.206Z",
+  "sequence_index": 86,
+  "session_id": "019dcf22-a957-707e-b88e-6c0bdef6d79b",
+  "session_title": "Create a new docmgr ticket to analyze the CSS visual diff wo",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 30,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T14:36:17.619Z",
+  "sequence_index": 87,
+  "session_id": "019dcf22-a957-707e-b88e-6c0bdef6d79b",
+  "session_title": "Create a new docmgr ticket to analyze the CSS visual diff wo",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 3,
+  "commands_summary": "status → upload → status`",
+  "duration_seconds": 36,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T14:58:38.482Z",
+  "sequence_index": 88,
+  "session_id": "019dcf22-a957-707e-b88e-6c0bdef6d79b",
+  "session_title": "Create a new docmgr ticket to analyze the CSS visual diff wo",
+  "subcommands": "upload",
+  "success_count": 3
+}
+, {
+  "call_count": 4,
+  "commands_summary": "status → upload → upload → cloud",
+  "duration_seconds": 58,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T14:00:11.472Z",
+  "sequence_index": 89,
+  "session_id": "019dcf38-037d-7339-b28b-1db597dd8ef1",
+  "session_title": "Create a pi extension that sources / uses direnv when runnin",
+  "subcommands": "cloud, status, upload",
+  "success_count": 4
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 28,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T14:34:31.917Z",
+  "sequence_index": 90,
+  "session_id": "019dcf38-037d-7339-b28b-1db597dd8ef1",
+  "session_title": "Create a pi extension that sources / uses direnv when runnin",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 3,
+  "commands_summary": "status → upload → upload",
+  "duration_seconds": 26,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T17:55:21.714Z",
+  "sequence_index": 91,
+  "session_id": "019dd010-91e5-738c-93dc-a1c264cdc667",
+  "session_title": "Create a new docmgr ticket to add config repository support ",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 5,
+  "commands_summary": "status → cloud → upload → upload → cloud",
+  "duration_seconds": 43,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T21:16:37.435Z",
+  "sequence_index": 92,
+  "session_id": "019dd0c4-4cfe-732d-947d-02aa81ad3a1f",
+  "session_title": "Clone https://github.com/rtk-ai/rtk and create a new docmgr ",
+  "subcommands": "cloud, status, upload",
+  "success_count": 5
+}
+, {
+  "call_count": 3,
+  "commands_summary": "upload → upload → cloud",
+  "duration_seconds": 28,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T21:33:15.147Z",
+  "sequence_index": 93,
+  "session_id": "019dd0c4-4cfe-732d-947d-02aa81ad3a1f",
+  "session_title": "Clone https://github.com/rtk-ai/rtk and create a new docmgr ",
+  "subcommands": "cloud, upload",
+  "success_count": 3
+}
+, {
+  "call_count": 6,
+  "commands_summary": "status → upload → upload → upload → upload … (+1 more)",
+  "duration_seconds": 62,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T21:56:23.610Z",
+  "sequence_index": 94,
+  "session_id": "019dd0de-fe25-702d-a4ae-7267b71cc9e4",
+  "session_title": "Create a new docmgr ticket to build a comparison serving web",
+  "subcommands": "cloud, status, upload",
+  "success_count": 6
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → cloud",
+  "duration_seconds": 27,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T22:36:44.161Z",
+  "sequence_index": 95,
+  "session_id": "019dd0de-fe25-702d-a4ae-7267b71cc9e4",
+  "session_title": "Create a new docmgr ticket to build a comparison serving web",
+  "subcommands": "cloud, upload",
+  "success_count": 2
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → cloud",
+  "duration_seconds": 11,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T22:44:12.435Z",
+  "sequence_index": 96,
+  "session_id": "019dd0de-fe25-702d-a4ae-7267b71cc9e4",
+  "session_title": "Create a new docmgr ticket to build a comparison serving web",
+  "subcommands": "cloud, upload",
+  "success_count": 2
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → cloud",
+  "duration_seconds": 11,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T22:48:33.871Z",
+  "sequence_index": 97,
+  "session_id": "019dd0de-fe25-702d-a4ae-7267b71cc9e4",
+  "session_title": "Create a new docmgr ticket to build a comparison serving web",
+  "subcommands": "cloud, upload",
+  "success_count": 2
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → cloud",
+  "duration_seconds": 13,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-27T22:59:02.218Z",
+  "sequence_index": 98,
+  "session_id": "019dd0de-fe25-702d-a4ae-7267b71cc9e4",
+  "session_title": "Create a new docmgr ticket to build a comparison serving web",
+  "subcommands": "cloud, upload",
+  "success_count": 2
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → cloud",
+  "duration_seconds": 11,
+  "fail_count": 0,
+  "first_timestamp": "2026-04-28T01:42:10.849Z",
+  "sequence_index": 99,
+  "session_id": "019dd0de-fe25-702d-a4ae-7267b71cc9e4",
+  "session_title": "Create a new docmgr ticket to build a comparison serving web",
+  "subcommands": "cloud, upload",
+  "success_count": 2
+}
+, {
+  "call_count": 2,
+  "commands_summary": "upload → upload",
+  "duration_seconds": 17,
+  "fail_count": 1,
+  "first_timestamp": "2026-04-28T02:44:02.079Z",
+  "sequence_index": 100,
+  "session_id": "019dd0de-fe25-702d-a4ae-7267b71cc9e4",
+  "session_title": "Create a new docmgr ticket to build a comparison serving web",
+  "subcommands": "upload",
+  "success_count": 1
+}
+]
