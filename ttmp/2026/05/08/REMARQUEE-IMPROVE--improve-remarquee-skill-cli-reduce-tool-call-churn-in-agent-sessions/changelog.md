@@ -40,3 +40,22 @@ Step 7: Investigated BigInt/Goja boundary. Traced data path: DuckDB → rows.Sca
 
 - /home/manuel/workspaces/2026-05-08/improve-tooling/go-minitrace/pkg/query/engine.go — NormalizeValue is the fix point for BigInt→Number coercion
 
+
+## 2026-05-08
+
+Step 8: Implemented and validated NormalizeValue BigInt/Decimal fix. *big.Int→int64, duckdb.Decimal→float64. All 7 JS scripts run without Number(). Corrected diagnosis: int64→number is fine, only *big.Int→bigint causes the error. Commits 6724803, 09df7d5.
+
+### Related Files
+
+- pkg/query/engine.go — NormalizeValue now converts *big.Int and duckdb.Decimal
+
+
+## 2026-05-08
+
+Step 9: Wired IsAuthError into upload commands via WithAuthRetry(). All three upload commands (md, bundle, src) now auto-retry with reauth on 401/403. Committed as b4aac28.
+
+
+## 2026-05-08
+
+Step 10: Added reauth log message to WithAuthRetry (a20acc9). Updated SKILL.md files to mention auto-retry on 401/403. Merged origin/main into go-minitrace task branch (db67cfa) with conflict resolution.
+
