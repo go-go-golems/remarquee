@@ -42,7 +42,8 @@ func forceSchemaV4(apiCtx api.ApiCtx) {
 		return
 	}
 
-	if schemaVersionField.String() == "" {
+	oldSchemaVersion := schemaVersionField.String()
+	if oldSchemaVersion != "4" {
 		// Values reached through unexported fields are not settable by default.
 		// Create a new, settable Value backed by the same memory address.
 		schemaVersionField = reflect.NewAt(
@@ -50,7 +51,7 @@ func forceSchemaV4(apiCtx api.ApiCtx) {
 			unsafe.Pointer(schemaVersionField.UnsafeAddr()),
 		).Elem()
 		schemaVersionField.SetString("4")
-		log.Debug().Msg("rmcloud: set HashTree.SchemaVersion to 4 via reflection")
+		log.Debug().Str("old_schema_version", oldSchemaVersion).Msg("rmcloud: set HashTree.SchemaVersion to 4 via reflection")
 	}
 }
 
@@ -81,6 +82,7 @@ func CreateApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
 		}
 
 		forceSchemaV4(apiCtx)
+		WrapTransportWithLogging(apiCtx)
 
 		return userInfo, apiCtx, nil
 	}

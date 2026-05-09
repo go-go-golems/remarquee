@@ -82,5 +82,8 @@ func WrapTransportWithLogging(apiCtx interface{}) {
 	if client.Transport == nil {
 		client.Transport = http.DefaultTransport
 	}
+	if _, ok := client.Transport.(*loggingRoundTripper); ok {
+		return
+	}
 	client.Transport = &loggingRoundTripper{base: client.Transport}
 }
