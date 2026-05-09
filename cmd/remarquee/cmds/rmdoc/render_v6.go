@@ -117,6 +117,22 @@ type renderV6Execution struct {
 	Pages       int
 }
 
+func archiveHasV6RM(ctx context.Context, rmdocPath string, doc *pkg_rmdoc.Document) (bool, error) {
+	for _, page := range doc.Pages {
+		if page.PageID == "" {
+			continue
+		}
+		rm, ok, err := pkg_rmdoc.ReadRMFileFromArchive(ctx, rmdocPath, page.PageID)
+		if err != nil {
+			return false, err
+		}
+		if ok && rm.Version == "V6" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (c *RenderV6Command) execute(ctx context.Context, s *RenderV6Settings) (*renderV6Execution, error) {
 	input, err := ResolveRMDocInput(ctx, s.File, s.CloudInputSettings)
 	if err != nil {
@@ -128,11 +144,17 @@ func (c *RenderV6Command) execute(ctx context.Context, s *RenderV6Settings) (*re
 	if err != nil {
 		return nil, err
 	}
-	if doc.Schema != pkg_rmdoc.SchemaCPages {
-		return nil, errors.Errorf("render-v6 only supports cPages/V6 archives; detected schema=%s", schemaString(doc.Schema))
-	}
 	if doc.Type == pkg_rmdoc.DocTypeEPUB {
 		return nil, errors.New("render-v6: epub not supported")
+	}
+	if doc.Schema != pkg_rmdoc.SchemaCPages {
+		hasV6RM, err := archiveHasV6RM(ctx, input.LocalPath, doc)
+		if err != nil {
+			return nil, err
+		}
+		if !hasV6RM {
+			return nil, errors.Errorf("render-v6 only supports cPages/V6 archives or legacy PDF archives with V6 .rm annotations; detected schema=%s", schemaString(doc.Schema))
+		}
 	}
 
 	out := s.Out

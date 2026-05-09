@@ -6,6 +6,7 @@ import (
 	"github.com/juruen/rmapi/api"
 	"github.com/juruen/rmapi/model"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 func normalizeDirPath(p string) string {
@@ -27,7 +28,9 @@ func normalizeDirPath(p string) string {
 //
 // The behavior is similar to `mkdir -p`: intermediate directories are created if missing.
 func MkdirAll(apiCtx api.ApiCtx, dirPath string) (*model.Node, error) {
+	originalDirPath := dirPath
 	dirPath = normalizeDirPath(dirPath)
+	log.Debug().Str("input_dir_path", originalDirPath).Str("normalized_dir_path", dirPath).Msg("rmcloud mkdir-all: ensure remote directory")
 	if dirPath == "/" {
 		return apiCtx.Filetree().Root(), nil
 	}
@@ -37,6 +40,7 @@ func MkdirAll(apiCtx api.ApiCtx, dirPath string) (*model.Node, error) {
 		if existing.IsFile() {
 			return nil, errors.Errorf("remote path is a file (expected directory): %s", dirPath)
 		}
+		log.Debug().Str("dir_path", dirPath).Str("node_id", existing.Id()).Msg("rmcloud mkdir-all: directory already exists")
 		return existing, nil
 	}
 
@@ -71,10 +75,13 @@ func MkdirAll(apiCtx api.ApiCtx, dirPath string) (*model.Node, error) {
 			parentId = ""
 		}
 
+		log.Debug().Str("entry", entry).Str("parent_name", current.Name()).Str("parent_id", parentId).Msg("rmcloud mkdir-all: creating remote directory")
 		doc, err := apiCtx.CreateDir(parentId, entry, true)
 		if err != nil {
+			log.Error().Err(err).Str("entry", entry).Str("parent_name", current.Name()).Str("parent_id", parentId).Msg("rmcloud mkdir-all: create remote directory failed")
 			return nil, errors.Wrapf(err, "failed to create remote directory %q under %q", entry, current.Name())
 		}
+		log.Debug().Str("entry", entry).Str("document_id", doc.ID).Str("document_name", doc.Name).Str("parent_id", doc.Parent).Msg("rmcloud mkdir-all: remote directory created")
 		apiCtx.Filetree().AddDocument(doc)
 
 		// Re-resolve after adding, to ensure we get the correct node.
