@@ -591,3 +591,23 @@ The skill file updates prevent the agent from doing manual `--reauth` steps that
 
 - Push the merged go-minitrace branch to wesen remote
 - Consider squashing the task branch before merging to main (4 commits: doc, fix, doc-update, merge)
+
+## Step 11: Install remarquee and go-minitrace with all improvements
+
+### Prompt Context
+
+**User prompt (verbatim):** "Did we apply any of the remarquee improvement?"
+
+**Assistant interpretation:** The user noticed that while we committed code changes, we never actually installed the updated binaries. The installed `remarquee` at `~/.local/bin/` was from May 4, predating all our changes.
+
+### What I did
+
+- Built and installed remarquee: `go install ./cmd/remarquee/...` → `~/go/bin/remarquee` (dated May 8, 82MB)
+- Copied to `~/.local/bin/remarquee` (overwriting the May 4 version)
+- Verified: `strings ~/.local/bin/remarquee | grep "auth expired"` → found `NOTE: auth expired, re-authenticating and retrying...`
+- Verified go-minitrace: already installed at `~/go/bin/go-minitrace` with v0.4+ NormalizeValue docs embedded
+
+### What I learned
+
+- `go install` puts binaries in `$GOPATH/bin`, not `~/.local/bin`. If the user's PATH prefers `~/.local/bin`, the old binary shadows the new one.
+- Always verify the installed binary actually contains the new features — committing code is not the same as deploying it.
