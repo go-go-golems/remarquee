@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/go-go-golems/remarquee/cmd/remarquee-ui/api"
 	"github.com/rs/zerolog"
@@ -70,7 +71,15 @@ func main() {
 
 	addr := ":" + port
 	log.Info().Str("addr", addr).Msg("remarquee-ui server listening")
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal().Err(err).Msg("Server failed")
 	}
 }

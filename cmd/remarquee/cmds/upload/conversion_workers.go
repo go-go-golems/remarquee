@@ -23,6 +23,7 @@ func buildMarkdownConversionJobs(inputs []markdownInput, outputRoot string, over
 		if err != nil {
 			return nil, err
 		}
+		pdfName = sanitizePDFName(pdfName)
 
 		outPDF := filepath.Join(outputRoot, pdfName)
 		if preserveDirs {

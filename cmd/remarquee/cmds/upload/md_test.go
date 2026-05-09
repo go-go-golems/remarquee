@@ -248,6 +248,29 @@ func TestUploadMarkdownRejectsNameWithMultipleFiles(t *testing.T) {
 	}
 }
 
+func TestUploadMarkdownRejectsSanitizedNameCollisions(t *testing.T) {
+	td := t.TempDir()
+	a := filepath.Join(td, "a b.md")
+	b := filepath.Join(td, "a_b.md")
+	if err := os.WriteFile(a, []byte("# A\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(b, []byte("# B\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewUploadMarkdownCommand()
+	cmd.SetArgs([]string{"--dry-run", "--pdf-only", a, b})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for sanitized markdown filename collision")
+	}
+	if !strings.Contains(err.Error(), "duplicate document") || !strings.Contains(err.Error(), "a_b") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestUploadMarkdownRejectsInvalidWorkers(t *testing.T) {
 	td := t.TempDir()
 	md := filepath.Join(td, "draft.md")

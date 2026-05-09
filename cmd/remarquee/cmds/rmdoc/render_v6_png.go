@@ -220,7 +220,7 @@ func renderPDFPagesToPNGsWithPopplerMapped(ctx context.Context, pdftoppm string,
 		outBase := filepath.Join(outDir, fmt.Sprintf("%s-page-%03d", prefix, page.Label))
 		outFile := outBase + ".png"
 
-		cmd := exec.CommandContext(ctx,
+		cmd := exec.CommandContext(ctx, // #nosec G204 -- PNG rendering intentionally invokes pdftoppm with explicit argv.
 			pdftoppm,
 			"-png",
 			"-r", strconv.Itoa(dpi),

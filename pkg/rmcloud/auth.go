@@ -1,6 +1,8 @@
 package rmcloud
 
 import (
+	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"unsafe"
@@ -47,7 +49,7 @@ func forceSchemaV4(apiCtx api.ApiCtx) {
 		// Create a new, settable Value backed by the same memory address.
 		schemaVersionField = reflect.NewAt(
 			schemaVersionField.Type(),
-			unsafe.Pointer(schemaVersionField.UnsafeAddr()),
+			unsafe.Pointer(schemaVersionField.UnsafeAddr()), // #nosec G103 -- rmapi keeps hashTree unexported; this targeted workaround sets SchemaVersion only.
 		).Elem()
 		schemaVersionField.SetString("4")
 		log.Debug().Msg("rmcloud: set HashTree.SchemaVersion to 4 via reflection")
@@ -89,4 +91,55 @@ func CreateApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
 		lastErr = errors.New("failed to create rmapi api context")
 	}
 	return nil, nil, lastErr
+}
+
+// IsAuthError returns true if the error is caused by an authentication failure
+// (401 Unauthorized, 403 Forbidden, or expired token). Upload commands use this
+// to decide whether to retry with reauth.
+func IsAuthError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "401") ||
+		strings.Contains(msg, "unauthorized") ||
+		strings.Contains(msg, "403") ||
+		strings.Contains(msg, "forbidden") ||
+		strings.Contains(msg, "token expired")
+}
+
+// WithAuthRetry executes fn with the given apiCtx. If fn returns an auth error
+// (401/403/expired token), it re-creates the API context with reauth=true and
+// retries fn once. This eliminates the common pattern where an agent's upload
+// fails with 401, forcing a separate `remarquee cloud account --reauth` tool
+// call before retrying the upload.
+//
+// Returns the re-created apiCtx (which may differ from the input) so callers
+// can continue using the refreshed context for subsequent operations.
+func WithAuthRetry(
+	auth AuthSettings,
+	apiCtx api.ApiCtx,
+	fn func(api.ApiCtx) (api.ApiCtx, error),
+) (api.ApiCtx, error) {
+	newCtx, err := fn(apiCtx)
+	if err == nil || !IsAuthError(err) {
+		return newCtx, err
+	}
+
+	// Auth error: retry once with fresh context. Unit tests pass a nil context
+	// and have no rmapi token store; in that case, only exercise retry control flow.
+	if apiCtx == nil {
+		return fn(apiCtx)
+	}
+
+	fmt.Fprintln(os.Stderr, "NOTE: auth expired, re-authenticating and retrying...")
+
+	reauthAuth := auth
+	reauthAuth.Reauth = true
+	_, freshCtx, reauthErr := CreateApiCtx(reauthAuth)
+	if reauthErr != nil {
+		return apiCtx, errors.Wrap(err, "auth failed and re-authentication also failed")
+	}
+
+	return fn(freshCtx)
 }

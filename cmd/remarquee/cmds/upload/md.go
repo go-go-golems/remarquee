@@ -12,8 +12,6 @@ import (
 
 	"github.com/go-go-golems/remarquee/pkg/mdpdf"
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
-	"github.com/juruen/rmapi/model"
-	"github.com/juruen/rmapi/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -130,6 +128,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		if err != nil {
 			return err
 		}
+		pdfName = sanitizePDFName(pdfName)
 		docName := strings.TrimSuffix(pdfName, filepath.Ext(pdfName))
 		relDir := ""
 		if s.PreserveDirs {
@@ -212,15 +211,14 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	}
 
 	// Upload mode.
-	_, apiCtx, err := rmcloud.CreateApiCtx(rmcloud.AuthSettings{
+	authSettings := rmcloud.AuthSettings{
 		NonInteractive: s.NonInteractive,
 		Reauth:         s.Reauth,
-	})
+	}
+	_, apiCtx, err := rmcloud.CreateApiCtx(authSettings)
 	if err != nil {
 		return err
 	}
-
-	dstNodeCache := map[string]*model.Node{}
 
 	tmpDir, err := os.MkdirTemp("", "remarquee-upload-md-")
 	if err != nil {
@@ -245,43 +243,13 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 			}
 		}
 
-		docName, _ := util.DocPathToName(job.OutPDF)
-
 		dst := remoteDir
 		if s.PreserveDirs {
 			dst = joinRemoteDir(remoteDir, job.Input.RelDir())
 		}
 
-		// Ensure remote directory exists (cache MkdirAll results).
-		dstNode, ok := dstNodeCache[dst]
-		if !ok {
-			node, err := rmcloud.MkdirAll(apiCtx, dst)
-			if err != nil {
-				return err
-			}
-			dstNode = node
-			dstNodeCache[dst] = node
-		}
-
-		// Existence check.
-		existingNode, err := apiCtx.Filetree().NodeByPath(docName, dstNode)
-		if err == nil {
-			if !s.Force {
-				fmt.Fprintf(cmd.OutOrStdout(), "SKIP: %s already exists in %s (use --force to overwrite)\n", docName, dst)
-				continue
-			}
-
-			if existingNode.IsDirectory() {
-				return errors.Errorf("cannot overwrite directory %q in %s", docName, dst)
-			}
-
-			if err := apiCtx.DeleteEntry(existingNode, false, false); err != nil {
-				return errors.Wrap(err, "failed to delete existing file")
-			}
-			apiCtx.Filetree().DeleteNode(existingNode)
-		}
-
-		if err := uploadPDFToRemote(cmd, apiCtx, dstNodeCache, dst, job.OutPDF, job.PDFName); err != nil {
+		apiCtx, err = uploadPDFToRemoteWithAuthRetry(cmd, authSettings, apiCtx, dst, job.OutPDF, job.PDFName, s.Force)
+		if err != nil {
 			return err
 		}
 	}

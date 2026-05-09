@@ -3,6 +3,7 @@ package rmdoc
 import (
 	"bytes"
 	"io"
+	"math"
 
 	"github.com/pkg/errors"
 )
@@ -70,7 +71,11 @@ func DecodeRMV6GlyphRange(payload []byte) (*RMV6GlyphRange, error) {
 		return nil, errors.Wrap(err, "read rectangles count")
 	}
 
-	rects := make([]RMV6Rectangle, 0, numRects)
+	if numRects > uint64(math.MaxInt) {
+		_ = vr.endSubBlock(sb)
+		return nil, errors.Errorf("rectangle count %d exceeds max int", numRects)
+	}
+	rects := make([]RMV6Rectangle, 0, int(numRects))
 	for i := 0; i < int(numRects); i++ {
 		x, err := vr.readFloat64LE()
 		if err != nil {

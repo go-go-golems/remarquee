@@ -3,6 +3,7 @@ package compile
 import (
 	"bytes"
 	"fmt"
+	"math"
 
 	"github.com/go-go-golems/remarquee/pkg/rmdoc"
 )
@@ -45,6 +46,13 @@ func rmv6HighlightMarker(color rmdoc.PenColor) (rmdoc.RGBA, bool) {
 	return rgba, ok
 }
 
+func penColorToUint32(color rmdoc.PenColor) (uint32, error) {
+	if color < 0 || int64(color) > math.MaxUint32 {
+		return 0, fmt.Errorf("pen color %d exceeds uint32", color)
+	}
+	return uint32(color), nil
+}
+
 func encodeRMV6LinePayload(stroke rmdoc.Stroke) ([]byte, error) {
 	var buf bytes.Buffer
 	w := newRMV6Writer(&buf)
@@ -83,7 +91,11 @@ func encodeRMV6LinePayload(stroke rmdoc.Stroke) ([]byte, error) {
 		return buf.Bytes(), nil
 	}
 
-	if err := w.writeUint32(2, uint32(color)); err != nil {
+	encodedColor, err := penColorToUint32(color)
+	if err != nil {
+		return nil, err
+	}
+	if err := w.writeUint32(2, encodedColor); err != nil {
 		return nil, err
 	}
 	if err := w.writeFloat64(3, stroke.ThicknessScale); err != nil {
@@ -159,7 +171,11 @@ func encodeRMV6GlyphRange(glyph CompiledGlyph) ([]byte, error) {
 		return buf.Bytes(), nil
 	}
 
-	if err := w.writeUint32(4, uint32(color)); err != nil {
+	encodedColor, err := penColorToUint32(color)
+	if err != nil {
+		return nil, err
+	}
+	if err := w.writeUint32(4, encodedColor); err != nil {
 		return nil, err
 	}
 	if err := w.writeString(5, glyph.Text); err != nil {

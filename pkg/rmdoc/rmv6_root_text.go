@@ -1,6 +1,10 @@
 package rmdoc
 
-import "github.com/pkg/errors"
+import (
+	"math"
+
+	"github.com/pkg/errors"
+)
 
 // RMV6RootText is a minimal representation of RootTextBlock.value from rmscene.
 type RMV6RootText struct {
@@ -137,7 +141,10 @@ func ParseRMV6RootTextBlock(tr *rmV6TaggedBlockReader) (*RMV6RootText, error) {
 	if err != nil {
 		return nil, err
 	}
-	items := make([]RMV6CrdtSequenceItem[RMV6TextAtom], 0, nItems)
+	if nItems > uint64(math.MaxInt) {
+		return nil, errors.Errorf("text item count %d exceeds max int", nItems)
+	}
+	items := make([]RMV6CrdtSequenceItem[RMV6TextAtom], 0, int(nItems))
 	for i := 0; i < int(nItems); i++ {
 		it, err := rmv6ReadTextItemFromStream(tr)
 		if err != nil {
@@ -166,6 +173,9 @@ func ParseRMV6RootTextBlock(tr *rmV6TaggedBlockReader) (*RMV6RootText, error) {
 	nFmt, err := tr.readVarUint()
 	if err != nil {
 		return nil, err
+	}
+	if nFmt > uint64(math.MaxInt) {
+		return nil, errors.Errorf("text format count %d exceeds max int", nFmt)
 	}
 	styles := map[RMV6CrdtID]uint8{}
 	for i := 0; i < int(nFmt); i++ {

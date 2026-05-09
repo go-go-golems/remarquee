@@ -144,8 +144,12 @@ func (r *rmV6ValueReader) readTag() (uint32, rmV6TagType, error) {
 	if err != nil {
 		return 0, 0, err
 	}
-	index := uint32(x >> 4)
-	tagType := rmV6TagType(x & 0xF)
+	index64 := x >> 4
+	if index64 > math.MaxUint32 {
+		return 0, 0, errors.Errorf("rm v6 tag index %d exceeds uint32", index64)
+	}
+	index := uint32(index64)
+	tagType := rmV6TagType(uint8(x & 0xF))
 	switch tagType {
 	case rmV6TagTypeID, rmV6TagTypeLength4, rmV6TagTypeByte8, rmV6TagTypeByte4, rmV6TagTypeByte1:
 		return index, tagType, nil
@@ -249,6 +253,12 @@ func (r *rmV6ValueReader) readString(index uint32) (string, error) {
 	}
 	if isASCII == 0 {
 		return "", errors.New("string is_ascii flag is false (unexpected)")
+	}
+	if strLen > uint64(math.MaxInt) {
+		return "", errors.Errorf("string length %d exceeds max int", strLen)
+	}
+	if strLen > uint64(sb.Size) {
+		return "", errors.Errorf("string length %d exceeds subblock size %d", strLen, sb.Size)
 	}
 	b, err := r.readBytes(int(strLen))
 	if err != nil {

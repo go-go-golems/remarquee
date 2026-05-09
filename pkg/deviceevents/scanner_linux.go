@@ -20,11 +20,11 @@ func NewEventScanner() (*EventScanner, error) {
 	if penInputDevice == "" || touchInputDevice == "" {
 		return nil, fmt.Errorf("input devices not configured for this architecture")
 	}
-	pen, err := os.OpenFile(penInputDevice, os.O_RDONLY, 0o644)
+	pen, err := os.Open(penInputDevice)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read pen input: %w", err)
 	}
-	touch, err := os.OpenFile(touchInputDevice, os.O_RDONLY, 0o644)
+	touch, err := os.Open(touchInputDevice)
 	if err != nil {
 		if cerr := pen.Close(); cerr != nil {
 			return nil, fmt.Errorf("failed to read touch input: %w (close pen: %v)", err, cerr)
@@ -69,6 +69,6 @@ func (e *EventScanner) StartAndPublish(ctx context.Context, pubsub *PubSub) {
 
 func readEvent(inputDevice *os.File) (InputEvent, error) {
 	var ev InputEvent
-	_, err := inputDevice.Read((*(*[unsafe.Sizeof(ev)]byte)(unsafe.Pointer(&ev)))[:])
+	_, err := inputDevice.Read((*(*[unsafe.Sizeof(ev)]byte)(unsafe.Pointer(&ev)))[:]) // #nosec G103 -- Linux input_event binary layout is read directly from the device node.
 	return ev, err
 }

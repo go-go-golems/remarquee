@@ -23,7 +23,7 @@ func newHTTPClient(s *clientSettings) *http.Client {
 		return &http.Client{Timeout: s.Timeout}
 	}
 	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // #nosec G402 -- explicitly requested insecure mode for self-signed device connections.
 	}
 	return &http.Client{
 		Timeout:   s.Timeout,

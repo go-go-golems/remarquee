@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
+	"math"
 
 	"github.com/pkg/errors"
 )
@@ -147,8 +148,12 @@ func (r *rmV6TaggedBlockReader) readTag() (uint32, rmV6TagType, error) {
 	if err != nil {
 		return 0, 0, err
 	}
-	index := uint32(x >> 4)
-	tagType := rmV6TagType(x & 0xF)
+	index64 := x >> 4
+	if index64 > math.MaxUint32 {
+		return 0, 0, errors.Errorf("rm v6 tag index %d exceeds uint32", index64)
+	}
+	index := uint32(index64)
+	tagType := rmV6TagType(uint8(x & 0xF))
 	switch tagType {
 	case rmV6TagTypeID, rmV6TagTypeLength4, rmV6TagTypeByte8, rmV6TagTypeByte4, rmV6TagTypeByte1:
 		return index, tagType, nil

@@ -46,7 +46,7 @@ func HandleInspect(testDocsPath string) http.HandlerFunc {
 		// Load test documents manifest to find the document path
 		docPath, err := findDocumentPath(testDocsPath, docID)
 		if err != nil {
-			log.Printf("Failed to find document %s: %v", docID, err)
+			log.Printf("Failed to find requested document: %v", err)
 			respondJSON(w, http.StatusNotFound, InspectResponse{
 				Error: fmt.Sprintf("Document not found: %s", docID),
 			})

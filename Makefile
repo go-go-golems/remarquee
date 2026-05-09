@@ -4,7 +4,7 @@ all: gifs
 
 VERSION=v0.1.14
 
-TAPES=$(shell ls doc/vhs/*tape)
+TAPES=$(wildcard doc/vhs/*tape)
 gifs: $(TAPES)
 	for i in $(TAPES); do vhs < $$i; done
 
@@ -19,7 +19,7 @@ lintmax:
 
 gosec:
 	go install github.com/securego/gosec/v2/cmd/gosec@latest
-	gosec -exclude=G101,G304,G301,G306 -exclude-dir=.history ./...
+	gosec -exclude=G101,G304,G301,G306 -exclude-dir=.history -exclude-dir=ttmp ./...
 
 govulncheck:
 	go install golang.org/x/vuln/cmd/govulncheck@latest

@@ -11,7 +11,6 @@ import (
 
 	"github.com/go-go-golems/remarquee/pkg/mdpdf"
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
-	"github.com/juruen/rmapi/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -184,15 +183,11 @@ func runUploadBundle(ctx context.Context, cmd *cobra.Command, s *uploadBundleSet
 	}
 
 	// Upload mode.
-	_, apiCtx, err := rmcloud.CreateApiCtx(rmcloud.AuthSettings{
+	authSettings := rmcloud.AuthSettings{
 		NonInteractive: s.NonInteractive,
 		Reauth:         s.Reauth,
-	})
-	if err != nil {
-		return err
 	}
-
-	dstNode, err := rmcloud.MkdirAll(apiCtx, remoteDir)
+	_, apiCtx, err := rmcloud.CreateApiCtx(authSettings)
 	if err != nil {
 		return err
 	}
@@ -208,34 +203,8 @@ func runUploadBundle(ctx context.Context, cmd *cobra.Command, s *uploadBundleSet
 		return err
 	}
 
-	docName, _ := util.DocPathToName(outPDF)
-
-	// Existence check.
-	existingNode, err := apiCtx.Filetree().NodeByPath(docName, dstNode)
-	if err == nil {
-		if !s.Force {
-			fmt.Fprintf(cmd.OutOrStdout(), "SKIP: %s already exists in %s (use --force to overwrite)\n", docName, remoteDir)
-			return nil
-		}
-
-		if existingNode.IsDirectory() {
-			return errors.Errorf("cannot overwrite directory %q in %s", docName, remoteDir)
-		}
-
-		if err := apiCtx.DeleteEntry(existingNode, false, false); err != nil {
-			return errors.Wrap(err, "failed to delete existing file")
-		}
-		apiCtx.Filetree().DeleteNode(existingNode)
-	}
-
-	document, err := apiCtx.UploadDocument(dstNode.Id(), outPDF, true, nil, nil, nil, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to upload file [%s]", outPDF)
-	}
-	apiCtx.Filetree().AddDocument(document)
-	fmt.Fprintf(cmd.OutOrStdout(), "OK: uploaded %s -> %s\n", pdfFileName, remoteDir)
-
-	return nil
+	_, err = uploadPDFToRemoteWithAuthRetry(cmd, authSettings, apiCtx, remoteDir, outPDF, pdfFileName, s.Force)
+	return err
 }
 
 func writeBundlePDF(ctx context.Context, files []bundleMarkdownFile, outPDF string, pandocOpts mdpdf.PandocOptions) error {

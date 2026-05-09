@@ -79,7 +79,7 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 	// filepath.Base(mdPath) here breaks Markdown files whose names contain
 	// issue/PR numbers like "PR #6.md".
 	inputPath := filepath.Join(tmpDir, "input.md")
-	if err := os.WriteFile(inputPath, []byte(body), 0o644); err != nil {
+	if err := os.WriteFile(inputPath, []byte(body), 0o644); err != nil { // #nosec G703 -- inputPath is a fixed filename inside an os.MkdirTemp directory.
 		return errors.Wrap(err, "failed to write preprocessed markdown")
 	}
 
@@ -127,7 +127,7 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 		argv = append(argv, "--listings")
 	}
 
-	cmd := exec.CommandContext(ctx, opts.PandocPath, argv...)
+	cmd := exec.CommandContext(ctx, opts.PandocPath, argv...) // #nosec G204 -- this package intentionally invokes the configured pandoc binary with explicit argv.
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.Wrapf(err, "pandoc failed: %s", string(out))

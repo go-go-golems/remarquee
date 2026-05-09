@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"context"
 	"io"
+	"math"
 	"os"
 	"path"
 	"strings"
@@ -120,6 +121,9 @@ func InspectRMFiles(ctx context.Context, archivePath string) ([]RMFileInfo, erro
 			}
 		}
 
+		if zf.UncompressedSize64 > math.MaxInt64 {
+			return nil, errors.Errorf("rm entry %s size %d exceeds max int64", zf.Name, zf.UncompressedSize64)
+		}
 		out = append(out, RMFileInfo{
 			PageID:   pageID,
 			Filename: zf.Name,

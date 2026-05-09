@@ -3,7 +3,9 @@ package compile
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
+	"math"
 
 	"github.com/go-go-golems/remarquee/pkg/rmdoc"
 )
@@ -140,6 +142,13 @@ func (w *rmv6Writer) writeFloat64(index uint32, v float64) error {
 	return w.writeFloat64LE(v)
 }
 
+func intToUint32(v int) (uint32, error) {
+	if v < 0 || v > math.MaxUint32 {
+		return 0, fmt.Errorf("value %d exceeds uint32", v)
+	}
+	return uint32(v), nil // #nosec G115 -- v is range-checked above.
+}
+
 func (w *rmv6Writer) writeSubBlock(index uint32, fn func(sw *rmv6Writer) error) error {
 	var buf bytes.Buffer
 	sw := newRMV6Writer(&buf)
@@ -149,7 +158,11 @@ func (w *rmv6Writer) writeSubBlock(index uint32, fn func(sw *rmv6Writer) error) 
 	if err := w.writeTag(index, rmv6TagTypeLength4); err != nil {
 		return err
 	}
-	if err := w.writeUint32LE(uint32(buf.Len())); err != nil {
+	bufLen, err := intToUint32(buf.Len())
+	if err != nil {
+		return err
+	}
+	if err := w.writeUint32LE(bufLen); err != nil {
 		return err
 	}
 	return w.writeBytes(buf.Bytes())
@@ -223,7 +236,11 @@ func (w *rmv6Writer) writeBlock(blockType uint8, minVersion uint8, currentVersio
 	if err := fn(bw); err != nil {
 		return err
 	}
-	if err := w.writeUint32LE(uint32(buf.Len())); err != nil {
+	bufLen, err := intToUint32(buf.Len())
+	if err != nil {
+		return err
+	}
+	if err := w.writeUint32LE(bufLen); err != nil {
 		return err
 	}
 	if err := w.writeUint8(0); err != nil {

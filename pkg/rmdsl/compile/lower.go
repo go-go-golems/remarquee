@@ -113,13 +113,13 @@ func lowerGlyph(item rmdsl.Item) *CompiledGlyph {
 	}
 
 	var start *uint32
-	if item.Glyph.Start != nil && *item.Glyph.Start >= 0 {
+	if item.Glyph.Start != nil && *item.Glyph.Start >= 0 && *item.Glyph.Start <= math.MaxUint32 {
 		v := uint32(*item.Glyph.Start)
 		start = &v
 	}
 
 	var length *uint32
-	if item.Glyph.Length != nil && *item.Glyph.Length >= 0 {
+	if item.Glyph.Length != nil && *item.Glyph.Length >= 0 && *item.Glyph.Length <= math.MaxUint32 {
 		v := uint32(*item.Glyph.Length)
 		length = &v
 	}
