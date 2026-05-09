@@ -15,16 +15,10 @@ RelatedFiles:
       Note: P0 skill rewrite - eliminated status pre-check
     - Path: ../../../../../../../../../code/wesen/go-go-golems/remarquee/cmd/remarquee/cmds/upload/root.go
       Note: P1 filename sanitization function
-    - Path: ../../../../../../../../../code/wesen/go-go-golems/remarquee/pkg/rmcloud/auth.go
-      Note: WithAuthRetry auto-retries API operations on 401/403
-    - Path: ../../../../../../../../../code/wesen/go-go-golems/remarquee/pkg/rmcloud/auth_test.go
-      Note: Tests for IsAuthError and WithAuthRetry
     - Path: ../../../../../../../../../code/wesen/obsidian-vault/Projects/2026/05/08/ARTICLE - Transcript Mining - Using go-minitrace to Find and Fix Tool-Call Churn in Agent Sessions.md
       Note: Obsidian vault article teaching the method
     - Path: go-minitrace/pkg/query/engine.go
       Note: NormalizeValue is the single fix point for BigInt→Number coercion at the DuckDB→Goja boundary
-    - Path: go-minitrace/pkg/query/normalize_value_test.go
-      Note: Unit test for NormalizeValue BigInt/Decimal conversion
     - Path: remarquee/ttmp/2026/05/08/REMARQUEE-IMPROVE--improve-remarquee-skill-cli-reduce-tool-call-churn-in-agent-sessions/scripts/js/remarquee-analysis/05-remarquee-sequences.js
       Note: Temporal sequence detection
     - Path: remarquee/ttmp/2026/05/08/REMARQUEE-IMPROVE--improve-remarquee-skill-cli-reduce-tool-call-churn-in-agent-sessions/scripts/js/remarquee-analysis/06-remarquee-subcommand-summary.js
@@ -41,8 +35,6 @@ LastUpdated: 2026-05-08T06:10:46.55559561-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
-
-
 
 
 
