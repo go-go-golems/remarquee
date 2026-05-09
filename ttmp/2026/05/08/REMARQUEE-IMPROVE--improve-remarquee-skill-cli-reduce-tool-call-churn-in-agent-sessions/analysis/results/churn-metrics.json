@@ -1,0 +1,652 @@
+[
+{
+  "churn_score": 20.2,
+  "remq_bash_ratio": "5.9%",
+  "remq_calls": 46,
+  "remq_failures": 3,
+  "remq_successes": 43,
+  "sequences": 19,
+  "session_id": "648bffd2-2781-4521-be8c-f9d5081b1933",
+  "session_title": "I want to create a simple golang discord bot. Create a new d",
+  "total_bash": 779,
+  "total_tools": 1900,
+  "total_turns": 1510
+}
+, {
+  "churn_score": 20,
+  "remq_bash_ratio": "2.4%",
+  "remq_calls": 42,
+  "remq_failures": 0,
+  "remq_successes": 42,
+  "sequences": 20,
+  "session_id": "019dcef8-38e7-716d-81f8-5df3fe0c1a42",
+  "session_title": "Read the playbook on doing visual tuning with css-visual-dif",
+  "total_bash": 1769,
+  "total_tools": 4027,
+  "total_turns": 4010
+}
+, {
+  "churn_score": 17,
+  "remq_bash_ratio": "4.3%",
+  "remq_calls": 45,
+  "remq_failures": 6,
+  "remq_successes": 39,
+  "sequences": 15,
+  "session_id": "019dfd98-5c8d-701a-ba4b-d81fc395b347",
+  "session_title": "Create a new docmgr ticket to figure out why we don't keep c",
+  "total_bash": 1053,
+  "total_tools": 2039,
+  "total_turns": 2112
+}
+, {
+  "churn_score": 16.8,
+  "remq_bash_ratio": "72.6%",
+  "remq_calls": 217,
+  "remq_failures": 43,
+  "remq_successes": 174,
+  "sequences": 14,
+  "session_id": "040defe7-7644-4a19-870d-d418b7e48fba",
+  "session_title": "Create a new docmgr to add structured output to `remarquee c",
+  "total_bash": 299,
+  "total_tools": 488,
+  "total_turns": 367
+}
+, {
+  "churn_score": 15.9,
+  "remq_bash_ratio": "93.3%",
+  "remq_calls": 153,
+  "remq_failures": 9,
+  "remq_successes": 144,
+  "sequences": 15,
+  "session_id": "019dee3c-2fdb-73ec-b541-f04ee8daa990",
+  "session_title": "Work on the docmgr ticket RM-SYNC-001 and tell me what the t",
+  "total_bash": 164,
+  "total_tools": 279,
+  "total_turns": 296
+}
+, {
+  "churn_score": 14.7,
+  "remq_bash_ratio": "5.4%",
+  "remq_calls": 40,
+  "remq_failures": 2,
+  "remq_successes": 38,
+  "sequences": 14,
+  "session_id": "019dc129-9955-73ce-a1ce-3d2a50308122",
+  "session_title": "Upload  ttmp/2026/04/24/PYXIS-COMPONENT-VISUAL-PARITY--run-b",
+  "total_bash": 742,
+  "total_tools": 1648,
+  "total_turns": 1646
+}
+, {
+  "churn_score": 13.7,
+  "remq_bash_ratio": "5.1%",
+  "remq_calls": 43,
+  "remq_failures": 6,
+  "remq_successes": 37,
+  "sequences": 12,
+  "session_id": "14667260-e86c-4bec-8002-d0f755ebaf01",
+  "session_title": "Create a new docmgr to create a storybook design component s",
+  "total_bash": 837,
+  "total_tools": 1919,
+  "total_turns": 1749
+}
+, {
+  "churn_score": 11.8,
+  "remq_bash_ratio": "5.5%",
+  "remq_calls": 43,
+  "remq_failures": 3,
+  "remq_successes": 40,
+  "sequences": 11,
+  "session_id": "46f9ca87-f914-468b-8fc5-6fc4e99f10d1",
+  "session_title": "Create a new docmgr to restyle / redo the hair-booking appli",
+  "total_bash": 780,
+  "total_tools": 1412,
+  "total_turns": 1073
+}
+, {
+  "churn_score": 11.5,
+  "remq_bash_ratio": "7.2%",
+  "remq_calls": 22,
+  "remq_failures": 1,
+  "remq_successes": 21,
+  "sequences": 11,
+  "session_id": "019dd0de-fe25-702d-a4ae-7267b71cc9e4",
+  "session_title": "Create a new docmgr ticket to build a comparison serving web",
+  "total_bash": 305,
+  "total_tools": 513,
+  "total_turns": 530
+}
+, {
+  "churn_score": 10.6,
+  "remq_bash_ratio": "3.8%",
+  "remq_calls": 36,
+  "remq_failures": 2,
+  "remq_successes": 34,
+  "sequences": 10,
+  "session_id": "019e02a5-4fb8-72bb-a3d1-a1e7d27f1ad0",
+  "session_title": "Let's work on @geppetto/ttmp/2026/05/07/GP-OBSERVABILITY--ad",
+  "total_bash": 950,
+  "total_tools": 2000,
+  "total_turns": 2117
+}
+, {
+  "churn_score": 10.5,
+  "remq_bash_ratio": "8.4%",
+  "remq_calls": 48,
+  "remq_failures": 8,
+  "remq_successes": 40,
+  "sequences": 9,
+  "session_id": "019dbe19-20d9-705e-8b7c-0bbae47b76ee",
+  "session_title": "Work on docmgr ticket css-visual-diff/ttmp/2026/04/24/CSSVD-",
+  "total_bash": 569,
+  "total_tools": 1330,
+  "total_turns": 1400
+}
+, {
+  "churn_score": 10.3,
+  "remq_bash_ratio": "5.8%",
+  "remq_calls": 34,
+  "remq_failures": 1,
+  "remq_successes": 33,
+  "sequences": 10,
+  "session_id": "019de996-30a4-74fb-9a6a-5d597fc3b8b5",
+  "session_title": "Create a new docmgr ticket to migrate @2026-03-16--gec-rag/ ",
+  "total_bash": 591,
+  "total_tools": 1320,
+  "total_turns": 1282
+}
+, {
+  "churn_score": 10,
+  "remq_bash_ratio": "2.0%",
+  "remq_calls": 22,
+  "remq_failures": 0,
+  "remq_successes": 22,
+  "sequences": 10,
+  "session_id": "c15b59fd-cb2c-4c51-98a1-048e22196e16",
+  "session_title": "Analyze @le-chat/ttmp/2026/04/19/EVT-STREAM-002--event-strea",
+  "total_bash": 1076,
+  "total_tools": 2764,
+  "total_turns": 2285
+}
+, {
+  "churn_score": 10,
+  "remq_bash_ratio": "2.6%",
+  "remq_calls": 21,
+  "remq_failures": 0,
+  "remq_successes": 21,
+  "sequences": 10,
+  "session_id": "019de984-68fe-76b2-a803-f520bf7651b8",
+  "session_title": "Create a new docmgr ticket to examine the performance of cod",
+  "total_bash": 811,
+  "total_tools": 1443,
+  "total_turns": 1549
+}
+, {
+  "churn_score": 9.7,
+  "remq_bash_ratio": "5.3%",
+  "remq_calls": 37,
+  "remq_failures": 3,
+  "remq_successes": 34,
+  "sequences": 9,
+  "session_id": "d867ddd1-ef58-4bfc-a5ab-6ec28584f9ea",
+  "session_title": "Analyze the minitrace schema (in here and in ~/code/others/l",
+  "total_bash": 696,
+  "total_tools": 1404,
+  "total_turns": 1280
+}
+, {
+  "churn_score": 9.7,
+  "remq_bash_ratio": "4.4%",
+  "remq_calls": 27,
+  "remq_failures": 2,
+  "remq_successes": 25,
+  "sequences": 9,
+  "session_id": "658a1b75-c2ef-4693-8e5c-e02f4c344288",
+  "session_title": "Create a new docmgr ticket to write a simple graphical hello",
+  "total_bash": 619,
+  "total_tools": 1725,
+  "total_turns": 1638
+}
+, {
+  "churn_score": 9.5,
+  "remq_bash_ratio": "3.4%",
+  "remq_calls": 20,
+  "remq_failures": 1,
+  "remq_successes": 19,
+  "sequences": 9,
+  "session_id": "019df3a4-6084-7608-bb0d-4f9487df728f",
+  "session_title": "---                                                         ",
+  "total_bash": 597,
+  "total_tools": 968,
+  "total_turns": 1000
+}
+, {
+  "churn_score": 9.5,
+  "remq_bash_ratio": "3.5%",
+  "remq_calls": 34,
+  "remq_failures": 2,
+  "remq_successes": 32,
+  "sequences": 9,
+  "session_id": "a9b7ea4e-5aaa-46b2-8d8c-95c664f0152b",
+  "session_title": "Create a new docmgr ticket to add support for pinocchio prof",
+  "total_bash": 967,
+  "total_tools": 1919,
+  "total_turns": 1274
+}
+, {
+  "churn_score": 9.3,
+  "remq_bash_ratio": "61.3%",
+  "remq_calls": 57,
+  "remq_failures": 9,
+  "remq_successes": 48,
+  "sequences": 8,
+  "session_id": "019dc1a7-28bd-74ed-936b-591233875cf0",
+  "session_title": "Read ../pinocchio and compile remarquee here to fix the gepp",
+  "total_bash": 93,
+  "total_tools": 158,
+  "total_turns": 154
+}
+, {
+  "churn_score": 9,
+  "remq_bash_ratio": "3.9%",
+  "remq_calls": 19,
+  "remq_failures": 0,
+  "remq_successes": 19,
+  "sequences": 9,
+  "session_id": "019ddef2-5b5d-72fb-b679-1d10972a0515",
+  "session_title": "Create a new docmgr ticket to turn this into a code review t",
+  "total_bash": 492,
+  "total_tools": 1030,
+  "total_turns": 1057
+}
+, {
+  "churn_score": 9,
+  "remq_bash_ratio": "3.3%",
+  "remq_calls": 13,
+  "remq_failures": 0,
+  "remq_successes": 13,
+  "sequences": 9,
+  "session_id": "2a28065a-af2a-492c-b007-45ab9056f2fd",
+  "session_title": "/tmp/pi-clipboard-01832dfc-62e5-4e9b-837e-6a6c669723dc.png  ",
+  "total_bash": 397,
+  "total_tools": 1034,
+  "total_turns": 926
+}
+, {
+  "churn_score": 8.4,
+  "remq_bash_ratio": "3.7%",
+  "remq_calls": 18,
+  "remq_failures": 1,
+  "remq_successes": 17,
+  "sequences": 8,
+  "session_id": "019dfa5b-2463-71ba-9c0c-b5a8d1a19ae4",
+  "session_title": "Create a new docmgr to explore ulisp on the picocalc. First,",
+  "total_bash": 489,
+  "total_tools": 595,
+  "total_turns": 779
+}
+, {
+  "churn_score": 8,
+  "remq_bash_ratio": "4.6%",
+  "remq_calls": 15,
+  "remq_failures": 0,
+  "remq_successes": 15,
+  "sequences": 8,
+  "session_id": "114cf5a5-75ef-45f9-8ed7-0faf2ea9965f",
+  "session_title": "Create a new docmgr ticket to add jsverbs + jsdocex support ",
+  "total_bash": 324,
+  "total_tools": 810,
+  "total_turns": 601
+}
+, {
+  "churn_score": 7.7,
+  "remq_bash_ratio": "8.9%",
+  "remq_calls": 20,
+  "remq_failures": 2,
+  "remq_successes": 18,
+  "sequences": 7,
+  "session_id": "019dc46a-b129-76a9-bacf-07afc0a62080",
+  "session_title": "Create a new docmgr ticket to add the fs primitive module to",
+  "total_bash": 224,
+  "total_tools": 426,
+  "total_turns": 450
+}
+, {
+  "churn_score": 7.3,
+  "remq_bash_ratio": "2.3%",
+  "remq_calls": 22,
+  "remq_failures": 1,
+  "remq_successes": 21,
+  "sequences": 7,
+  "session_id": "019dc7bb-300d-719f-b5bb-8776b186ca04",
+  "session_title": "Create a new docmgr ticket to create the go + postgresql bac",
+  "total_bash": 949,
+  "total_tools": 2230,
+  "total_turns": 2164
+}
+, {
+  "churn_score": 7,
+  "remq_bash_ratio": "2.8%",
+  "remq_calls": 13,
+  "remq_failures": 0,
+  "remq_successes": 13,
+  "sequences": 7,
+  "session_id": "019deedd-0587-763c-b253-cf4624cf99d3",
+  "session_title": "Create a new docmgr ticket for building a little go server (",
+  "total_bash": 470,
+  "total_tools": 861,
+  "total_turns": 945
+}
+, {
+  "churn_score": 7,
+  "remq_bash_ratio": "1.9%",
+  "remq_calls": 12,
+  "remq_failures": 2,
+  "remq_successes": 10,
+  "sequences": 6,
+  "session_id": "8cea1965-7269-4c42-abd0-4c6bc82b66c6",
+  "session_title": "Create a new docmgr ticket to add a http server for glazed h",
+  "total_bash": 642,
+  "total_tools": 1106,
+  "total_turns": 1132
+}
+, {
+  "churn_score": 7,
+  "remq_bash_ratio": "4.9%",
+  "remq_calls": 17,
+  "remq_failures": 0,
+  "remq_successes": 17,
+  "sequences": 7,
+  "session_id": "019de917-bec1-77fc-8f4d-ec9db39f3eed",
+  "session_title": "Create a new docmgr ticket to improve the glazed serving ser",
+  "total_bash": 347,
+  "total_tools": 624,
+  "total_turns": 664
+}
+, {
+  "churn_score": 7,
+  "remq_bash_ratio": "7.1%",
+  "remq_calls": 15,
+  "remq_failures": 0,
+  "remq_successes": 15,
+  "sequences": 7,
+  "session_id": "ba33a7cd-735b-41c5-bf89-c551e1085ac6",
+  "session_title": "Create a new ticket and study the workspace packages here to",
+  "total_bash": 212,
+  "total_tools": 498,
+  "total_turns": 376
+}
+, {
+  "churn_score": 6.5,
+  "remq_bash_ratio": "6.7%",
+  "remq_calls": 8,
+  "remq_failures": 5,
+  "remq_successes": 3,
+  "sequences": 4,
+  "session_id": "0bbd9dd9-2ec7-4c08-bb59-616717472fe6",
+  "session_title": "Create a new ticket with docmgr to deploy my claude artifact",
+  "total_bash": 119,
+  "total_tools": 170,
+  "total_turns": 123
+}
+, {
+  "churn_score": 6.4,
+  "remq_bash_ratio": "68.8%",
+  "remq_calls": 55,
+  "remq_failures": 4,
+  "remq_successes": 51,
+  "sequences": 6,
+  "session_id": "019dedf2-9b69-73de-84a4-a6c5517327dd",
+  "session_title": "Create a new docmgr ticket for upload the obsidian vault pro",
+  "total_bash": 80,
+  "total_tools": 106,
+  "total_turns": 67
+}
+, {
+  "churn_score": 6.4,
+  "remq_bash_ratio": "4.2%",
+  "remq_calls": 30,
+  "remq_failures": 2,
+  "remq_successes": 28,
+  "sequences": 6,
+  "session_id": "adcc8176-fe6a-478e-8d2b-b3f6e43749c9",
+  "session_title": "Create a new docmgr ticket to create a jingle extractor with",
+  "total_bash": 716,
+  "total_tools": 1417,
+  "total_turns": 1231
+}
+, {
+  "churn_score": 6.3,
+  "remq_bash_ratio": "30.1%",
+  "remq_calls": 22,
+  "remq_failures": 1,
+  "remq_successes": 21,
+  "sequences": 6,
+  "session_id": "10df4f9e-f1b5-46d5-ba99-e6194137e62b",
+  "session_title": "Work on docmgr ticket MEN-TR-007 by analyzing temporal-relat",
+  "total_bash": 73,
+  "total_tools": 126,
+  "total_turns": 101
+}
+, {
+  "churn_score": 6.3,
+  "remq_bash_ratio": "2.2%",
+  "remq_calls": 24,
+  "remq_failures": 1,
+  "remq_successes": 23,
+  "sequences": 6,
+  "session_id": "bbf1bdf1-364a-44cb-8cd0-ebcba86dd1ad",
+  "session_title": "Create a new docmgr ticket to port this from ffmpeg streams ",
+  "total_bash": 1101,
+  "total_tools": 2822,
+  "total_turns": 2265
+}
+, {
+  "churn_score": 6.3,
+  "remq_bash_ratio": "7.5%",
+  "remq_calls": 20,
+  "remq_failures": 1,
+  "remq_successes": 19,
+  "sequences": 6,
+  "session_id": "019dd3c9-feb6-766a-9ffb-2a5f86033566",
+  "session_title": "Create a new docmgr ticket to add glaze help entries / glaze",
+  "total_bash": 265,
+  "total_tools": 487,
+  "total_turns": 454
+}
+, {
+  "churn_score": 6.2,
+  "remq_bash_ratio": "33.3%",
+  "remq_calls": 28,
+  "remq_failures": 1,
+  "remq_successes": 27,
+  "sequences": 6,
+  "session_id": "019dc48f-533b-71b4-88aa-282e591ecda8",
+  "session_title": "Create a new docmgr ticket to download the linux container r",
+  "total_bash": 84,
+  "total_tools": 126,
+  "total_turns": 109
+}
+, {
+  "churn_score": 6.1,
+  "remq_bash_ratio": "4.9%",
+  "remq_calls": 22,
+  "remq_failures": 5,
+  "remq_successes": 17,
+  "sequences": 5,
+  "session_id": "eb0e7e6d-59ef-4a6f-9f04-ddbb469910bf",
+  "session_title": "Create a detailed code review of smailnail against origin/ma",
+  "total_bash": 449,
+  "total_tools": 1109,
+  "total_turns": 812
+}
+, {
+  "churn_score": 6,
+  "remq_bash_ratio": "2.3%",
+  "remq_calls": 10,
+  "remq_failures": 0,
+  "remq_successes": 10,
+  "sequences": 6,
+  "session_id": "4692d406-10c9-47fe-a6d2-69c0c0e66a31",
+  "session_title": "Work on the UI DSL ticket @ttmp/2026/04/21/DISCORD-BOT-019--",
+  "total_bash": 444,
+  "total_tools": 990,
+  "total_turns": 946
+}
+, {
+  "churn_score": 6,
+  "remq_bash_ratio": "4.1%",
+  "remq_calls": 10,
+  "remq_failures": 0,
+  "remq_successes": 10,
+  "sequences": 6,
+  "session_id": "019dd974-2895-748f-821e-ae8ffbcda791",
+  "session_title": "we were working on @ttmp/2026/04/29/CHAT-THIRD-DB-LOGGING--d",
+  "total_bash": 245,
+  "total_tools": 547,
+  "total_turns": 569
+}
+, {
+  "churn_score": 6,
+  "remq_bash_ratio": "4.4%",
+  "remq_calls": 19,
+  "remq_failures": 0,
+  "remq_successes": 19,
+  "sequences": 6,
+  "session_id": "2803ce85-fb9d-4181-95c8-e30de070b3a3",
+  "session_title": "Create a new docmgr ticket to fix the bug that pinocchio can",
+  "total_bash": 433,
+  "total_tools": 839,
+  "total_turns": 639
+}
+, {
+  "churn_score": 6,
+  "remq_bash_ratio": "3.1%",
+  "remq_calls": 15,
+  "remq_failures": 0,
+  "remq_successes": 15,
+  "sequences": 6,
+  "session_id": "345857ce-ef7f-43ea-a8c5-dfefb26082ff",
+  "session_title": "Create a new docmgr ticket to analyze how go-go-goja does js",
+  "total_bash": 484,
+  "total_tools": 1008,
+  "total_turns": 848
+}
+, {
+  "churn_score": 5.8,
+  "remq_bash_ratio": "3.9%",
+  "remq_calls": 18,
+  "remq_failures": 3,
+  "remq_successes": 15,
+  "sequences": 5,
+  "session_id": "31166b9a-db93-4fba-84fc-5e8d56e0e319",
+  "session_title": "/tmp/pi-clipboard-01832dfc-62e5-4e9b-837e-6a6c669723dc.png  ",
+  "total_bash": 460,
+  "total_tools": 984,
+  "total_turns": 914
+}
+, {
+  "churn_score": 5.6,
+  "remq_bash_ratio": "9.1%",
+  "remq_calls": 17,
+  "remq_failures": 2,
+  "remq_successes": 15,
+  "sequences": 5,
+  "session_id": "019dcf22-a957-707e-b88e-6c0bdef6d79b",
+  "session_title": "Create a new docmgr ticket to analyze the CSS visual diff wo",
+  "total_bash": 186,
+  "total_tools": 276,
+  "total_turns": 237
+}
+, {
+  "churn_score": 5.6,
+  "remq_bash_ratio": "6.0%",
+  "remq_calls": 27,
+  "remq_failures": 3,
+  "remq_successes": 24,
+  "sequences": 5,
+  "session_id": "7f61f412-40f0-417f-ab85-4dffdb9927e5",
+  "session_title": "Create a new docmgr ticket to add sqleton-style verb query l",
+  "total_bash": 453,
+  "total_tools": 971,
+  "total_turns": 780
+}
+, {
+  "churn_score": 5.4,
+  "remq_bash_ratio": "8.6%",
+  "remq_calls": 14,
+  "remq_failures": 1,
+  "remq_successes": 13,
+  "sequences": 5,
+  "session_id": "019dd12e-2b98-744a-b994-7d480d38bfb3",
+  "session_title": "Create a new docmgr ticket for adding yaml primitive support",
+  "total_bash": 162,
+  "total_tools": 309,
+  "total_turns": 290
+}
+, {
+  "churn_score": 5.3,
+  "remq_bash_ratio": "2.1%",
+  "remq_calls": 18,
+  "remq_failures": 1,
+  "remq_successes": 17,
+  "sequences": 5,
+  "session_id": "f6498c9d-3c41-4850-8f9c-667eca2ee271",
+  "session_title": "Create a new docmgr ticket to get this remarkable eink demo ",
+  "total_bash": 838,
+  "total_tools": 1126,
+  "total_turns": 654
+}
+, {
+  "churn_score": 5.2,
+  "remq_bash_ratio": "28.3%",
+  "remq_calls": 28,
+  "remq_failures": 1,
+  "remq_successes": 27,
+  "sequences": 5,
+  "session_id": "3fbb0b31-2438-41a2-94e7-8377af7181f2",
+  "session_title": "Use docmgr to work on all the chapter writing tickets, and k",
+  "total_bash": 99,
+  "total_tools": 181,
+  "total_turns": 137
+}
+, {
+  "churn_score": 5,
+  "remq_bash_ratio": "9.5%",
+  "remq_calls": 9,
+  "remq_failures": 0,
+  "remq_successes": 9,
+  "sequences": 5,
+  "session_id": "2648a974-87e4-42b0-a113-37e898f36e00",
+  "session_title": "Create a new docmgr ticket to get coinvault's DB tools to wo",
+  "total_bash": 95,
+  "total_tools": 205,
+  "total_turns": 182
+}
+, {
+  "churn_score": 5,
+  "remq_bash_ratio": "1.9%",
+  "remq_calls": 10,
+  "remq_failures": 0,
+  "remq_successes": 10,
+  "sequences": 5,
+  "session_id": "019dda98-6c6d-713b-9d04-4307716f0f1a",
+  "session_title": "Create a new docmgr ticket to create a local almanach creato",
+  "total_bash": 514,
+  "total_tools": 742,
+  "total_turns": 768
+}
+, {
+  "churn_score": 5,
+  "remq_bash_ratio": "1.5%",
+  "remq_calls": 10,
+  "remq_failures": 0,
+  "remq_successes": 10,
+  "sequences": 5,
+  "session_id": "019dbcb9-a9c4-7449-9d4f-dc260c37eaba",
+  "session_title": "Why does this software need a backend? Can we create a singl",
+  "total_bash": 678,
+  "total_tools": 1441,
+  "total_turns": 1420
+}
+]
