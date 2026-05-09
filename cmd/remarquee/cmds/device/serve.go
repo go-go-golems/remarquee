@@ -114,8 +114,9 @@ func runServe(cmd *cobra.Command, s *serveSettings) error {
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		// Leave WriteTimeout unset: /api/v1/stream, /api/v1/events,
+		// and /api/v1/gestures intentionally keep responses open.
+		IdleTimeout: 60 * time.Second,
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "listening on %s\n", s.BindAddr)

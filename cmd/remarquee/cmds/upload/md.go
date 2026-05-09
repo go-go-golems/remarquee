@@ -128,6 +128,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		if err != nil {
 			return err
 		}
+		pdfName = sanitizePDFName(pdfName)
 		docName := strings.TrimSuffix(pdfName, filepath.Ext(pdfName))
 		relDir := ""
 		if s.PreserveDirs {
