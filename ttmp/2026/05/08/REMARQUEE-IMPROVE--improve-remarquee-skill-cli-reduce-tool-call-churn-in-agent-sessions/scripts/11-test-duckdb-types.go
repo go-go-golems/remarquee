@@ -11,24 +11,40 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	rows, err := db.Query("SELECT COUNT(*) AS cnt, 42 AS fixed, 3.14 AS pi")
 	if err != nil {
 		panic(err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
-	columns, _ := rows.Columns()
+	columns, err := rows.Columns()
+	if err != nil {
+		panic(err)
+	}
 	for rows.Next() {
 		values := make([]any, len(columns))
 		scanArgs := make([]any, len(columns))
 		for i := range scanArgs {
 			scanArgs[i] = &values[i]
 		}
-		rows.Scan(scanArgs...)
+		if err := rows.Scan(scanArgs...); err != nil {
+			panic(err)
+		}
 		for i, col := range columns {
 			fmt.Printf("%s: type=%T value=%v\n", col, values[i], values[i])
 		}
+	}
+	if err := rows.Err(); err != nil {
+		panic(err)
 	}
 }
