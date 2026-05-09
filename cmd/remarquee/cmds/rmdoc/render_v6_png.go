@@ -16,6 +16,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -219,7 +220,7 @@ func renderPDFPagesToPNGsWithPopplerMapped(ctx context.Context, pdftoppm string,
 		outBase := filepath.Join(outDir, fmt.Sprintf("%s-page-%03d", prefix, page.Label))
 		outFile := outBase + ".png"
 
-		cmd := exec.CommandContext(ctx,
+		cmd := exec.CommandContext(ctx, // #nosec G204 -- PNG rendering intentionally invokes pdftoppm with explicit argv.
 			pdftoppm,
 			"-png",
 			"-r", strconv.Itoa(dpi),
@@ -253,9 +254,6 @@ func NewRenderV6PNGCobraCommand() (*cobra.Command, error) {
 	return cli.BuildCobraCommand(cmd,
 		cli.WithDualMode(true),
 		cli.WithGlazeToggleFlag("with-glaze-output"),
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpSections: []string{schema.DefaultSlug},
-			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
-		}),
+		cli.WithParserConfig(appconfig.DefaultParserConfig()),
 	)
 }

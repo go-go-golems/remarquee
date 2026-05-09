@@ -148,7 +148,10 @@ func (r *rmV6TaggedBlockReader) readString(index uint32) (string, error) {
 	}
 
 	// 1 byte for ascii flag + varuint length header are part of subblock; ensure claimed length fits.
-	if int64(strLen) > int64(sb.Size) {
+	if strLen > uint64(math.MaxInt) {
+		return "", errors.Errorf("string length %d exceeds max int", strLen)
+	}
+	if strLen > uint64(sb.Size) {
 		return "", errors.Errorf("string length %d exceeds subblock size %d", strLen, sb.Size)
 	}
 	b, err := r.readBytes(int(strLen))
@@ -175,6 +178,12 @@ func (r *rmV6TaggedBlockReader) readStringWithFormat(index uint32) (string, *uin
 	}
 	if !isASCII {
 		return "", nil, errors.New("string is_ascii flag is false (unexpected)")
+	}
+	if strLen > uint64(math.MaxInt) {
+		return "", nil, errors.Errorf("string length %d exceeds max int", strLen)
+	}
+	if strLen > uint64(sb.Size) {
+		return "", nil, errors.Errorf("string length %d exceeds subblock size %d", strLen, sb.Size)
 	}
 
 	b, err := r.readBytes(int(strLen))

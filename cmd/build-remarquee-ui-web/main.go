@@ -3,20 +3,24 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"dagger.io/dagger"
 )
 
+const (
+	defaultBuilderImage = "node:22"
+	defaultPNPMVersion  = "10.15.1"
+	pnpmStorePath       = "/pnpm/store"
+)
+
 func main() {
 	ctx := context.Background()
-	client, err := dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
-	if err != nil {
-		log.Fatalf("connect dagger: %v", err)
-	}
-	defer func() { _ = client.Close() }()
 
 	wd, err := os.Getwd()
 	if err != nil {
@@ -37,37 +41,190 @@ func main() {
 		distOut = env
 	}
 
-	if err := os.RemoveAll(distOut); err != nil {
-		log.Fatalf("remove dist: %v", err)
+	pnpmVersion := packageManagerPNPMVersion(frontendDir)
+	if pnpmVersion == "" {
+		pnpmVersion = defaultPNPMVersion
+	}
+
+	if forceLocal := os.Getenv("BUILD_WEB_LOCAL"); forceLocal != "" {
+		log.Print("BUILD_WEB_LOCAL is set: building web UI with local pnpm")
+		if err := buildLocal(ctx, frontendDir, distOut, pnpmVersion); err != nil {
+			log.Fatalf("local web build failed: %v", err)
+		}
+		return
+	}
+
+	if err := buildWithDagger(ctx, frontendDir, distOut, pnpmVersion); err != nil {
+		log.Printf("dagger web build failed: %v", err)
+		log.Printf("falling back to local pnpm build; set BUILD_WEB_LOCAL=1 to force this path")
+		if err := buildLocal(ctx, frontendDir, distOut, pnpmVersion); err != nil {
+			log.Fatalf("local web build failed: %v", err)
+		}
+	}
+}
+
+func buildWithDagger(ctx context.Context, frontendDir string, distOut string, pnpmVersion string) error {
+	client, err := dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
+	if err != nil {
+		return fmt.Errorf("connect dagger: %w", err)
+	}
+	defer func() { _ = client.Close() }()
+
+	if err := os.RemoveAll(distOut); err != nil { // #nosec G703 -- build helper intentionally removes the configured dist output directory.
+		return fmt.Errorf("remove dist: %w", err)
 	}
 
 	image := os.Getenv("WEB_BUILDER_IMAGE")
 	if image == "" {
-		image = "node:22"
+		image = defaultBuilderImage
 	}
 
-	webDir := client.Host().Directory(frontendDir)
+	webDir := client.Host().Directory(frontendDir, dagger.HostDirectoryOpts{
+		Exclude: []string{"node_modules", ".pnpm-store", "dist"},
+	})
+	pnpmStore := client.CacheVolume("remarquee-ui-pnpm-store")
+
 	ctr := client.Container().
 		From(image).
 		WithWorkdir("/src").
-		WithMountedDirectory("/src", webDir)
-
-	installCmd := "npm ci"
-	if _, err := os.Stat(filepath.Join(frontendDir, "package-lock.json")); err != nil {
-		installCmd = "npm install"
-	}
-
-	ctr = ctr.
+		WithMountedDirectory("/src", webDir).
+		WithMountedCache(pnpmStorePath, pnpmStore).
+		WithEnvVariable("COREPACK_ENABLE_DOWNLOAD_PROMPT", "0").
+		WithEnvVariable("CI", "1").
 		WithExec([]string{"sh", "-lc", "node --version"}).
-		WithExec([]string{"sh", "-lc", "npm --version"}).
-		WithExec([]string{"sh", "-lc", installCmd}).
-		WithExec([]string{"sh", "-lc", "npm run build"})
+		WithExec([]string{"sh", "-lc", "corepack enable"}).
+		WithExec([]string{"sh", "-lc", fmt.Sprintf("corepack prepare pnpm@%s --activate", shellQuote(pnpmVersion))}).
+		WithExec([]string{"sh", "-lc", "pnpm --version"}).
+		WithExec([]string{"sh", "-lc", fmt.Sprintf("pnpm config set store-dir %s", shellQuote(pnpmStorePath))}).
+		WithExec([]string{"sh", "-lc", "pnpm install --frozen-lockfile"}).
+		WithExec([]string{"sh", "-lc", "pnpm run build"})
 
-	dist := ctr.Directory("/src/dist")
-	if _, err := dist.Export(ctx, distOut); err != nil {
-		log.Fatalf("export dist: %v", err)
+	if _, err := ctr.Directory("/src/dist").Export(ctx, distOut); err != nil {
+		return fmt.Errorf("export dist: %w", err)
 	}
-	log.Printf("exported web dist to %s", distOut)
+	log.Print("exported web dist")
+	return nil
+}
+
+func buildLocal(ctx context.Context, frontendDir string, distOut string, pnpmVersion string) error {
+	defaultDist := filepath.Join(frontendDir, "dist")
+	if err := os.RemoveAll(defaultDist); err != nil { // #nosec G703 -- build helper intentionally removes the frontend dist directory.
+		return fmt.Errorf("remove default dist: %w", err)
+	}
+	if filepath.Clean(distOut) != filepath.Clean(defaultDist) {
+		if err := os.RemoveAll(distOut); err != nil { // #nosec G703 -- build helper intentionally removes the configured dist output directory.
+			return fmt.Errorf("remove custom dist: %w", err)
+		}
+	}
+
+	commands := [][]string{
+		{"corepack", "enable"},
+		{"corepack", "prepare", "pnpm@" + pnpmVersion, "--activate"},
+		{"pnpm", "config", "set", "store-dir", filepath.Join(frontendDir, ".pnpm-store")},
+		{"pnpm", "install", "--frozen-lockfile"},
+		{"pnpm", "run", "build"},
+	}
+	for _, argv := range commands {
+		cmd := exec.CommandContext(ctx, argv[0], argv[1:]...) // #nosec G204 -- command argv is selected by this build helper, not shell-expanded user input.
+		cmd.Dir = frontendDir
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("%s: %w", strings.Join(argv, " "), err)
+		}
+	}
+	if filepath.Clean(distOut) != filepath.Clean(defaultDist) {
+		if err := copyDir(defaultDist, distOut); err != nil {
+			return fmt.Errorf("copy dist to requested output: %w", err)
+		}
+	}
+	log.Print("exported web dist")
+	return nil
+}
+
+func copyDir(src string, dst string) error {
+	info, err := os.Stat(src) // #nosec G703 -- build helper intentionally copies from the configured source directory.
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("source is not a directory: %s", src)
+	}
+	if err := os.MkdirAll(dst, info.Mode()); err != nil { // #nosec G703 -- build helper intentionally creates the configured destination directory.
+		return err
+	}
+	return filepath.WalkDir(src, func(path string, d os.DirEntry, err error) error { // #nosec G703 -- build helper intentionally walks the configured source directory.
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		target := filepath.Join(dst, rel)
+		if d.IsDir() {
+			info, err := d.Info()
+			if err != nil {
+				return err
+			}
+			return os.MkdirAll(target, info.Mode()) // #nosec G703 -- target is derived from filepath.Rel within the copied source tree.
+		}
+		return copyFile(path, target)
+	})
+}
+
+func copyFile(src string, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = in.Close() }()
+	info, err := in.Stat()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil { // #nosec G703 -- build helper intentionally creates parent directories for the destination file.
+		return err
+	}
+	out, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode()) // #nosec G703 -- build helper intentionally writes the destination file.
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		_ = out.Close()
+		return err
+	}
+	return out.Close()
+}
+
+func packageManagerPNPMVersion(frontendDir string) string {
+	b, err := os.ReadFile(filepath.Join(frontendDir, "package.json")) // #nosec G703 -- build helper intentionally reads package.json from the configured frontend directory.
+	if err != nil {
+		return ""
+	}
+	needle := `"packageManager"`
+	idx := strings.Index(string(b), needle)
+	if idx < 0 {
+		return ""
+	}
+	rest := string(b)[idx+len(needle):]
+	pnpmIdx := strings.Index(rest, "pnpm@")
+	if pnpmIdx < 0 {
+		return ""
+	}
+	version := rest[pnpmIdx+len("pnpm@"):]
+	end := strings.IndexAny(version, `"' \n\r\t`)
+	if end >= 0 {
+		version = version[:end]
+	}
+	return strings.TrimSpace(version)
+}
+
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
 }
 
 func findRepoRoot(start string) (string, error) {

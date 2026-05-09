@@ -43,11 +43,16 @@ func DecodeRMV6Line(lineVersion uint8, payload []byte) (*Stroke, error) {
 		return nil, err
 	}
 
-	if sb.Size%uint32(pointSize) != 0 {
+	if pointSize <= 0 || pointSize > math.MaxUint32 {
+		_ = vr.endSubBlock(sb)
+		return nil, errors.Errorf("invalid point size %d", pointSize)
+	}
+	pointSizeU32 := uint32(pointSize)
+	if sb.Size%pointSizeU32 != 0 {
 		_ = vr.endSubBlock(sb)
 		return nil, errors.Errorf("point data size mismatch: %d is not multiple of point_size %d", sb.Size, pointSize)
 	}
-	numPoints := int(sb.Size) / pointSize
+	numPoints := int(sb.Size / pointSizeU32)
 
 	points := make([]StrokePoint, 0, numPoints)
 	for i := 0; i < numPoints; i++ {
@@ -83,7 +88,7 @@ func DecodeRMV6Line(lineVersion uint8, payload []byte) (*Stroke, error) {
 			if len(mb) == 6 {
 				// Marker stores bytes in (b,g,r,a) order.
 				b, g, r, a := mb[2], mb[3], mb[4], mb[5]
-				if c, ok := HardcodedColorMap[RGBA{R: r, G: g, B: b, A: a}]; ok {
+				if c, ok := HardcodedColorMap[RGBA{R: r, G: g, B: b, A: a}]; ok && c >= 0 && c <= math.MaxUint32 {
 					color = uint32(c)
 				}
 			}

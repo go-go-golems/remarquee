@@ -229,7 +229,9 @@ func makePDFWithNPages(n int) ([]byte, error) {
 		p := c.NewParagraph(fmt.Sprintf("Fake background page %d", i+1))
 		p.SetFontSize(24)
 		p.SetPos(72, 72)
-		c.Draw(p)
+		if err := c.Draw(p); err != nil {
+			return nil, err
+		}
 	}
 	var buf bytes.Buffer
 	if err := c.Write(&buf); err != nil {
@@ -319,5 +321,3 @@ func writeRMDoc(outPath string, docID string, flatFiles map[string][]byte, rmFil
 	}
 	return nil
 }
-
-

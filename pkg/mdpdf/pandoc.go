@@ -74,8 +74,12 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	inputPath := filepath.Join(tmpDir, filepath.Base(mdPath)+".input.md")
-	if err := os.WriteFile(inputPath, []byte(body), 0o644); err != nil {
+	// Keep temporary helper filenames deliberately boring. Pandoc treats '#'
+	// in input paths as a URI fragment separator in some readers, so using
+	// filepath.Base(mdPath) here breaks Markdown files whose names contain
+	// issue/PR numbers like "PR #6.md".
+	inputPath := filepath.Join(tmpDir, "input.md")
+	if err := os.WriteFile(inputPath, []byte(body), 0o644); err != nil { // #nosec G703 -- inputPath is a fixed filename inside an os.MkdirTemp directory.
 		return errors.Wrap(err, "failed to write preprocessed markdown")
 	}
 
@@ -83,14 +87,14 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 	if opts.LatexHeaderFile != "" {
 		headerPaths = append(headerPaths, opts.LatexHeaderFile)
 	} else {
-		headerPath := filepath.Join(tmpDir, filepath.Base(mdPath)+".header.tex")
+		headerPath := filepath.Join(tmpDir, "header.tex")
 		if err := os.WriteFile(headerPath, []byte(defaultLatexHeader), 0o644); err != nil {
 			return errors.Wrap(err, "failed to write latex header")
 		}
 		headerPaths = append(headerPaths, headerPath)
 	}
 	if strings.TrimSpace(opts.ExtraLatexHeader) != "" {
-		extraHeaderPath := filepath.Join(tmpDir, filepath.Base(mdPath)+".extra-header.tex")
+		extraHeaderPath := filepath.Join(tmpDir, "extra-header.tex")
 		if err := os.WriteFile(extraHeaderPath, []byte(opts.ExtraLatexHeader), 0o644); err != nil {
 			return errors.Wrap(err, "failed to write extra latex header")
 		}
@@ -123,7 +127,7 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 		argv = append(argv, "--listings")
 	}
 
-	cmd := exec.CommandContext(ctx, opts.PandocPath, argv...)
+	cmd := exec.CommandContext(ctx, opts.PandocPath, argv...) // #nosec G204 -- this package intentionally invokes the configured pandoc binary with explicit argv.
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.Wrapf(err, "pandoc failed: %s", string(out))

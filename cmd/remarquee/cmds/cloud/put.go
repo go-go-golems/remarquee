@@ -10,8 +10,10 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig"
 	"github.com/juruen/rmapi/util"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -139,6 +141,16 @@ func (c *PutCommand) Run(ctx context.Context, parsedValues *values.Values) error
 	}
 
 	docName, ext := util.DocPathToName(s.Local)
+	log.Debug().
+		Str("local", s.Local).
+		Str("remote_dir", s.RemoteDir).
+		Str("doc_name", docName).
+		Str("ext", ext).
+		Str("parent_id", dstNode.Id()).
+		Bool("force", s.Force).
+		Bool("content_only", s.ContentOnly).
+		Interface("coverpage", coverpageFlag).
+		Msg("cloud put: starting upload")
 
 	// content-only mode (PDF only)
 	if s.ContentOnly {
@@ -148,8 +160,10 @@ func (c *PutCommand) Run(ctx context.Context, parsedValues *values.Values) error
 
 		existingNode, err := apiCtx.Filetree().NodeByPath(docName, dstNode)
 		if err != nil {
-			document, err := apiCtx.UploadDocument(dstNode.Id(), s.Local, true, coverpageFlag)
+			log.Debug().Str("doc_name", docName).Msg("cloud put: content-only: document not found, creating new")
+			document, err := apiCtx.UploadDocument(dstNode.Id(), s.Local, true, coverpageFlag, nil, nil, nil)
 			if err != nil {
+				log.Error().Err(err).Str("file", s.Local).Str("parent_id", dstNode.Id()).Msg("cloud put: content-only upload failed")
 				return errors.Wrapf(err, "failed to upload file [%s]", s.Local)
 			}
 			apiCtx.Filetree().AddDocument(document)
@@ -161,7 +175,9 @@ func (c *PutCommand) Run(ctx context.Context, parsedValues *values.Values) error
 			return errors.New("cannot replace directory with file")
 		}
 
+		log.Debug().Str("doc_id", existingNode.Document.ID).Str("file", s.Local).Msg("cloud put: content-only: replacing document file")
 		if err := apiCtx.ReplaceDocumentFile(existingNode.Document.ID, s.Local, true); err != nil {
+			log.Error().Err(err).Str("doc_id", existingNode.Document.ID).Str("file", s.Local).Msg("cloud put: replace content failed")
 			return errors.Wrap(err, "failed to replace content")
 		}
 
@@ -172,6 +188,7 @@ func (c *PutCommand) Run(ctx context.Context, parsedValues *values.Values) error
 	// regular upload / --force
 	existingNode, err := apiCtx.Filetree().NodeByPath(docName, dstNode)
 	if err == nil {
+		log.Debug().Str("doc_name", docName).Msg("cloud put: entry already exists")
 		if !s.Force {
 			return errors.New("entry already exists (use --force to recreate, --content-only to replace content)")
 		}
@@ -180,14 +197,19 @@ func (c *PutCommand) Run(ctx context.Context, parsedValues *values.Values) error
 			return errors.New("cannot overwrite directory with file")
 		}
 
+		log.Debug().Str("doc_id", existingNode.Document.ID).Msg("cloud put: deleting existing entry for --force")
 		if err := apiCtx.DeleteEntry(existingNode, false, false); err != nil {
 			return errors.Wrap(err, "failed to delete existing file")
 		}
 		apiCtx.Filetree().DeleteNode(existingNode)
+	} else {
+		log.Debug().Str("doc_name", docName).Msg("cloud put: no existing entry found")
 	}
 
-	document, err := apiCtx.UploadDocument(dstNode.Id(), s.Local, true, coverpageFlag)
+	log.Debug().Str("file", s.Local).Str("parent_id", dstNode.Id()).Interface("coverpage", coverpageFlag).Msg("cloud put: uploading document")
+	document, err := apiCtx.UploadDocument(dstNode.Id(), s.Local, true, coverpageFlag, nil, nil, nil)
 	if err != nil {
+		log.Error().Err(err).Str("file", s.Local).Str("parent_id", dstNode.Id()).Msg("cloud put: upload failed")
 		return errors.Wrapf(err, "failed to upload file [%s]", s.Local)
 	}
 	apiCtx.Filetree().AddDocument(document)
@@ -203,10 +225,7 @@ func NewPutCobraCommand() (*cobra.Command, error) {
 	}
 
 	return cli.BuildCobraCommand(cmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpSections: []string{schema.DefaultSlug},
-			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
-		}),
+		cli.WithParserConfig(appconfig.DefaultParserConfig()),
 	)
 }
 

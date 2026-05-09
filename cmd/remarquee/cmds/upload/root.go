@@ -1,8 +1,6 @@
 package upload
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -19,6 +17,7 @@ func NewUploadCommand() *cobra.Command {
 	cmd.AddCommand(NewUploadMarkdownCommand())
 	cmd.AddCommand(NewUploadBundleCommand())
 	cmd.AddCommand(NewUploadSourceCommand())
+	cmd.AddCommand(NewUploadSyncCommand())
 	return cmd
 }
 
@@ -55,19 +54,4 @@ func sanitizePDFName(name string) string {
 	}
 
 	return stem + ext
-}
-
-// sanitizeAndCheckOutputPath applies sanitizePDFName to the filename portion of
-// outPDF and returns the cleaned path. If the name was sanitized, prints a
-// notice so the agent knows the upload target differs from the input name.
-func sanitizeAndCheckOutputPath(outPDF string) string {
-	dir := filepath.Dir(outPDF)
-	origBase := filepath.Base(outPDF)
-	cleanBase := sanitizePDFName(origBase)
-
-	if origBase != cleanBase {
-		fmt.Fprintf(os.Stderr, "NOTE: sanitized PDF filename: %q -> %q\n", origBase, cleanBase)
-	}
-
-	return filepath.Join(dir, cleanBase)
 }

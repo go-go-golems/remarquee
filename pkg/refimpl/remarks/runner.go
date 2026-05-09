@@ -61,7 +61,7 @@ func (r Runner) Run(ctx context.Context, inputPath, outputDir string) (*Result, 
 		args = append(args, r.ExtraArgs...)
 	}
 
-	cmd := exec.CommandContext(ctx, bin, args...)
+	cmd := exec.CommandContext(ctx, bin, args...) // #nosec G204 -- remarks runner intentionally invokes the configured remarks binary with explicit argv.
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

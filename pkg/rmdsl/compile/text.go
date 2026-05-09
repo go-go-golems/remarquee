@@ -1,6 +1,7 @@
 package compile
 
 import (
+	"math"
 	"strings"
 	"unicode/utf8"
 
@@ -57,9 +58,19 @@ func textCounts(text string) (uint32, uint32) {
 	if text == "" {
 		return 0, 0
 	}
-	chars := utf8.RuneCountInString(text)
-	lines := strings.Count(text, "\n") + 1
-	return uint32(chars + 1), uint32(lines)
+	chars := clampIntToUint32(utf8.RuneCountInString(text) + 1)
+	lines := clampIntToUint32(strings.Count(text, "\n") + 1)
+	return chars, lines
+}
+
+func clampIntToUint32(v int) uint32 {
+	if v <= 0 {
+		return 0
+	}
+	if v > math.MaxUint32 {
+		return math.MaxUint32
+	}
+	return uint32(v)
 }
 
 func isASCII(s string) bool {

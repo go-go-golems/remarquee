@@ -10,6 +10,7 @@ import (
 	"image/color"
 	"image/png"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -238,7 +239,7 @@ func renderPDFPageWithPDFToPPM(ctx context.Context, tmpDir, prefix, pdfPath stri
 	outBase := filepath.Join(tmpDir, fmt.Sprintf("%s-page-%03d", prefix, pageNum))
 	outFile := outBase + ".png"
 
-	cmd := exec.CommandContext(ctx,
+	cmd := exec.CommandContext(ctx, // #nosec G204 -- pdf comparison intentionally invokes pdftoppm with explicit argv.
 		"pdftoppm",
 		"-png",
 		"-r", strconv.Itoa(dpi),
@@ -560,9 +561,9 @@ func compareImages(a, b image.Image, tolerance float64, generateDiff bool) PageR
 					// Dim the original a pixel to make changes pop.
 					r, g, bl, _ := ca.RGBA()
 					diffImg.SetRGBA(x, y, color.RGBA{
-						R: uint8((r >> 8) / 2),
-						G: uint8((g >> 8) / 2),
-						B: uint8((bl >> 8) / 2),
+						R: dimRGBA16(r),
+						G: dimRGBA16(g),
+						B: dimRGBA16(bl),
 						A: 255,
 					})
 					continue
@@ -577,6 +578,14 @@ func compareImages(a, b image.Image, tolerance float64, generateDiff bool) PageR
 	}
 
 	return pr
+}
+
+func dimRGBA16(v uint32) uint8 {
+	dimmed := (v >> 8) / 2
+	if dimmed > math.MaxUint8 {
+		return math.MaxUint8
+	}
+	return uint8(dimmed)
 }
 
 func sameColor(a, b color.Color) bool {

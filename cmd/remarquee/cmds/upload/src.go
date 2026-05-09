@@ -11,9 +11,6 @@ import (
 
 	"github.com/go-go-golems/remarquee/pkg/mdpdf"
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
-	"github.com/juruen/rmapi/api"
-	"github.com/juruen/rmapi/model"
-	"github.com/juruen/rmapi/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -282,45 +279,9 @@ func runUploadSource(ctx context.Context, cmd *cobra.Command, s *uploadSourceSet
 			return err
 		}
 
-		docName, _ := util.DocPathToName(outPDF)
-
-		// Upload with auto-reauth on 401/403.
-		_, err = rmcloud.WithAuthRetry(authSettings, apiCtx, func(currentCtx api.ApiCtx) (api.ApiCtx, error) {
-			dstNode, mkdirErr := rmcloud.MkdirAll(currentCtx, remoteDir)
-			if mkdirErr != nil {
-				return currentCtx, mkdirErr
-			}
-
-			existingNode, err := currentCtx.Filetree().NodeByPath(docName, dstNode)
-			if err == nil {
-				if !s.Force {
-					fmt.Fprintf(cmd.OutOrStdout(), "SKIP: %s already exists in %s (use --force to overwrite)\n", docName, remoteDir)
-					return currentCtx, nil
-				}
-
-				if existingNode.IsDirectory() {
-					return currentCtx, errors.Errorf("cannot overwrite directory %q in %s", docName, remoteDir)
-				}
-
-				if err := currentCtx.DeleteEntry(existingNode, false, false); err != nil {
-					return currentCtx, errors.Wrap(err, "failed to delete existing file")
-				}
-				currentCtx.Filetree().DeleteNode(existingNode)
-			}
-
-			document, err := currentCtx.UploadDocument(dstNode.Id(), outPDF, true, nil)
-			if err != nil {
-				return currentCtx, errors.Wrapf(err, "failed to upload file [%s]", outPDF)
-			}
-			currentCtx.Filetree().AddDocument(document)
-			fmt.Fprintf(cmd.OutOrStdout(), "OK: uploaded %s -> %s\n", pdfName, remoteDir)
-
-			return currentCtx, nil
-		})
+		_, err = uploadPDFToRemoteWithAuthRetry(cmd, authSettings, apiCtx, remoteDir, outPDF, pdfName, s.Force)
 		return err
 	}
-
-	dstNodeCache := map[string]*model.Node{}
 
 	for _, in := range inputs {
 		src := in.AbsPath
@@ -331,46 +292,7 @@ func runUploadSource(ctx context.Context, cmd *cobra.Command, s *uploadSourceSet
 			return err
 		}
 
-		docName, _ := util.DocPathToName(outPDF)
-
-		// Upload with auto-reauth on 401/403.
-		apiCtx, err = rmcloud.WithAuthRetry(authSettings, apiCtx, func(currentCtx api.ApiCtx) (api.ApiCtx, error) {
-			dstNode, ok := dstNodeCache[remoteDir]
-			if !ok {
-				node, mkdirErr := rmcloud.MkdirAll(currentCtx, remoteDir)
-				if mkdirErr != nil {
-					return currentCtx, mkdirErr
-				}
-				dstNode = node
-				dstNodeCache[remoteDir] = node
-			}
-
-			existingNode, err := currentCtx.Filetree().NodeByPath(docName, dstNode)
-			if err == nil {
-				if !s.Force {
-					fmt.Fprintf(cmd.OutOrStdout(), "SKIP: %s already exists in %s (use --force to overwrite)\n", docName, remoteDir)
-					return currentCtx, nil
-				}
-
-				if existingNode.IsDirectory() {
-					return currentCtx, errors.Errorf("cannot overwrite directory %q in %s", docName, remoteDir)
-				}
-
-				if err := currentCtx.DeleteEntry(existingNode, false, false); err != nil {
-					return currentCtx, errors.Wrap(err, "failed to delete existing file")
-				}
-				currentCtx.Filetree().DeleteNode(existingNode)
-			}
-
-			document, err := currentCtx.UploadDocument(dstNode.Id(), outPDF, true, nil)
-			if err != nil {
-				return currentCtx, errors.Wrapf(err, "failed to upload file [%s]", outPDF)
-			}
-			currentCtx.Filetree().AddDocument(document)
-			fmt.Fprintf(cmd.OutOrStdout(), "OK: uploaded %s -> %s\n", pdfName, remoteDir)
-
-			return currentCtx, nil
-		})
+		apiCtx, err = uploadPDFToRemoteWithAuthRetry(cmd, authSettings, apiCtx, remoteDir, outPDF, pdfName, s.Force)
 		if err != nil {
 			return err
 		}

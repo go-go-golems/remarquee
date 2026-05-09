@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-go-golems/remarquee/pkg/devicecapture"
 	"github.com/go-go-golems/remarquee/pkg/deviceevents"
@@ -109,8 +110,12 @@ func runServe(cmd *cobra.Command, s *serveSettings) error {
 	}
 
 	server := &http.Server{
-		Addr:    s.BindAddr,
-		Handler: handler,
+		Addr:              s.BindAddr,
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "listening on %s\n", s.BindAddr)

@@ -3,10 +3,13 @@ package rmcloud
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
+	"unsafe"
 
 	"github.com/juruen/rmapi/api"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 const authRetries = 3
@@ -18,6 +21,39 @@ const authRetries = 3
 type AuthSettings struct {
 	NonInteractive bool
 	Reauth         bool
+}
+
+// forceSchemaV4 uses reflection to set the underlying sync15 HashTree.SchemaVersion to "4"
+// when it is empty. This avoids the global side-effect of os.Setenv and works around the
+// rmapi bug where an empty SchemaVersion defaults to V3, causing 400 "invalid hash" from
+// the reMarkable cloud.
+func forceSchemaV4(apiCtx api.ApiCtx) {
+	v := reflect.ValueOf(apiCtx)
+	if v.Kind() != reflect.Ptr || v.IsNil() {
+		return
+	}
+	v = v.Elem()
+
+	hashTreeField := v.FieldByName("hashTree")
+	if !hashTreeField.IsValid() || hashTreeField.IsNil() {
+		return
+	}
+
+	schemaVersionField := hashTreeField.Elem().FieldByName("SchemaVersion")
+	if !schemaVersionField.IsValid() {
+		return
+	}
+
+	if schemaVersionField.String() == "" {
+		// Values reached through unexported fields are not settable by default.
+		// Create a new, settable Value backed by the same memory address.
+		schemaVersionField = reflect.NewAt(
+			schemaVersionField.Type(),
+			unsafe.Pointer(schemaVersionField.UnsafeAddr()), // #nosec G103 -- rmapi keeps hashTree unexported; this targeted workaround sets SchemaVersion only.
+		).Elem()
+		schemaVersionField.SetString("4")
+		log.Debug().Msg("rmcloud: set HashTree.SchemaVersion to 4 via reflection")
+	}
 }
 
 // CreateApiCtx creates an rmapi ApiCtx using rmapi's token bootstrap logic.
@@ -45,6 +81,8 @@ func CreateApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
 			lastErr = errors.Wrap(err, "failed to create rmapi api context")
 			continue
 		}
+
+		forceSchemaV4(apiCtx)
 
 		return userInfo, apiCtx, nil
 	}
@@ -88,15 +126,18 @@ func WithAuthRetry(
 		return newCtx, err
 	}
 
-	// Auth error: retry once with fresh context.
+	// Auth error: retry once with fresh context. Unit tests pass a nil context
+	// and have no rmapi token store; in that case, only exercise retry control flow.
+	if apiCtx == nil {
+		return fn(apiCtx)
+	}
+
 	fmt.Fprintln(os.Stderr, "NOTE: auth expired, re-authenticating and retrying...")
 
 	reauthAuth := auth
 	reauthAuth.Reauth = true
 	_, freshCtx, reauthErr := CreateApiCtx(reauthAuth)
 	if reauthErr != nil {
-		// Return the original error (the auth failure), not the reauth failure,
-		// unless reauth itself failed.
 		return apiCtx, errors.Wrap(err, "auth failed and re-authentication also failed")
 	}
 

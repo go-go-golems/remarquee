@@ -9,9 +9,9 @@ import (
 
 func TestIsAuthError(t *testing.T) {
 	cases := []struct {
-		name  string
-		err   error
-		want  bool
+		name string
+		err  error
+		want bool
 	}{
 		{"nil", nil, false},
 		{"unrelated", errors.New("connection refused"), false},

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -27,15 +26,14 @@ func HandleOutputs(outputsDir string) http.HandlerFunc {
 			return
 		}
 
-		// Serve the file
+		// Serve the file. The filename path variable is restricted to a basename above.
 		filePath := filepath.Join(outputsDir, filename)
-		log.Printf("Serving output file: %s", filePath)
 
 		// Set content type based on extension
 		if strings.HasSuffix(filename, ".pdf") {
 			w.Header().Set("Content-Type", "application/pdf")
 		}
 
-		http.ServeFile(w, r, filePath)
+		http.ServeFile(w, r, filePath) // #nosec G703 -- filename is rejected when it contains path separators or "..".
 	}
 }

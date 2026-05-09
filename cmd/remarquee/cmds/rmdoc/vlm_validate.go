@@ -16,6 +16,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig"
 	rmdocrender "github.com/go-go-golems/remarquee/pkg/rmdoc/render"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -213,7 +214,7 @@ func (c *VLMValidateCommand) Run(ctx context.Context, parsedValues *values.Value
 
 	imagesArg := strings.Join(images, ",")
 	// Ensure non-interactive runs (CI/scripts) don't block on "continue in chat?" prompts.
-	cmd := exec.CommandContext(ctx, s.Pinocchio, "code", "professional", "--non-interactive", "--output", "text", "--images", imagesArg, s.Prompt)
+	cmd := exec.CommandContext(ctx, s.Pinocchio, "code", "professional", "--non-interactive", "--output", "text", "--images", imagesArg, s.Prompt) // #nosec G204 -- command intentionally invokes the configured pinocchio binary with explicit argv.
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -330,10 +331,7 @@ func NewVLMValidateCobraCommand() (*cobra.Command, error) {
 	}
 	return cli.BuildCobraCommand(cmd,
 		cli.WithDualMode(false),
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpSections: []string{schema.DefaultSlug},
-			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
-		}),
+		cli.WithParserConfig(appconfig.DefaultParserConfig()),
 	)
 }
 
@@ -397,7 +395,7 @@ func renderPDFPagesToPNGsWithPoppler(ctx context.Context, pdftoppm string, dpi i
 		outBase := filepath.Join(outDir, fmt.Sprintf("%s-page-%03d", prefix, pageNum))
 		outFile := outBase + ".png"
 
-		cmd := exec.CommandContext(ctx,
+		cmd := exec.CommandContext(ctx, // #nosec G204 -- VLM validation intentionally invokes pdftoppm with explicit argv.
 			pdftoppm,
 			"-png",
 			"-r", strconv.Itoa(dpi),

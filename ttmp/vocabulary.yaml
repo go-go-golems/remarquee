@@ -29,6 +29,10 @@ topics:
       description: Go language implementation work
     - slug: migration
       description: Planned or in-progress codebase migrations and API cutovers
+    - slug: obsidian
+      description: Obsidian vault notes and Markdown knowledge-base workflows
+    - slug: sync
+      description: One-way or two-way synchronization workflows and delta computation
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
@@ -40,6 +44,8 @@ docTypes:
       description: Ticket landing page
     - slug: skill
       description: Skill documentation (what it's for and when to use it)
+    - slug: analysis
+      description: Investigation, research, and analysis documents
 intent:
     - slug: long-term
       description: Likely to persist
