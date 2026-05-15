@@ -255,7 +255,9 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		// (failed conversions won't produce output files).
 		if s.Workers > 1 {
 			if _, err := os.Stat(job.OutPDF); err != nil {
-				continue // PDF not generated — conversion failed for this job
+				// Track the conversion failure so it's included in the final error count.
+				failures = append(failures, mdUploadError{key: job.Input.AbsPath, err: err, phase: "convert"})
+				continue
 			}
 		}
 
