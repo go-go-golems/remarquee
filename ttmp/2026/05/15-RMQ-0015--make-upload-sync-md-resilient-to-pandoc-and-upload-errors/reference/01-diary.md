@@ -110,6 +110,26 @@ After the initial implementation, I discovered two follow-up issues:
 - Then `md.go` — same pattern in the upload loop, plus the `os.Stat` check for multi-worker partial success
 - Validate: `go test ./cmd/remarquee/cmds/upload/... -count=1 -v`
 - Smoke test: build binary and run `upload md <dir-with-broken-md> --pdf-only --output-dir /tmp/test`
+
+## Step 3: Fix LaTeX "Too deeply nested" error
+
+The three failing files (chatgpt-home.md, hn_compiler_thread.md, original_article.md) are accessibility tree dumps from Playwright/ChatGPT, with list nesting up to 13-17 levels deep. LaTeX only supports 4 levels of list nesting by default.
+
+### What I tried
+
+1. **LaTeX header approach** (FAILED): Tried adding `\setlistdepth{20}` and `\newlist{deepitemize}{itemize}{20}` to the default LaTeX header, then using `\renewenvironment{itemize}` to redirect to the deep variant. This failed because pandoc's `\tightlist` macro references the original environment internals, and `\renewenvironment` / `\let` approaches break pandoc's internal list handling. Got "Undefined label" or "Missing \begin{document}" errors.
+
+2. **Preprocessor approach** (WORKED): Added `FlattenDeepLists(mdText, maxDepth)` to the markdown preprocessor in `pkg/mdpdf/preprocess.go`. This scans all list items and re-indents any items deeper than `maxDepth` (4) to the maximum allowed depth. Items beyond level 4 are merged into the level 4 list. This happens before pandoc sees the markdown.
+
+### Bug found and fixed
+
+Initially `FlattenDeepLists` used `strings.Repeat("  ", maxDepth)` for re-indenting, but `listIndentLevel` is 1-based (0 spaces = depth 1), so `maxDepth=4` produced 8 spaces = depth 5. Fixed by using `maxDepth-1`.
+
+### Verification
+
+All 19 markdown files in the compiler-writing-hn directory now convert successfully, including the 3 that previously failed.
+
+**Commit (code):** 080b75b — "fix(mdpdf): flatten deeply nested lists to avoid LaTeX 'Too deeply nested' error"
 - Then `md.go` — same pattern in the upload loop
 - Validate: `go test ./cmd/remarquee/cmds/upload/... -count=1 -v`
 
