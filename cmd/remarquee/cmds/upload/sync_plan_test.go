@@ -166,7 +166,7 @@ func TestPrintSyncPlanSummary(t *testing.T) {
 	cmd.SetOut(&out)
 	printSyncPlan(cmd, "/ai/sync", plan)
 
-	if !strings.Contains(out.String(), "SUMMARY: upload=1 skip=0 stale=0 orphan=0") {
+	if !strings.Contains(out.String(), "SUMMARY: upload=1 skip=0 stale=0 orphan=0 error=0") {
 		t.Fatalf("expected summary in output, got:\n%s", out.String())
 	}
 	if !strings.Contains(out.String(), "UPLOAD: /ai/sync/note <- "+note) {

@@ -2,8 +2,10 @@ package upload
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/go-go-golems/remarquee/pkg/mdpdf"
@@ -14,6 +16,11 @@ type markdownConversionJob struct {
 	Input   markdownInput
 	PDFName string
 	OutPDF  string
+}
+
+type conversionError struct {
+	job markdownConversionJob
+	err error
 }
 
 func buildMarkdownConversionJobs(inputs []markdownInput, outputRoot string, overrideName string, preserveDirs bool) ([]markdownConversionJob, error) {
@@ -46,11 +53,16 @@ func convertMarkdownJobs(ctx context.Context, jobs []markdownConversionJob, work
 	if workers < 1 {
 		return errors.New("--workers must be at least 1")
 	}
+
 	if workers == 1 || len(jobs) <= 1 {
+		var convErrs []conversionError
 		for _, job := range jobs {
 			if err := mdpdf.ConvertMarkdownFileToPDF(ctx, job.Input.AbsPath, job.OutPDF, opts); err != nil {
-				return err
+				convErrs = append(convErrs, conversionError{job: job, err: err})
 			}
+		}
+		if len(convErrs) > 0 {
+			return formatConversionErrors(convErrs)
 		}
 		return nil
 	}
@@ -58,23 +70,18 @@ func convertMarkdownJobs(ctx context.Context, jobs []markdownConversionJob, work
 		workers = len(jobs)
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	jobCh := make(chan markdownConversionJob)
-	errCh := make(chan error, 1)
-	var once sync.Once
+	var mu sync.Mutex
+	var convErrs []conversionError
 	var wg sync.WaitGroup
 
 	worker := func() {
 		defer wg.Done()
 		for job := range jobCh {
 			if err := mdpdf.ConvertMarkdownFileToPDF(ctx, job.Input.AbsPath, job.OutPDF, opts); err != nil {
-				once.Do(func() {
-					errCh <- err
-					cancel()
-				})
-				return
+				mu.Lock()
+				convErrs = append(convErrs, conversionError{job: job, err: err})
+				mu.Unlock()
 			}
 		}
 	}
@@ -84,24 +91,22 @@ func convertMarkdownJobs(ctx context.Context, jobs []markdownConversionJob, work
 		go worker()
 	}
 
-sendLoop:
 	for _, job := range jobs {
-		select {
-		case <-ctx.Done():
-			break sendLoop
-		case jobCh <- job:
-		}
+		jobCh <- job
 	}
 	close(jobCh)
 	wg.Wait()
 
-	select {
-	case err := <-errCh:
-		return err
-	default:
-		if err := ctx.Err(); err != nil && err != context.Canceled {
-			return err
-		}
-		return nil
+	if len(convErrs) > 0 {
+		return formatConversionErrors(convErrs)
 	}
+	return nil
+}
+
+func formatConversionErrors(errs []conversionError) error {
+	var msgs []string
+	for _, e := range errs {
+		msgs = append(msgs, fmt.Sprintf("%s: %v", e.job.Input.AbsPath, e.err))
+	}
+	return errors.Errorf("%d file(s) failed pandoc conversion: %s", len(errs), strings.Join(msgs, "; "))
 }

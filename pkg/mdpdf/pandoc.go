@@ -67,6 +67,7 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 	}
 	body := StripYAMLFrontmatter(string(mdBytes))
 	body = NormalizeListSpacing(body)
+	body = FlattenDeepLists(body, 4)
 
 	tmpDir, err := os.MkdirTemp("", "remarquee-mdpdf-")
 	if err != nil {

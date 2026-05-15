@@ -1,4 +1,4 @@
-# Add custom name flag to upload md
+# Make upload sync/md resilient to pandoc and upload errors
 
 This is the document workspace for ticket RMQ-0015.
 

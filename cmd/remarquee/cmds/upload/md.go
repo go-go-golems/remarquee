@@ -201,11 +201,17 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		if err != nil {
 			return err
 		}
-		if err := convertMarkdownJobs(ctx, jobs, s.Workers, pandocOpts); err != nil {
-			return err
+		convErr := convertMarkdownJobs(ctx, jobs, s.Workers, pandocOpts)
+		if convErr != nil {
+			fmt.Fprintf(cmd.OutOrStdout(), "ERROR-CONVERT: %v\n", convErr)
 		}
 		for _, job := range jobs {
-			fmt.Fprintf(cmd.OutOrStdout(), "OK: generated %s\n", job.OutPDF)
+			if _, err := os.Stat(job.OutPDF); err == nil {
+				fmt.Fprintf(cmd.OutOrStdout(), "OK: generated %s\n", job.OutPDF)
+			}
+		}
+		if convErr != nil {
+			return convErr
 		}
 		return nil
 	}
@@ -230,16 +236,36 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	if err != nil {
 		return err
 	}
+	type mdUploadError struct {
+		key   string
+		err   error
+		phase string // "convert" or "upload"
+	}
+	var failures []mdUploadError
+
 	if s.Workers > 1 {
 		if err := convertMarkdownJobs(ctx, jobs, s.Workers, pandocOpts); err != nil {
-			return err
+			fmt.Fprintf(cmd.OutOrStdout(), "ERROR-CONVERT: %v\n", err)
+			// Some files may have succeeded; continue to upload what we can.
 		}
 	}
 
 	for _, job := range jobs {
+		// In multi-worker mode, check if the PDF was actually created
+		// (failed conversions won't produce output files).
+		if s.Workers > 1 {
+			if _, err := os.Stat(job.OutPDF); err != nil {
+				// Track the conversion failure so it's included in the final error count.
+				failures = append(failures, mdUploadError{key: job.Input.AbsPath, err: err, phase: "convert"})
+				continue
+			}
+		}
+
 		if s.Workers == 1 {
 			if err := mdpdf.ConvertMarkdownFileToPDF(ctx, job.Input.AbsPath, job.OutPDF, pandocOpts); err != nil {
-				return err
+				fmt.Fprintf(cmd.OutOrStdout(), "ERROR-CONVERT: %s — %v\n", job.Input.AbsPath, err)
+				failures = append(failures, mdUploadError{key: job.Input.AbsPath, err: err, phase: "convert"})
+				continue
 			}
 		}
 
@@ -250,8 +276,26 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 
 		apiCtx, err = uploadPDFToRemoteWithAuthRetry(cmd, authSettings, apiCtx, dst, job.OutPDF, job.PDFName, s.Force)
 		if err != nil {
-			return err
+			fmt.Fprintf(cmd.OutOrStdout(), "ERROR-UPLOAD: %s — %v\n", job.Input.AbsPath, err)
+			failures = append(failures, mdUploadError{key: job.Input.AbsPath, err: err, phase: "upload"})
+			continue
 		}
+	}
+
+	if len(failures) > 0 {
+		convertFailed := 0
+		uploadFailed := 0
+		for _, f := range failures {
+			switch f.phase {
+			case "convert":
+				convertFailed++
+			case "upload":
+				uploadFailed++
+			}
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "ERRORS: convert-failed=%d upload-failed=%d\n", convertFailed, uploadFailed)
+		return errors.Errorf("%d file(s) failed during upload (convert=%d, upload=%d)",
+			len(failures), convertFailed, uploadFailed)
 	}
 
 	return nil

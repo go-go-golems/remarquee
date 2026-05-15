@@ -99,3 +99,53 @@ func NormalizeListSpacing(mdText string) string {
 
 	return strings.Join(out, "\n")
 }
+
+// FlattenDeepLists caps markdown list nesting at maxDepth levels.
+// LaTeX only supports 4 levels of list nesting by default, so deeply nested
+// lists (e.g. from accessibility tree dumps) cause "Too deeply nested" errors.
+// Items beyond maxDepth are re-indented to the maximum depth, merging them
+// into the deepest valid list level.
+func FlattenDeepLists(mdText string, maxDepth int) string {
+	if maxDepth < 1 {
+		maxDepth = 1
+	}
+
+	lines := strings.Split(mdText, "\n")
+	out := make([]string, 0, len(lines))
+
+	for _, line := range lines {
+		indent := listIndentLevel(line)
+		if indent > maxDepth {
+			// Re-indent this line to maxDepth
+			stripped := strings.TrimLeft(line, " \t")
+			newIndent := strings.Repeat("  ", maxDepth-1)
+			out = append(out, newIndent+stripped)
+		} else {
+			out = append(out, line)
+		}
+	}
+
+	return strings.Join(out, "\n")
+}
+
+// listIndentLevel returns the nesting depth of a list item line (1-based).
+// Returns 0 for non-list lines.
+func listIndentLevel(line string) int {
+	if !isListItemLine(line) {
+		return 0
+	}
+	// Count leading spaces/tabs to determine nesting.
+	// Each 2 spaces or 1 tab = 1 level of nesting.
+	spaces := 0
+	for _, ch := range line {
+		switch ch {
+		case ' ':
+			spaces++
+		case '\t':
+			spaces += 2
+		default:
+			return (spaces / 2) + 1
+		}
+	}
+	return (spaces / 2) + 1
+}
