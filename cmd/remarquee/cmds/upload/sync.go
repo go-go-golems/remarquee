@@ -157,9 +157,16 @@ func executeSyncPlan(ctx context.Context, cmd *cobra.Command, apiCtx api.ApiCtx,
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
+	type failedItem struct {
+		key   string
+		err   error
+		phase string // "convert" or "upload"
+	}
+	var failures []failedItem
+
 	for _, item := range plan.Items {
 		switch item.Action {
-		case syncActionSkip:
+		case syncActionSkip, syncActionError:
 			continue
 		case syncActionOrphan:
 			if !force {
@@ -167,7 +174,9 @@ func executeSyncPlan(ctx context.Context, cmd *cobra.Command, apiCtx api.ApiCtx,
 				continue
 			}
 			if err := deleteSyncRemoteEntry(apiCtx, item.Remote, "orphan remote file"); err != nil {
-				return err
+				fmt.Fprintf(cmd.OutOrStdout(), "ERROR-DELETE: %s — %v\n", item.Remote.Path, err)
+				failures = append(failures, failedItem{key: item.Remote.Path, err: err, phase: "delete"})
+				continue
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "OK: deleted orphan %s\n", item.Remote.Path)
 			continue
@@ -177,7 +186,9 @@ func executeSyncPlan(ctx context.Context, cmd *cobra.Command, apiCtx api.ApiCtx,
 				continue
 			}
 			if err := deleteSyncRemoteEntry(apiCtx, item.Remote, "stale remote file"); err != nil {
-				return err
+				fmt.Fprintf(cmd.OutOrStdout(), "ERROR-DELETE: %s — %v\n", item.Local.RemoteKey, err)
+				failures = append(failures, failedItem{key: item.Local.RemoteKey, err: err, phase: "delete"})
+				continue
 			}
 		case syncActionUpload:
 			// Continue below and upload the new document.
@@ -191,17 +202,42 @@ func executeSyncPlan(ctx context.Context, cmd *cobra.Command, apiCtx api.ApiCtx,
 		if preserveDirs {
 			outPDF = filepath.Join(tmpDir, item.Local.Input.RelDir(), item.Local.PDFName)
 			if err := os.MkdirAll(filepath.Dir(outPDF), 0o755); err != nil {
-				return errors.Wrap(err, "failed to create temp directory structure")
+				fmt.Fprintf(cmd.OutOrStdout(), "ERROR-CONVERT: %s — %v\n", item.Local.RemoteKey, err)
+				failures = append(failures, failedItem{key: item.Local.RemoteKey, err: err, phase: "convert"})
+				continue
 			}
 		}
 
 		if err := mdpdf.ConvertMarkdownFileToPDF(ctx, item.Local.Input.AbsPath, outPDF, pandocOpts); err != nil {
-			return err
+			fmt.Fprintf(cmd.OutOrStdout(), "ERROR-CONVERT: %s — %v\n", item.Local.RemoteKey, err)
+			failures = append(failures, failedItem{key: item.Local.RemoteKey, err: err, phase: "convert"})
+			continue
 		}
 
 		if err := uploadPDFToRemote(cmd, apiCtx, dstNodeCache, item.Local.RemoteDir, outPDF, item.Local.PDFName); err != nil {
-			return err
+			fmt.Fprintf(cmd.OutOrStdout(), "ERROR-UPLOAD: %s — %v\n", item.Local.RemoteKey, err)
+			failures = append(failures, failedItem{key: item.Local.RemoteKey, err: err, phase: "upload"})
+			continue
 		}
+	}
+
+	if len(failures) > 0 {
+		convertFailed := 0
+		uploadFailed := 0
+		deleteFailed := 0
+		for _, f := range failures {
+			switch f.phase {
+			case "convert":
+				convertFailed++
+			case "upload":
+				uploadFailed++
+			case "delete":
+				deleteFailed++
+			}
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "ERRORS: convert-failed=%d upload-failed=%d delete-failed=%d\n", convertFailed, uploadFailed, deleteFailed)
+		return errors.Errorf("%d file(s) failed during sync (convert=%d, upload=%d, delete=%d)",
+			len(failures), convertFailed, uploadFailed, deleteFailed)
 	}
 
 	return nil
@@ -261,11 +297,12 @@ func buildSyncRemoteIndex(apiCtx api.ApiCtx, remoteDir string) (map[string]syncR
 func printSyncPlan(cmd *cobra.Command, remoteDir string, plan syncPlan) {
 	out := cmd.OutOrStdout()
 	fmt.Fprintf(out, "SYNC: remote-dir=%s\n", remoteDir)
-	fmt.Fprintf(out, "SUMMARY: upload=%d skip=%d stale=%d orphan=%d\n",
+	fmt.Fprintf(out, "SUMMARY: upload=%d skip=%d stale=%d orphan=%d error=%d\n",
 		plan.Count(syncActionUpload),
 		plan.Count(syncActionSkip),
 		plan.Count(syncActionStale),
 		plan.Count(syncActionOrphan),
+		plan.Count(syncActionError),
 	)
 
 	for _, item := range plan.Items {
@@ -278,6 +315,12 @@ func printSyncPlan(cmd *cobra.Command, remoteDir string, plan syncPlan) {
 			fmt.Fprintf(out, "STALE: %s (%s)\n", item.Local.RemoteKey, item.Reason)
 		case syncActionOrphan:
 			fmt.Fprintf(out, "ORPHAN: %s (%s)\n", item.Remote.Path, item.Reason)
+		case syncActionError:
+			if item.Local != nil {
+				fmt.Fprintf(out, "ERROR: %s (%s)\n", item.Local.RemoteKey, item.Reason)
+			} else {
+				fmt.Fprintf(out, "ERROR: %s\n", item.Reason)
+			}
 		}
 	}
 }

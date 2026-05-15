@@ -17,6 +17,7 @@ const (
 	syncActionSkip   syncAction = "skip"
 	syncActionStale  syncAction = "stale"
 	syncActionOrphan syncAction = "orphan"
+	syncActionError  syncAction = "error"
 )
 
 type syncPlanSettings struct {
