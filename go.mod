@@ -20,7 +20,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-replace github.com/juruen/rmapi => github.com/ddvk/rmapi v0.0.0-20260421131258-29d7b039e606
+replace github.com/juruen/rmapi => github.com/marcobarcelos/rmapi v0.0.0-20260518211546-a0d079936d46
 
 require (
 	cloud.google.com/go v0.121.1 // indirect
