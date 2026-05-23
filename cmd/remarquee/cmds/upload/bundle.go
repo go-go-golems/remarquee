@@ -246,16 +246,18 @@ func writeBundlePDF(ctx context.Context, files []bundleMarkdownFile, outPDF stri
 		})
 	}
 
-	body, err := mdpdf.BuildBundleMarkdown(inputs)
-	if err != nil {
-		return err
-	}
-
+	// Create the temp directory early so that BuildBundleMarkdown can
+	// place resolved images into tmpDir/images/ before concatenation.
 	tmpDir, err := os.MkdirTemp("", "remarquee-bundle-md-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp directory")
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	body, err := mdpdf.BuildBundleMarkdown(ctx, inputs, tmpDir, pandocOpts.Mermaid)
+	if err != nil {
+		return err
+	}
 
 	bundleMD := filepath.Join(tmpDir, "bundle.md")
 	if err := os.WriteFile(bundleMD, []byte(body), 0o644); err != nil {
