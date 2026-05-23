@@ -25,6 +25,10 @@ type PandocOptions struct {
 
 	HighlightStyle string
 	Listings       bool
+
+	// Mermaid configures Mermaid diagram rendering. If nil, Mermaid blocks
+	// are left as plain-text code listings.
+	Mermaid *MermaidRendererConfig
 }
 
 func DefaultPandocOptions() PandocOptions {
@@ -79,6 +83,13 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 	body, err = ResolveImagePaths(body, sourceDir, tmpDir)
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve image paths")
+	}
+
+	// Render Mermaid code blocks to images (if mmdc is available).
+	body, err = RenderMermaidBlocks(ctx, body, tmpDir, opts.Mermaid)
+	if err != nil {
+		// Non-fatal: mermaid rendering errors are logged per-block.
+		// Continue with unrendered blocks.
 	}
 
 	body = NormalizeListSpacing(body)
