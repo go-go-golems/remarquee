@@ -114,7 +114,7 @@ Safety:
 	cmd.Flags().StringVar(&s.MermaidTheme, "mermaid-theme", "default", "Mermaid theme: default, dark, forest, neutral")
 	cmd.Flags().StringVar(&s.MermaidBg, "mermaid-bg", "white", "Background color for Mermaid diagrams")
 	cmd.Flags().IntVar(&s.MermaidWidth, "mermaid-width", 0, "Max width in pixels for Mermaid diagrams (0 = auto)")
-	cmd.Flags().BoolVar(&s.MermaidNoSandbox, "mermaid-no-sandbox", false, "Pass --no-sandbox to Puppeteer/Chromium (needed on Ubuntu 23.10+, CI containers)")
+	cmd.Flags().BoolVar(&s.MermaidNoSandbox, "mermaid-no-sandbox", true, "Pass --no-sandbox to Puppeteer/Chromium (default: true, safe for CLI use)")
 	cmd.Flags().StringVar(&s.MermaidPDFWidth, "mermaid-pdf-width", "", "Display width for Mermaid diagrams in PDF (e.g. 50%, 400px, 10cm). Empty = fill page width")
 
 	// Image flags.
