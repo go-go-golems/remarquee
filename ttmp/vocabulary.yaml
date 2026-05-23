@@ -33,6 +33,16 @@ topics:
       description: Obsidian vault notes and Markdown knowledge-base workflows
     - slug: sync
       description: One-way or two-way synchronization workflows and delta computation
+    - slug: mdpdf
+      description: Markdown-to-PDF conversion package in remarquee (pkg/mdpdf)
+    - slug: mermaid
+      description: Mermaid diagram rendering support
+    - slug: image-embed
+      description: Local image embedding in Markdown PDF pipeline
+    - slug: pandoc
+      description: Pandoc document conversion integration
+    - slug: xelatex
+      description: XeLaTeX PDF engine used by pandoc
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
