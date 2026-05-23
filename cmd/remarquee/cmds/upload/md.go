@@ -37,6 +37,17 @@ type uploadMarkdownSettings struct {
 	Geometry        string
 	LatexHeaderFile string
 	Workers         int
+
+	// Mermaid flags.
+	Mermaid       bool
+	MmdcPath      string
+	MermaidScale  int
+	MermaidTheme  string
+	MermaidBg     string
+	MermaidWidth  int
+
+	// Image flags.
+	ResolveImages bool
 }
 
 func NewUploadMarkdownCommand() *cobra.Command {
@@ -94,6 +105,17 @@ Safety:
 	cmd.Flags().StringVar(&s.Geometry, "geometry", "margin=1in", "LaTeX geometry setting passed to pandoc (default: margin=1in)")
 	cmd.Flags().StringVar(&s.LatexHeaderFile, "latex-header-file", "", "Optional path to a LaTeX header file to include (overrides built-in header)")
 
+	// Mermaid flags.
+	cmd.Flags().BoolVar(&s.Mermaid, "mermaid", true, "Render Mermaid code blocks as diagrams (requires mmdc)")
+	cmd.Flags().StringVar(&s.MmdcPath, "mmdc-path", "", "Path to mmdc binary (default: auto-detect from $PATH)")
+	cmd.Flags().IntVar(&s.MermaidScale, "mermaid-scale", 2, "Pixel scale for rendered Mermaid diagrams")
+	cmd.Flags().StringVar(&s.MermaidTheme, "mermaid-theme", "default", "Mermaid theme: default, dark, forest, neutral")
+	cmd.Flags().StringVar(&s.MermaidBg, "mermaid-bg", "white", "Background color for Mermaid diagrams")
+	cmd.Flags().IntVar(&s.MermaidWidth, "mermaid-width", 0, "Max width in pixels for Mermaid diagrams (0 = auto)")
+
+	// Image flags.
+	cmd.Flags().BoolVar(&s.ResolveImages, "resolve-images", true, "Resolve and embed local image references")
+
 	return cmd
 }
 
@@ -150,6 +172,14 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		s.MonoFont,
 		s.Geometry,
 		s.LatexHeaderFile,
+		(&mermaidFlags{
+			Mermaid:      s.Mermaid,
+			MmdcPath:     s.MmdcPath,
+			MermaidScale: s.MermaidScale,
+			MermaidTheme: s.MermaidTheme,
+			MermaidBg:    s.MermaidBg,
+			MermaidWidth: s.MermaidWidth,
+		}).ToConfig(),
 	)
 	if err != nil {
 		return err
