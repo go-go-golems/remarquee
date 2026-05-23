@@ -14,6 +14,7 @@ type mermaidFlags struct {
 	MermaidBg        string
 	MermaidWidth     int
 	MermaidNoSandbox bool
+	MermaidPDFWidth  string
 }
 
 func (f *mermaidFlags) ToConfig() *mdpdf.MermaidRendererConfig {
@@ -33,6 +34,7 @@ func (f *mermaidFlags) ToConfig() *mdpdf.MermaidRendererConfig {
 	}
 	cfg.Width = f.MermaidWidth
 	cfg.NoSandbox = f.MermaidNoSandbox
+	cfg.PDFWidth = f.MermaidPDFWidth
 	return &cfg
 }
 

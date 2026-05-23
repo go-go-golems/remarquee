@@ -39,6 +39,11 @@ type MermaidRendererConfig struct {
 	// Required on systems where the Chrome sandbox is unavailable (e.g.
 	// Ubuntu 23.10+ with AppArmor userns restrictions, or CI containers).
 	NoSandbox bool
+
+	// PDFWidth sets the display width for mermaid images in the PDF.
+	// Uses pandoc attribute syntax: "50%", "400px", "10cm", etc.
+	// Empty = no constraint (pandoc default = fill page width).
+	PDFWidth string
 }
 
 // DefaultMermaidRendererConfig returns sensible defaults.
@@ -108,6 +113,10 @@ func RenderMermaidBlocks(ctx context.Context, body string, tmpDir string, config
 			// doesn't break the whole document.
 			fmt.Fprintf(os.Stderr, "WARNING: failed to render Mermaid block %d: %v\n", counter, err)
 			return match
+		}
+
+		if config.PDFWidth != "" {
+			return fmt.Sprintf("![mermaid diagram %d](./images/%s){width=%s}", counter, imgFilename, config.PDFWidth)
 		}
 
 		return fmt.Sprintf("![mermaid diagram %d](./images/%s)", counter, imgFilename)

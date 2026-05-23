@@ -46,6 +46,7 @@ type uploadMarkdownSettings struct {
 	MermaidBg        string
 	MermaidWidth     int
 	MermaidNoSandbox bool
+	MermaidPDFWidth  string
 
 	// Image flags.
 	ResolveImages bool
@@ -114,6 +115,7 @@ Safety:
 	cmd.Flags().StringVar(&s.MermaidBg, "mermaid-bg", "white", "Background color for Mermaid diagrams")
 	cmd.Flags().IntVar(&s.MermaidWidth, "mermaid-width", 0, "Max width in pixels for Mermaid diagrams (0 = auto)")
 	cmd.Flags().BoolVar(&s.MermaidNoSandbox, "mermaid-no-sandbox", false, "Pass --no-sandbox to Puppeteer/Chromium (needed on Ubuntu 23.10+, CI containers)")
+	cmd.Flags().StringVar(&s.MermaidPDFWidth, "mermaid-pdf-width", "", "Display width for Mermaid diagrams in PDF (e.g. 50%, 400px, 10cm). Empty = fill page width")
 
 	// Image flags.
 	cmd.Flags().BoolVar(&s.ResolveImages, "resolve-images", true, "Resolve and embed local image references")
@@ -182,6 +184,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 			MermaidBg:        s.MermaidBg,
 			MermaidWidth:     s.MermaidWidth,
 			MermaidNoSandbox: s.MermaidNoSandbox,
+			MermaidPDFWidth:  s.MermaidPDFWidth,
 		}).ToConfig(),
 	)
 	if err != nil {
