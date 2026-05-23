@@ -150,6 +150,10 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 	}
 
 	cmd := exec.CommandContext(ctx, opts.PandocPath, argv...) // #nosec G204 -- this package intentionally invokes the configured pandoc binary with explicit argv.
+	// Set working directory to tmpDir so pandoc resolves relative image
+	// paths (like ./images/mermaid-001.png) from the temp directory where
+	// ResolveImagePaths and RenderMermaidBlocks placed them.
+	cmd.Dir = tmpDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.Wrapf(err, "pandoc failed: %s", string(out))
