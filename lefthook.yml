@@ -2,18 +2,16 @@ pre-commit:
   commands:
     lint:
       glob: '*.go'
-      run: make lint
+      run: golangci-lint run -v
     test:
       glob: '*.go'
-      run: make test
-  parallel: true
+      run: go test ./...
 
 pre-push:
   commands:
-    release:
-      run: make goreleaser
     lint:
-      run: make lint
+      glob: '*.go'
+      run: golangci-lint run -v
     test:
-      run: make test
-  parallel: true
+      glob: '*.go'
+      run: go test ./...

@@ -90,6 +90,7 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 	if err != nil {
 		// Non-fatal: mermaid rendering errors are logged per-block.
 		// Continue with unrendered blocks.
+		_ = err
 	}
 
 	body = NormalizeListSpacing(body)

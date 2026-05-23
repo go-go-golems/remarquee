@@ -52,6 +52,7 @@ func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir strin
 		body, err = RenderMermaidBlocks(ctx, body, tmpDir, mermaidCfg)
 		if err != nil {
 			// Non-fatal: mermaid rendering errors are logged per-block.
+			_ = err
 		}
 
 		body = NormalizeListSpacing(body)

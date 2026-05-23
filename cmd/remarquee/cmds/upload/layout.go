@@ -7,12 +7,13 @@ import (
 )
 
 type mermaidFlags struct {
-	Mermaid      bool
-	MmdcPath     string
-	MermaidScale int
-	MermaidTheme string
-	MermaidBg    string
-	MermaidWidth int
+	Mermaid          bool
+	MmdcPath         string
+	MermaidScale     int
+	MermaidTheme     string
+	MermaidBg        string
+	MermaidWidth     int
+	MermaidNoSandbox bool
 }
 
 func (f *mermaidFlags) ToConfig() *mdpdf.MermaidRendererConfig {
@@ -31,6 +32,7 @@ func (f *mermaidFlags) ToConfig() *mdpdf.MermaidRendererConfig {
 		cfg.BackgroundColor = f.MermaidBg
 	}
 	cfg.Width = f.MermaidWidth
+	cfg.NoSandbox = f.MermaidNoSandbox
 	return &cfg
 }
 

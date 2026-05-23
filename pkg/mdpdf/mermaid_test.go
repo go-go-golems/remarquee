@@ -3,6 +3,7 @@ package mdpdf
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -33,7 +34,7 @@ func TestRenderMermaidBlocks_Disabled(t *testing.T) {
 
 func TestRenderMermaidBlocks_MmdcNotFound(t *testing.T) {
 	cfg := &MermaidRendererConfig{
-		Enabled: true,
+		Enabled:  true,
 		MmdcPath: "/nonexistent/mmdc",
 	}
 	body := "```mermaid\ngraph TD\n  A --> B\n```\n"
@@ -73,6 +74,11 @@ func TestRenderMermaidBlocks_EmptyBlock(t *testing.T) {
 }
 
 func TestResolveMmdcPath_NotFound(t *testing.T) {
+	// If mmdc is installed on the system, this test cannot verify the
+	// "not found" path. Skip it.
+	if _, err := exec.LookPath("mmdc"); err == nil {
+		t.Skip("mmdc is installed; cannot test not-found path")
+	}
 	_, err := resolveMmdcPath("")
 	if err == nil {
 		t.Fatal("expected error when mmdc is not in $PATH")

@@ -34,6 +34,11 @@ type MermaidRendererConfig struct {
 	// Theme sets the Mermaid theme. Default: "default". Options: "default",
 	// "dark", "forest", "neutral".
 	Theme string
+
+	// NoSandbox passes --no-sandbox to the Puppeteer/Chromium process.
+	// Required on systems where the Chrome sandbox is unavailable (e.g.
+	// Ubuntu 23.10+ with AppArmor userns restrictions, or CI containers).
+	NoSandbox bool
 }
 
 // DefaultMermaidRendererConfig returns sensible defaults.
@@ -140,6 +145,16 @@ func renderMermaidToPNG(ctx context.Context, mmdcPath string, source string, out
 	}
 	if config.Width > 0 {
 		args = append(args, "-w", strconv.Itoa(config.Width))
+	}
+
+	// If NoSandbox is set, write a Puppeteer config file and pass it to mmdc.
+	if config.NoSandbox {
+		puppeteerConfig := filepath.Join(tmpDir, "puppeteer.json")
+		puppeteerContent := `{"args": ["--no-sandbox"]}`
+		if err := os.WriteFile(puppeteerConfig, []byte(puppeteerContent), 0o644); err != nil {
+			return fmt.Errorf("failed to write puppeteer config: %w", err)
+		}
+		args = append(args, "--puppeteerConfigFile", puppeteerConfig)
 	}
 
 	cmd := exec.CommandContext(ctx, mmdcPath, args...) // #nosec G204
