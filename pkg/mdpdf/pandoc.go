@@ -66,14 +66,23 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 		return errors.Wrap(err, "failed to read markdown file")
 	}
 	body := StripYAMLFrontmatter(string(mdBytes))
-	body = NormalizeListSpacing(body)
-	body = FlattenDeepLists(body, 4)
 
 	tmpDir, err := os.MkdirTemp("", "remarquee-mdpdf-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp directory")
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	// Resolve local image paths before other preprocessing so that pandoc
+	// can find referenced files from the temp directory.
+	sourceDir := filepath.Dir(mdPath)
+	body, err = ResolveImagePaths(body, sourceDir, tmpDir)
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve image paths")
+	}
+
+	body = NormalizeListSpacing(body)
+	body = FlattenDeepLists(body, 4)
 
 	// Keep temporary helper filenames deliberately boring. Pandoc treats '#'
 	// in input paths as a URI fragment separator in some readers, so using
