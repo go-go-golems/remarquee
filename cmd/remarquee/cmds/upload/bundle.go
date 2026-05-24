@@ -40,6 +40,9 @@ type uploadBundleSettings struct {
 	Layout          string
 	Geometry        string
 	LatexHeaderFile string
+
+	// Image flags.
+	ResolveImages bool
 }
 
 type bundleMarkdownFile struct {
@@ -105,6 +108,14 @@ Safety:
 	cmd.Flags().StringVar(&s.Geometry, "geometry", "margin=1in", "LaTeX geometry setting passed to pandoc (default: margin=1in)")
 	cmd.Flags().StringVar(&s.LatexHeaderFile, "latex-header-file", "", "Optional path to a LaTeX header file to include (overrides built-in header)")
 
+	// Mermaid flags (Glazed section — shows in "Mermaid flags" help group).
+	if err := addMermaidFlagsToCommand(cmd); err != nil {
+		panic(err)
+	}
+
+	// Image flags.
+	addResolveImagesFlag(cmd, &s.ResolveImages)
+
 	return cmd
 }
 
@@ -128,6 +139,11 @@ func runUploadBundle(ctx context.Context, cmd *cobra.Command, s *uploadBundleSet
 		return err
 	}
 
+	mermaidCfg, err := mermaidConfigFromCommand(cmd)
+	if err != nil {
+		return err
+	}
+
 	pandocOpts, err := configureMarkdownPandocOptions(
 		cmd.Flags(),
 		s.Layout,
@@ -137,10 +153,12 @@ func runUploadBundle(ctx context.Context, cmd *cobra.Command, s *uploadBundleSet
 		s.MonoFont,
 		s.Geometry,
 		s.LatexHeaderFile,
+		mermaidCfg,
 	)
 	if err != nil {
 		return err
 	}
+	pandocOpts.ResolveImages = s.ResolveImages
 	pandocOpts.TOC = true
 	pandocOpts.TOCDepth = s.TOCDepth
 
@@ -216,16 +234,18 @@ func writeBundlePDF(ctx context.Context, files []bundleMarkdownFile, outPDF stri
 		})
 	}
 
-	body, err := mdpdf.BuildBundleMarkdown(inputs)
-	if err != nil {
-		return err
-	}
-
+	// Create the temp directory early so that BuildBundleMarkdown can
+	// place resolved images into tmpDir/images/ before concatenation.
 	tmpDir, err := os.MkdirTemp("", "remarquee-bundle-md-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp directory")
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	body, err := mdpdf.BuildBundleMarkdown(ctx, inputs, tmpDir, pandocOpts.Mermaid, pandocOpts.ResolveImages)
+	if err != nil {
+		return err
+	}
 
 	bundleMD := filepath.Join(tmpDir, "bundle.md")
 	if err := os.WriteFile(bundleMD, []byte(body), 0o644); err != nil {

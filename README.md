@@ -13,7 +13,7 @@ remarquee is a unified Go CLI for reMarkable power users, automation scripts, an
 It currently focuses on five areas:
 
 - **Cloud filesystem workflows** — browse, search, upload, download, move, delete, and inspect reMarkable cloud documents using rmapi-backed Sync15 primitives.
-- **Markdown and source upload** — convert Markdown or source trees into reMarkable-friendly PDFs with `pandoc`/`xelatex`, then upload safely.
+- **Markdown and source upload** — convert Markdown or source trees into reMarkable-friendly PDFs with `pandoc`/`xelatex`, then upload safely. Supports local image embedding and Mermaid diagram rendering.
 - **`.rmdoc` inspection and rendering** — inspect local `.rmdoc` archives and render legacy/V6 notebook content to PDF or PNG.
 - **On-device capture** — run a small server on the tablet to capture screenshots, raw framebuffer frames, pen events, and gesture summaries.
 - **RMDoc-DSL fixtures** — author small YAML/JavaScript document fixtures for renderer testing and debugging.
@@ -80,6 +80,15 @@ remarquee upload md ./docs/
 
 # Generate PDFs locally without uploading
 remarquee upload md --pdf-only --output-dir ./out ./docs/
+
+# Include local images and Mermaid diagrams
+remarquee upload md ./design-doc.md
+
+# Customize Mermaid rendering
+remarquee upload md --mermaid-scale 3 --mermaid-width 1200 --mermaid-theme dark ./design.md
+
+# Disable Mermaid or image resolution
+remarquee upload md --mermaid=false --resolve-images=false ./notes.md
 ```
 
 ### Bundle docs into one reMarkable PDF

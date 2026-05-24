@@ -25,15 +25,24 @@ type PandocOptions struct {
 
 	HighlightStyle string
 	Listings       bool
+
+	// Mermaid configures Mermaid diagram rendering. If nil, Mermaid blocks
+	// are left as plain-text code listings.
+	Mermaid *MermaidRendererConfig
+
+	// ResolveImages controls whether local Markdown image paths are copied into
+	// the pandoc temp directory and rewritten. DefaultPandocOptions enables it.
+	ResolveImages bool
 }
 
 func DefaultPandocOptions() PandocOptions {
 	return PandocOptions{
-		PandocPath: "pandoc",
-		PDFEngine:  "xelatex",
-		MainFont:   "DejaVu Sans",
-		MonoFont:   "DejaVu Sans Mono",
-		Geometry:   "margin=1in",
+		PandocPath:    "pandoc",
+		PDFEngine:     "xelatex",
+		MainFont:      "DejaVu Sans",
+		MonoFont:      "DejaVu Sans Mono",
+		Geometry:      "margin=1in",
+		ResolveImages: true,
 	}
 }
 
@@ -45,6 +54,18 @@ const defaultLatexHeader = `\usepackage{enumitem}
 `
 
 func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string, opts PandocOptions) error {
+	absOutPDF, err := filepath.Abs(outPDF)
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve output PDF path")
+	}
+	if opts.LatexHeaderFile != "" {
+		absHeader, err := filepath.Abs(opts.LatexHeaderFile)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve latex header path")
+		}
+		opts.LatexHeaderFile = absHeader
+	}
+
 	if opts.PandocPath == "" {
 		opts.PandocPath = "pandoc"
 	}
@@ -66,14 +87,33 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 		return errors.Wrap(err, "failed to read markdown file")
 	}
 	body := StripYAMLFrontmatter(string(mdBytes))
-	body = NormalizeListSpacing(body)
-	body = FlattenDeepLists(body, 4)
 
 	tmpDir, err := os.MkdirTemp("", "remarquee-mdpdf-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp directory")
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	if opts.ResolveImages {
+		// Resolve local image paths before other preprocessing so that pandoc
+		// can find referenced files from the temp directory.
+		sourceDir := filepath.Dir(mdPath)
+		body, err = ResolveImagePaths(body, sourceDir, tmpDir)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve image paths")
+		}
+	}
+
+	// Render Mermaid code blocks to images (if mmdc is available).
+	body, err = RenderMermaidBlocks(ctx, body, tmpDir, opts.Mermaid)
+	if err != nil {
+		// Non-fatal: mermaid rendering errors are logged per-block.
+		// Continue with unrendered blocks.
+		_ = err
+	}
+
+	body = NormalizeListSpacing(body)
+	body = FlattenDeepLists(body, 4)
 
 	// Keep temporary helper filenames deliberately boring. Pandoc treats '#'
 	// in input paths as a URI fragment separator in some readers, so using
@@ -104,7 +144,7 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 
 	argv := []string{
 		inputPath,
-		"-o", outPDF,
+		"-o", absOutPDF,
 		"--pdf-engine=" + opts.PDFEngine,
 		"--standalone",
 		"-V", "mainfont=" + opts.MainFont,
@@ -129,6 +169,10 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 	}
 
 	cmd := exec.CommandContext(ctx, opts.PandocPath, argv...) // #nosec G204 -- this package intentionally invokes the configured pandoc binary with explicit argv.
+	// Set working directory to tmpDir so pandoc resolves relative image
+	// paths (like ./images/mermaid-001.png) from the temp directory where
+	// ResolveImagePaths and RenderMermaidBlocks placed them.
+	cmd.Dir = tmpDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.Wrapf(err, "pandoc failed: %s", string(out))

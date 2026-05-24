@@ -21,3 +21,4 @@ dist/
 .history
 rendering/
 .pr-builder/
+frontend/dist/

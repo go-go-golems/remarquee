@@ -111,6 +111,7 @@ func runUploadSync(ctx context.Context, cmd *cobra.Command, s *uploadSyncSetting
 		s.MonoFont,
 		s.Geometry,
 		s.LatexHeaderFile,
+		nil, // sync does not support mermaid rendering yet
 	)
 	if err != nil {
 		return err

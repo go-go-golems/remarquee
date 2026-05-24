@@ -15,12 +15,14 @@ func configureMarkdownPandocOptions(
 	monoFont string,
 	geometry string,
 	latexHeaderFile string,
+	mermaidCfg *mdpdf.MermaidRendererConfig,
 ) (mdpdf.PandocOptions, error) {
 	opts := mdpdf.DefaultPandocOptions()
 	opts.PandocPath = pandoc
 	opts.PDFEngine = pdfEngine
 	opts.MainFont = mainFont
 	opts.MonoFont = monoFont
+	opts.Mermaid = mermaidCfg
 
 	if err := mdpdf.ApplyMarkdownLayoutPreset(&opts, layout); err != nil {
 		return mdpdf.PandocOptions{}, err

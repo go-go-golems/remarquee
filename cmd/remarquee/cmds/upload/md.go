@@ -37,6 +37,9 @@ type uploadMarkdownSettings struct {
 	Geometry        string
 	LatexHeaderFile string
 	Workers         int
+
+	// Image flags.
+	ResolveImages bool
 }
 
 func NewUploadMarkdownCommand() *cobra.Command {
@@ -94,6 +97,14 @@ Safety:
 	cmd.Flags().StringVar(&s.Geometry, "geometry", "margin=1in", "LaTeX geometry setting passed to pandoc (default: margin=1in)")
 	cmd.Flags().StringVar(&s.LatexHeaderFile, "latex-header-file", "", "Optional path to a LaTeX header file to include (overrides built-in header)")
 
+	// Mermaid flags (Glazed section — shows in "Mermaid flags" help group).
+	if err := addMermaidFlagsToCommand(cmd); err != nil {
+		panic(err) // should never happen with static definitions
+	}
+
+	// Image flags.
+	addResolveImagesFlag(cmd, &s.ResolveImages)
+
 	return cmd
 }
 
@@ -141,6 +152,11 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		seenRemoteKeys[key] = in.AbsPath
 	}
 
+	mermaidCfg, err := mermaidConfigFromCommand(cmd)
+	if err != nil {
+		return err
+	}
+
 	pandocOpts, err := configureMarkdownPandocOptions(
 		cmd.Flags(),
 		s.Layout,
@@ -150,10 +166,12 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		s.MonoFont,
 		s.Geometry,
 		s.LatexHeaderFile,
+		mermaidCfg,
 	)
 	if err != nil {
 		return err
 	}
+	pandocOpts.ResolveImages = s.ResolveImages
 
 	if s.DryRun {
 		fmt.Fprintf(cmd.OutOrStdout(), "DRY: layout=%s\n", mdpdf.NormalizeMarkdownLayout(s.Layout))
