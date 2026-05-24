@@ -214,3 +214,90 @@ Updated README with Mermaid and image embed examples.
 - 38 mdpdf tests pass
 - 22 upload tests pass
 - No regressions in existing tests
+
+---
+
+## Step 8: PR Review Cleanup and Mermaid Flag Section (commit b331544)
+
+This step took over the feature branch after review surfaced several correctness issues and after the Mermaid flag wiring had started to drift into an awkward half-Glazed, half-Cobra shape. The goal was to preserve the working behavior while making the command surface cleaner, eliminating collision bugs, and restoring compatibility around pandoc path handling.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Make a custom glazed schema section for the mermaid stuff, in order to not register them in the default section"
+
+**Follow-up prompt (verbatim):** "Address the code review issues as well: https://github.com/go-go-golems/remarquee/pull/13
+
+Basically, we're takig over for our little brother who has started to struggle cleaning and wrapping things up. Go through their work, tighten things up, add proper patterns where things are confused, remove deprecated or unnecessary complexity.
+
+Keep a diary and commit at appropriate intervals"
+
+**Assistant interpretation:** Finish the partially-started Mermaid flag grouping using a proper Glazed section, then address all automated PR review comments and clean up confused implementation patterns.
+
+**Inferred user intent:** Make the PR production-quality: correct edge cases, reduce hand-rolled complexity, keep the command help organized, and document what changed.
+
+### What I did
+
+- Fetched PR #13 inline review comments with `gh api repos/go-go-golems/remarquee/pulls/13/comments --paginate`.
+- Replaced direct Mermaid flag registration in `upload md` and `upload bundle` with a dedicated Glazed `schema.SectionImpl` in `cmd/remarquee/cmds/upload/mermaid_section.go`.
+- Kept parsing simple by using Cobra flag accessors (`GetBool`, `GetString`, `GetInt`) after the Glazed section adds and groups the flags.
+- Verified `remarquee upload md --help` and `remarquee upload bundle --help` now render a separate `## Mermaid flags:` group.
+- Fixed PR review P1: Mermaid filenames now get a per-input `bundle-###-` prefix in bundle mode, avoiding repeated `mermaid-001.png` overwrites.
+- Fixed PR review P1: copied image filenames now get the same per-input prefix in bundle mode, avoiding same-basename image overwrites across bundled files.
+- Fixed PR review P1: `ConvertMarkdownFileToPDF` resolves relative `outPDF` and `--latex-header-file` to absolute paths before setting `cmd.Dir = tmpDir`, preserving existing CLI behavior.
+- Wired `--resolve-images` into `PandocOptions.ResolveImages` so the flag is no longer decorative.
+- Added regression tests for grouped Mermaid flag annotations, Mermaid flag defaults/overrides, bundle image collisions, bundle Mermaid collisions, and relative output/header paths.
+
+### What worked
+
+- Glazed already had the exact lower-level primitive needed: `schema.SectionImpl.AddSectionToCobraCommand` adds flags and registers a flag group through Cobra annotations.
+- The existing custom help template already understands those annotations, so no help-template changes were needed.
+- The code review comments were accurate: the filename collision bugs were real, and `cmd.Dir = tmpDir` did change how relative output/header paths resolved.
+
+### What didn't work
+
+- My first attempt at parsing the Glazed section via `SectionValues` was too complicated and initially failed to include default values correctly.
+- The better pattern was: use Glazed only for schema/registration/grouped help, and use Cobra's typed flag getters for runtime parsing in these plain Cobra upload commands.
+
+### What I learned
+
+- Glazed flag grouping is annotation-driven (`glazed:flag-group:*`) and can be applied to plain Cobra commands without converting the command to a full Glazed command.
+- Pandoc path behavior has two separate concerns:
+  - relative resources need `cmd.Dir = tmpDir` so copied images are visible;
+  - relative output/header paths must be made absolute before changing `cmd.Dir`.
+
+### What was tricky to build
+
+- Bundle mode has two layers of temporary paths: the bundle staging dir and the inner pandoc conversion dir. Prefixing assets at bundle-staging time prevents collisions; the later conversion pass can safely copy those already-prefixed paths again.
+- The Mermaid flags needed to be grouped without duplicating the same flag declarations in `md.go` and `bundle.go`. A reusable `NewMermaidSection()` plus `addMermaidFlagsToCommand()` solved this.
+
+### What warrants a second pair of eyes
+
+- `ResolveImagePathsWithPrefix` intentionally prefixes copied basenames rather than preserving source subdirectories. This keeps paths short and stable, but reviewers should confirm that is acceptable for very large bundles.
+- `mermaidConfigWithImagePrefix` clones the config and prepends the bundle prefix to any existing `ImagePrefix`; this is intended but worth checking if future callers use `ImagePrefix` directly.
+
+### What should be done in the future
+
+- Consider consolidating all markdown-render preprocessing options into a small explicit options struct if more flags are added.
+- Consider a more complete Markdown image parser if we need to preserve title attributes or handle nested parentheses in image URLs.
+
+### Code review instructions
+
+- Start with `cmd/remarquee/cmds/upload/mermaid_section.go` for the new Glazed section and parser.
+- Then review `pkg/mdpdf/bundle.go`, `pkg/mdpdf/images.go`, and `pkg/mdpdf/mermaid.go` for the bundle collision fixes.
+- Then review `pkg/mdpdf/pandoc.go` for path handling around `cmd.Dir = tmpDir`.
+- Validate with:
+  - `go test ./pkg/mdpdf/ ./cmd/remarquee/cmds/upload/ -count=1`
+  - `go run ./cmd/remarquee upload md --help | grep -n "Mermaid flags\|--mermaid-pdf-width"`
+
+### Technical details
+
+PR review comments addressed:
+
+1. `pkg/mdpdf/mermaid.go`: globally unique Mermaid image names in bundle mode.
+2. `pkg/mdpdf/pandoc.go`: resolve relative header/output paths before changing pandoc working directory.
+3. `pkg/mdpdf/images.go`: avoid image filename collisions across bundled Markdown files.
+
+Verification from the commit hook:
+
+- `golangci-lint run -v` — 0 issues.
+- `go test ./...` — passed.
