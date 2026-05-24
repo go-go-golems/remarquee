@@ -150,6 +150,15 @@ func TestUploadSyncHelpDocumentsForceForOrphanDeletion(t *testing.T) {
 	}
 }
 
+func TestUploadSyncRegistersMarkdownRenderFlags(t *testing.T) {
+	cmd := NewUploadSyncCommand()
+	for _, name := range []string{"mermaid", "mmdc-path", "mermaid-scale", "mermaid-theme", "mermaid-bg", "mermaid-width", "mermaid-no-sandbox", "mermaid-pdf-width", "resolve-images"} {
+		if cmd.Flag(name) == nil {
+			t.Fatalf("expected upload sync to register --%s", name)
+		}
+	}
+}
+
 func TestPrintSyncPlanSummary(t *testing.T) {
 	td := t.TempDir()
 	note := writeMarkdownFixture(t, td, "note.md")

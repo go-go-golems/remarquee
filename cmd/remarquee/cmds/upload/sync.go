@@ -37,6 +37,9 @@ type uploadSyncSettings struct {
 	Layout          string
 	Geometry        string
 	LatexHeaderFile string
+
+	// Image flags.
+	ResolveImages bool
 }
 
 func NewUploadSyncCommand() *cobra.Command {
@@ -81,6 +84,14 @@ Use --dry-run to inspect the delta without converting, uploading, or deleting. W
 	cmd.Flags().StringVar(&s.Geometry, "geometry", "margin=1in", "LaTeX geometry setting passed to pandoc (default: margin=1in)")
 	cmd.Flags().StringVar(&s.LatexHeaderFile, "latex-header-file", "", "Optional path to a LaTeX header file to include (overrides built-in header)")
 
+	// Mermaid flags (match upload md/bundle).
+	if err := addMermaidFlagsToCommand(cmd); err != nil {
+		panic(err) // should never happen with static definitions
+	}
+
+	// Image flags.
+	addResolveImagesFlag(cmd, &s.ResolveImages)
+
 	return cmd
 }
 
@@ -102,6 +113,11 @@ func runUploadSync(ctx context.Context, cmd *cobra.Command, s *uploadSyncSetting
 		return err
 	}
 
+	mermaidCfg, err := mermaidConfigFromCommand(cmd)
+	if err != nil {
+		return err
+	}
+
 	pandocOpts, err := configureMarkdownPandocOptions(
 		cmd.Flags(),
 		s.Layout,
@@ -111,11 +127,12 @@ func runUploadSync(ctx context.Context, cmd *cobra.Command, s *uploadSyncSetting
 		s.MonoFont,
 		s.Geometry,
 		s.LatexHeaderFile,
-		nil, // sync does not support mermaid rendering yet
+		mermaidCfg,
 	)
 	if err != nil {
 		return err
 	}
+	pandocOpts.ResolveImages = s.ResolveImages
 
 	_, apiCtx, err := rmcloud.CreateApiCtx(rmcloud.AuthSettings{
 		NonInteractive: s.NonInteractive,
