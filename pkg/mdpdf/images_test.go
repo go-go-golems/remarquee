@@ -219,6 +219,83 @@ func TestResolveImagePaths_DataURI_Unchanged(t *testing.T) {
 	}
 }
 
+func TestResolveImagePaths_InlineImageWithTitle(t *testing.T) {
+	srcDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(srcDir, "img.png"), []byte("png"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+
+	body := "![caption](./img.png \"Figure title\")\n"
+	result, err := ResolveImagePaths(body, srcDir, tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "![caption](./images/img.png \"Figure title\")") {
+		t.Fatalf("expected title-preserving rewrite, got: %q", result)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "images", "img.png")); err != nil {
+		t.Fatalf("expected copied image: %v", err)
+	}
+}
+
+func TestResolveImagePaths_ReferenceStyleImage(t *testing.T) {
+	srcDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(srcDir, "ref.png"), []byte("ref"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+
+	body := "Here is ![Alt text][diagram].\n\n[diagram]: ./ref.png \"Reference title\"\n"
+	result, err := ResolveImagePaths(body, srcDir, tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "![Alt text][diagram]") {
+		t.Fatalf("expected image reference use to remain, got: %q", result)
+	}
+	if !strings.Contains(result, "[diagram]: ./images/ref.png \"Reference title\"") {
+		t.Fatalf("expected reference definition rewrite, got: %q", result)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "images", "ref.png")); err != nil {
+		t.Fatalf("expected copied reference image: %v", err)
+	}
+}
+
+func TestResolveImagePaths_CollapsedReferenceStyleImage(t *testing.T) {
+	srcDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(srcDir, "collapsed.png"), []byte("collapsed"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+
+	body := "Here is ![Diagram][].\n\n[diagram]: ./collapsed.png\n"
+	result, err := ResolveImagePaths(body, srcDir, tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "[diagram]: ./images/collapsed.png") {
+		t.Fatalf("expected collapsed reference definition rewrite, got: %q", result)
+	}
+}
+
+func TestResolveImagePaths_NonImageReferenceDefinitionUnchanged(t *testing.T) {
+	srcDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(srcDir, "linked.png"), []byte("linked"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+
+	body := "This is a [plain link][id].\n\n[id]: ./linked.png\n"
+	result, err := ResolveImagePaths(body, srcDir, tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != body {
+		t.Fatalf("non-image reference definition should be unchanged, got: %q", result)
+	}
+}
+
 func TestResolveImagePaths_NoImages(t *testing.T) {
 	tmpDir := t.TempDir()
 

@@ -15,3 +15,10 @@
 - Phase 3 (2ccac3e): CLI flags — 7 new flags on upload md/bundle, mermaidFlags helper type
 - Phase 4 (5606cb8): Bundle mode — per-file image/mermaid preprocessing in BuildBundleMarkdown
 - Phase 5 (cd216c6): README updated with mermaid/image examples
+
+## 2026-05-23: Fix image resolver for valid Markdown image forms
+
+- Updated `pkg/mdpdf/images.go` so local image copying/rewrite handles inline image titles like `![alt](./img.png "title")`.
+- Added support for reference-style image definitions used by `![alt][id]` and collapsed `![alt][]` references.
+- Preserved non-image reference definitions unchanged.
+- Added regression tests in `pkg/mdpdf/images_test.go`.

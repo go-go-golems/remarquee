@@ -301,3 +301,31 @@ Verification from the commit hook:
 
 - `golangci-lint run -v` — 0 issues.
 - `go test ./...` — passed.
+
+---
+
+## Step 9: Fix Markdown Image Resolver for Titles and Reference-Style Images
+
+A PR #13 review comment caught a correctness regression introduced by running pandoc from the preprocessing temp directory. The image resolver only handled the simple inline form `![alt](path)`. Valid Markdown image forms such as `![alt](./img.png "title")` and `![alt][id]` with `[id]: ./img.png` were not copied into `tmpDir/images`, so pandoc would later look for those relative paths in the wrong directory and omit the images.
+
+### What I changed
+
+- Replaced the single `imageEmbedRegex` path capture with separate handling for:
+  - inline images with optional titles;
+  - full reference-style image uses, `![alt][id]`;
+  - collapsed reference-style image uses, `![alt][]`;
+  - reference definitions, `[id]: destination "optional title"`.
+- Preserved titles while rewriting image destinations.
+- Rewrote only reference definitions that are actually used by image references, leaving plain link reference definitions alone.
+- Kept the existing behavior for absolute paths, URLs, data URIs, and missing files: leave them unchanged.
+- Added tests covering inline titles, reference-style images, collapsed references, and non-image reference definitions.
+
+### Validation
+
+- `go test ./pkg/mdpdf/ ./cmd/remarquee/cmds/upload/ -count=1` passed.
+- `golangci-lint run -v` passed with 0 issues.
+
+### Review notes
+
+- This is still a lightweight Markdown resolver, not a full Markdown AST parser. It now covers the common valid forms from the PR review comment while preserving the existing low-dependency implementation.
+- If future bugs appear around deeply nested brackets/parentheses or shortcut references (`![alt]`), the next step should be replacing regex scanning with a Markdown parser that exposes image nodes.
