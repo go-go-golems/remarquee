@@ -35,6 +35,36 @@ func TestConvertMarkdownFileToPDFHandlesHashInInputFilename(t *testing.T) {
 	}
 }
 
+func TestConvertMarkdownFileToPDFWithRelativeOutputAndLatexHeader(t *testing.T) {
+	pandocAvailable(t)
+
+	td := t.TempDir()
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(oldWD) })
+
+	if err := os.WriteFile("header.tex", []byte("% custom header\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("doc.md", []byte("# Relative Paths\n\nBody.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	opts := DefaultPandocOptions()
+	opts.LatexHeaderFile = "header.tex"
+	if err := ConvertMarkdownFileToPDF(context.Background(), "doc.md", "out.pdf", opts); err != nil {
+		t.Fatalf("conversion with relative output/header failed: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(td, "out.pdf")); err != nil {
+		t.Fatalf("expected relative output PDF in caller cwd: %v", err)
+	}
+}
+
 func TestConvertMarkdownFileToPDFWithImage(t *testing.T) {
 	pandocAvailable(t)
 

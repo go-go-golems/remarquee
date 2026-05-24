@@ -29,15 +29,20 @@ type PandocOptions struct {
 	// Mermaid configures Mermaid diagram rendering. If nil, Mermaid blocks
 	// are left as plain-text code listings.
 	Mermaid *MermaidRendererConfig
+
+	// ResolveImages controls whether local Markdown image paths are copied into
+	// the pandoc temp directory and rewritten. DefaultPandocOptions enables it.
+	ResolveImages bool
 }
 
 func DefaultPandocOptions() PandocOptions {
 	return PandocOptions{
-		PandocPath: "pandoc",
-		PDFEngine:  "xelatex",
-		MainFont:   "DejaVu Sans",
-		MonoFont:   "DejaVu Sans Mono",
-		Geometry:   "margin=1in",
+		PandocPath:    "pandoc",
+		PDFEngine:     "xelatex",
+		MainFont:      "DejaVu Sans",
+		MonoFont:      "DejaVu Sans Mono",
+		Geometry:      "margin=1in",
+		ResolveImages: true,
 	}
 }
 
@@ -49,6 +54,18 @@ const defaultLatexHeader = `\usepackage{enumitem}
 `
 
 func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string, opts PandocOptions) error {
+	absOutPDF, err := filepath.Abs(outPDF)
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve output PDF path")
+	}
+	if opts.LatexHeaderFile != "" {
+		absHeader, err := filepath.Abs(opts.LatexHeaderFile)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve latex header path")
+		}
+		opts.LatexHeaderFile = absHeader
+	}
+
 	if opts.PandocPath == "" {
 		opts.PandocPath = "pandoc"
 	}
@@ -77,12 +94,14 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	// Resolve local image paths before other preprocessing so that pandoc
-	// can find referenced files from the temp directory.
-	sourceDir := filepath.Dir(mdPath)
-	body, err = ResolveImagePaths(body, sourceDir, tmpDir)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve image paths")
+	if opts.ResolveImages {
+		// Resolve local image paths before other preprocessing so that pandoc
+		// can find referenced files from the temp directory.
+		sourceDir := filepath.Dir(mdPath)
+		body, err = ResolveImagePaths(body, sourceDir, tmpDir)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve image paths")
+		}
 	}
 
 	// Render Mermaid code blocks to images (if mmdc is available).
@@ -125,7 +144,7 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 
 	argv := []string{
 		inputPath,
-		"-o", outPDF,
+		"-o", absOutPDF,
 		"--pdf-engine=" + opts.PDFEngine,
 		"--standalone",
 		"-V", "mainfont=" + opts.MainFont,

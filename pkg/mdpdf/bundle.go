@@ -23,7 +23,7 @@ type BundleInput struct {
 //
 // The resulting body can be passed to ConvertMarkdownFileToPDF, which
 // will find the pre-resolved images via its own image resolution step.
-func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir string, mermaidCfg *MermaidRendererConfig) (string, error) {
+func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir string, mermaidCfg *MermaidRendererConfig, resolveImages bool) (string, error) {
 	var b strings.Builder
 
 	for i, in := range inputs {
@@ -41,15 +41,21 @@ func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir strin
 		}
 		body := StripYAMLFrontmatter(string(mdBytes))
 
-		// Resolve local image paths relative to this input's source directory.
-		sourceDir := filepath.Dir(in.Path)
-		body, err = ResolveImagePaths(body, sourceDir, tmpDir)
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to resolve image paths for %s", in.Path)
+		assetPrefix := fmt.Sprintf("bundle-%03d-", i+1)
+		if resolveImages {
+			// Resolve local image paths relative to this input's source directory.
+			// Prefix filenames by bundle input so same-basename images from
+			// different files cannot overwrite each other in tmpDir/images.
+			sourceDir := filepath.Dir(in.Path)
+			body, err = ResolveImagePathsWithPrefix(body, sourceDir, tmpDir, assetPrefix)
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to resolve image paths for %s", in.Path)
+			}
 		}
 
-		// Render Mermaid blocks for this input.
-		body, err = RenderMermaidBlocks(ctx, body, tmpDir, mermaidCfg)
+		// Render Mermaid blocks for this input. Use the same per-input
+		// filename prefix to avoid mermaid-001.png collisions across files.
+		body, err = RenderMermaidBlocks(ctx, body, tmpDir, mermaidConfigWithImagePrefix(mermaidCfg, assetPrefix))
 		if err != nil {
 			// Non-fatal: mermaid rendering errors are logged per-block.
 			_ = err

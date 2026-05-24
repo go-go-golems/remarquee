@@ -44,6 +44,10 @@ type MermaidRendererConfig struct {
 	// Uses pandoc attribute syntax: "50%", "400px", "10cm", etc.
 	// Empty = no constraint (pandoc default = fill page width).
 	PDFWidth string
+
+	// ImagePrefix is prepended to generated PNG filenames. Bundle generation
+	// sets this per input file so repeated mermaid-001.png names do not collide.
+	ImagePrefix string
 }
 
 // DefaultMermaidRendererConfig returns sensible defaults.
@@ -105,7 +109,7 @@ func RenderMermaidBlocks(ctx context.Context, body string, tmpDir string, config
 			return match // empty block, skip
 		}
 
-		imgFilename := fmt.Sprintf("mermaid-%03d.png", counter)
+		imgFilename := fmt.Sprintf("%smermaid-%03d.png", config.ImagePrefix, counter)
 		imgPath := filepath.Join(imagesDir, imgFilename)
 
 		if err := renderMermaidToPNG(ctx, mmdcPath, mermaidSource, imgPath, config); err != nil {

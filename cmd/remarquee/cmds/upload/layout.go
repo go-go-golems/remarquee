@@ -6,38 +6,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type mermaidFlags struct {
-	Mermaid          bool
-	MmdcPath         string
-	MermaidScale     int
-	MermaidTheme     string
-	MermaidBg        string
-	MermaidWidth     int
-	MermaidNoSandbox bool
-	MermaidPDFWidth  string
-}
-
-func (f *mermaidFlags) ToConfig() *mdpdf.MermaidRendererConfig {
-	if !f.Mermaid {
-		return nil
-	}
-	cfg := mdpdf.DefaultMermaidRendererConfig()
-	cfg.MmdcPath = f.MmdcPath
-	if f.MermaidScale > 0 {
-		cfg.Scale = f.MermaidScale
-	}
-	if f.MermaidTheme != "" {
-		cfg.Theme = f.MermaidTheme
-	}
-	if f.MermaidBg != "" {
-		cfg.BackgroundColor = f.MermaidBg
-	}
-	cfg.Width = f.MermaidWidth
-	cfg.NoSandbox = f.MermaidNoSandbox
-	cfg.PDFWidth = f.MermaidPDFWidth
-	return &cfg
-}
-
 func configureMarkdownPandocOptions(
 	flags *pflag.FlagSet,
 	layout string,

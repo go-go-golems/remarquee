@@ -38,16 +38,6 @@ type uploadMarkdownSettings struct {
 	LatexHeaderFile string
 	Workers         int
 
-	// Mermaid flags.
-	Mermaid          bool
-	MmdcPath         string
-	MermaidScale     int
-	MermaidTheme     string
-	MermaidBg        string
-	MermaidWidth     int
-	MermaidNoSandbox bool
-	MermaidPDFWidth  string
-
 	// Image flags.
 	ResolveImages bool
 }
@@ -107,18 +97,13 @@ Safety:
 	cmd.Flags().StringVar(&s.Geometry, "geometry", "margin=1in", "LaTeX geometry setting passed to pandoc (default: margin=1in)")
 	cmd.Flags().StringVar(&s.LatexHeaderFile, "latex-header-file", "", "Optional path to a LaTeX header file to include (overrides built-in header)")
 
-	// Mermaid flags.
-	cmd.Flags().BoolVar(&s.Mermaid, "mermaid", true, "Render Mermaid code blocks as diagrams (requires mmdc)")
-	cmd.Flags().StringVar(&s.MmdcPath, "mmdc-path", "", "Path to mmdc binary (default: auto-detect from $PATH)")
-	cmd.Flags().IntVar(&s.MermaidScale, "mermaid-scale", 2, "Pixel scale for rendered Mermaid diagrams")
-	cmd.Flags().StringVar(&s.MermaidTheme, "mermaid-theme", "default", "Mermaid theme: default, dark, forest, neutral")
-	cmd.Flags().StringVar(&s.MermaidBg, "mermaid-bg", "white", "Background color for Mermaid diagrams")
-	cmd.Flags().IntVar(&s.MermaidWidth, "mermaid-width", 0, "Max width in pixels for Mermaid diagrams (0 = auto)")
-	cmd.Flags().BoolVar(&s.MermaidNoSandbox, "mermaid-no-sandbox", true, "Pass --no-sandbox to Puppeteer/Chromium (default: true, safe for CLI use)")
-	cmd.Flags().StringVar(&s.MermaidPDFWidth, "mermaid-pdf-width", "", "Display width for Mermaid diagrams in PDF (e.g. 50%, 400px, 10cm). Empty = fill page width")
+	// Mermaid flags (Glazed section — shows in "Mermaid flags" help group).
+	if err := addMermaidFlagsToCommand(cmd); err != nil {
+		panic(err) // should never happen with static definitions
+	}
 
 	// Image flags.
-	cmd.Flags().BoolVar(&s.ResolveImages, "resolve-images", true, "Resolve and embed local image references")
+	addResolveImagesFlag(cmd, &s.ResolveImages)
 
 	return cmd
 }
@@ -167,6 +152,11 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		seenRemoteKeys[key] = in.AbsPath
 	}
 
+	mermaidCfg, err := mermaidConfigFromCommand(cmd)
+	if err != nil {
+		return err
+	}
+
 	pandocOpts, err := configureMarkdownPandocOptions(
 		cmd.Flags(),
 		s.Layout,
@@ -176,20 +166,12 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		s.MonoFont,
 		s.Geometry,
 		s.LatexHeaderFile,
-		(&mermaidFlags{
-			Mermaid:          s.Mermaid,
-			MmdcPath:         s.MmdcPath,
-			MermaidScale:     s.MermaidScale,
-			MermaidTheme:     s.MermaidTheme,
-			MermaidBg:        s.MermaidBg,
-			MermaidWidth:     s.MermaidWidth,
-			MermaidNoSandbox: s.MermaidNoSandbox,
-			MermaidPDFWidth:  s.MermaidPDFWidth,
-		}).ToConfig(),
+		mermaidCfg,
 	)
 	if err != nil {
 		return err
 	}
+	pandocOpts.ResolveImages = s.ResolveImages
 
 	if s.DryRun {
 		fmt.Fprintf(cmd.OutOrStdout(), "DRY: layout=%s\n", mdpdf.NormalizeMarkdownLayout(s.Layout))

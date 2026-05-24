@@ -41,16 +41,6 @@ type uploadBundleSettings struct {
 	Geometry        string
 	LatexHeaderFile string
 
-	// Mermaid flags.
-	Mermaid          bool
-	MmdcPath         string
-	MermaidScale     int
-	MermaidTheme     string
-	MermaidBg        string
-	MermaidWidth     int
-	MermaidNoSandbox bool
-	MermaidPDFWidth  string
-
 	// Image flags.
 	ResolveImages bool
 }
@@ -118,18 +108,13 @@ Safety:
 	cmd.Flags().StringVar(&s.Geometry, "geometry", "margin=1in", "LaTeX geometry setting passed to pandoc (default: margin=1in)")
 	cmd.Flags().StringVar(&s.LatexHeaderFile, "latex-header-file", "", "Optional path to a LaTeX header file to include (overrides built-in header)")
 
-	// Mermaid flags.
-	cmd.Flags().BoolVar(&s.Mermaid, "mermaid", true, "Render Mermaid code blocks as diagrams (requires mmdc)")
-	cmd.Flags().StringVar(&s.MmdcPath, "mmdc-path", "", "Path to mmdc binary (default: auto-detect from $PATH)")
-	cmd.Flags().IntVar(&s.MermaidScale, "mermaid-scale", 2, "Pixel scale for rendered Mermaid diagrams")
-	cmd.Flags().StringVar(&s.MermaidTheme, "mermaid-theme", "default", "Mermaid theme: default, dark, forest, neutral")
-	cmd.Flags().StringVar(&s.MermaidBg, "mermaid-bg", "white", "Background color for Mermaid diagrams")
-	cmd.Flags().IntVar(&s.MermaidWidth, "mermaid-width", 0, "Max width in pixels for Mermaid diagrams (0 = auto)")
-	cmd.Flags().BoolVar(&s.MermaidNoSandbox, "mermaid-no-sandbox", true, "Pass --no-sandbox to Puppeteer/Chromium (default: true, safe for CLI use)")
-	cmd.Flags().StringVar(&s.MermaidPDFWidth, "mermaid-pdf-width", "", "Display width for Mermaid diagrams in PDF (e.g. 50%, 400px, 10cm). Empty = fill page width")
+	// Mermaid flags (Glazed section — shows in "Mermaid flags" help group).
+	if err := addMermaidFlagsToCommand(cmd); err != nil {
+		panic(err)
+	}
 
 	// Image flags.
-	cmd.Flags().BoolVar(&s.ResolveImages, "resolve-images", true, "Resolve and embed local image references")
+	addResolveImagesFlag(cmd, &s.ResolveImages)
 
 	return cmd
 }
@@ -154,6 +139,11 @@ func runUploadBundle(ctx context.Context, cmd *cobra.Command, s *uploadBundleSet
 		return err
 	}
 
+	mermaidCfg, err := mermaidConfigFromCommand(cmd)
+	if err != nil {
+		return err
+	}
+
 	pandocOpts, err := configureMarkdownPandocOptions(
 		cmd.Flags(),
 		s.Layout,
@@ -163,20 +153,12 @@ func runUploadBundle(ctx context.Context, cmd *cobra.Command, s *uploadBundleSet
 		s.MonoFont,
 		s.Geometry,
 		s.LatexHeaderFile,
-		(&mermaidFlags{
-			Mermaid:          s.Mermaid,
-			MmdcPath:         s.MmdcPath,
-			MermaidScale:     s.MermaidScale,
-			MermaidTheme:     s.MermaidTheme,
-			MermaidBg:        s.MermaidBg,
-			MermaidWidth:     s.MermaidWidth,
-			MermaidNoSandbox: s.MermaidNoSandbox,
-			MermaidPDFWidth:  s.MermaidPDFWidth,
-		}).ToConfig(),
+		mermaidCfg,
 	)
 	if err != nil {
 		return err
 	}
+	pandocOpts.ResolveImages = s.ResolveImages
 	pandocOpts.TOC = true
 	pandocOpts.TOCDepth = s.TOCDepth
 
@@ -260,7 +242,7 @@ func writeBundlePDF(ctx context.Context, files []bundleMarkdownFile, outPDF stri
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	body, err := mdpdf.BuildBundleMarkdown(ctx, inputs, tmpDir, pandocOpts.Mermaid)
+	body, err := mdpdf.BuildBundleMarkdown(ctx, inputs, tmpDir, pandocOpts.Mermaid, pandocOpts.ResolveImages)
 	if err != nil {
 		return err
 	}

@@ -28,6 +28,13 @@ var imageEmbedRegex = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)\)`)
 //
 // Returns the rewritten Markdown body.
 func ResolveImagePaths(body string, sourceDir string, tmpDir string) (string, error) {
+	return ResolveImagePathsWithPrefix(body, sourceDir, tmpDir, "")
+}
+
+// ResolveImagePathsWithPrefix is like ResolveImagePaths, but prefixes copied
+// image filenames. Bundle generation uses this to avoid collisions when
+// different input files contain images with the same basename.
+func ResolveImagePathsWithPrefix(body string, sourceDir string, tmpDir string, filenamePrefix string) (string, error) {
 	imagesDir := filepath.Join(tmpDir, "images")
 	if err := os.MkdirAll(imagesDir, 0o755); err != nil {
 		return body, fmt.Errorf("failed to create images directory: %w", err)
@@ -60,12 +67,14 @@ func ResolveImagePaths(body string, sourceDir string, tmpDir string) (string, er
 			return match
 		}
 
-		// Determine a unique filename in the images directory.
+		// Determine a unique filename in the images directory. Prefixing is
+		// important for bundle mode, where this function is called once per
+		// input file while reusing the same tmpDir/images directory.
 		base := filepath.Base(resolvedPath)
-		destName := base
+		destName := filenamePrefix + base
 		if usedNames[destName] {
-			ext := filepath.Ext(base)
-			stem := strings.TrimSuffix(base, ext)
+			ext := filepath.Ext(destName)
+			stem := strings.TrimSuffix(destName, ext)
 			for i := 1; usedNames[destName]; i++ {
 				destName = fmt.Sprintf("%s-%d%s", stem, i, ext)
 			}
