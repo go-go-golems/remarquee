@@ -59,3 +59,11 @@ REMARQUEE_BINARY=$(shell which remarquee)
 install:
 	go build -o ./dist/remarquee ./cmd/remarquee && \
 		cp ./dist/remarquee $(REMARQUEE_BINARY)
+
+.PHONY: logcopter-generate
+logcopter-generate:
+	GOWORK=off go tool logcopter-gen -include-main -var zlog -area-prefix go-go-golems.remarquee -strip-prefix github.com/go-go-golems/remarquee ./cmd/... ./pkg/...
+
+.PHONY: logcopter-check
+logcopter-check:
+	GOWORK=off go tool logcopter-gen -include-main -var zlog -area-prefix go-go-golems.remarquee -strip-prefix github.com/go-go-golems/remarquee -check ./cmd/... ./pkg/...
