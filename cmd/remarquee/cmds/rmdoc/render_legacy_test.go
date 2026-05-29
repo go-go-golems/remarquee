@@ -38,6 +38,31 @@ func TestRenderLegacyCommand_Smoke(t *testing.T) {
 	}
 }
 
+func TestRenderLegacyCommand_PagesSubset(t *testing.T) {
+	cmd, err := NewRenderLegacyCommand()
+	if err != nil {
+		t.Fatalf("NewRenderLegacyCommand: %v", err)
+	}
+
+	tmp := t.TempDir()
+	out := filepath.Join(tmp, "out.pdf")
+
+	parsedValues := newDefaultParsedValues(t, cmd.CommandDescription, map[string]interface{}{
+		"file":  filepath.Join(repoRootFromThisFile(t), "cmd", "remarquee-ui", "testdata", "legacy-pdf-a4.zip"),
+		"out":   out,
+		"force": true,
+		"pages": "1",
+	})
+
+	if err := cmd.Run(context.Background(), parsedValues); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	if got := countPDFPages(t, out); got != 1 {
+		t.Fatalf("pages=%d want=1", got)
+	}
+}
+
 func TestRenderLegacyCommand_CloudSmoke(t *testing.T) {
 	oldDownloader := downloadDocumentByPath
 	t.Cleanup(func() {

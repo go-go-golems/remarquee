@@ -26,8 +26,9 @@ type RenderV6Command struct {
 }
 
 type RenderV6Settings struct {
-	File string `glazed:"file"`
-	Out  string `glazed:"out"`
+	File  string `glazed:"file"`
+	Out   string `glazed:"out"`
+	Pages string `glazed:"pages"`
 
 	Force bool `glazed:"force"`
 
@@ -59,6 +60,12 @@ func NewRenderV6Command() (*RenderV6Command, error) {
 			fields.TypeBool,
 			fields.WithDefault(false),
 			fields.WithHelp("Overwrite output file if it exists"),
+		),
+		fields.New(
+			"pages",
+			fields.TypeString,
+			fields.WithDefault(""),
+			fields.WithHelp("1-based page numbers/ranges to render, for example 1, 1,3,5, or 2-4 (default: all pages)"),
 		),
 		fields.New(
 			"file",
@@ -109,12 +116,13 @@ func (c *RenderV6Command) Run(ctx context.Context, parsedValues *values.Values) 
 }
 
 type renderV6Execution struct {
-	Input       string
-	InputSource string
-	Output      string
-	Schema      string
-	Type        string
-	Pages       int
+	Input         string
+	InputSource   string
+	Output        string
+	Schema        string
+	Type          string
+	Pages         int
+	SelectedPages string
 }
 
 func archiveHasV6RM(ctx context.Context, rmdocPath string, doc *pkg_rmdoc.Document) (bool, error) {
@@ -165,7 +173,17 @@ func (c *RenderV6Command) execute(ctx context.Context, s *RenderV6Settings) (*re
 		return nil, err
 	}
 
-	res, err := rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfo(ctx, input.LocalPath, rmdocrender.V6MergeOptions{})
+	selection, err := parsePageSelection1Based(s.Pages, len(doc.Pages))
+	if err != nil {
+		return nil, err
+	}
+
+	var res *rmdocrender.V6MergeResult
+	if selection.All {
+		res, err = rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfo(ctx, input.LocalPath, rmdocrender.V6MergeOptions{})
+	} else {
+		res, err = rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx, input.LocalPath, rmdocrender.V6MergeOptions{}, selection.Indices0)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -174,12 +192,13 @@ func (c *RenderV6Command) execute(ctx context.Context, s *RenderV6Settings) (*re
 	}
 
 	return &renderV6Execution{
-		Input:       input.RequestedPath,
-		InputSource: input.Source,
-		Output:      out,
-		Schema:      schemaString(doc.Schema),
-		Type:        docTypeString(doc.Type),
-		Pages:       len(doc.Pages),
+		Input:         input.RequestedPath,
+		InputSource:   input.Source,
+		Output:        out,
+		Schema:        schemaString(doc.Schema),
+		Type:          docTypeString(doc.Type),
+		Pages:         len(doc.Pages),
+		SelectedPages: formatPages1Based(selection.Pages1),
 	}, nil
 }
 
@@ -208,6 +227,7 @@ func (c *RenderV6Command) RunIntoGlazeProcessor(
 		types.MRP("schema", res.Schema),
 		types.MRP("type", res.Type),
 		types.MRP("pages", res.Pages),
+		types.MRP("selected_pages", res.SelectedPages),
 	)
 	return gp.AddRow(ctx, row)
 }

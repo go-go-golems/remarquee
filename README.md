@@ -116,9 +116,11 @@ remarquee upload src ./pkg/rmdoc --bundle --name "rmdoc package review"
 ```bash
 # Legacy notebooks/documents
 remarquee rmdoc render-legacy ./notebook.rmdoc --out ./notebook.pdf
+remarquee rmdoc render-legacy ./notebook.rmdoc --pages 1,3-5 --out ./notebook-pages.pdf
 
 # V6/cPages notebooks
 remarquee rmdoc render-v6 ./notebook.rmdoc --out ./notebook.pdf
+remarquee rmdoc render-v6 ./notebook.rmdoc --pages 2-4 --out ./notebook-pages.pdf
 
 # Debug V6 rendering as page PNGs
 remarquee rmdoc render-v6-png ./notebook.rmdoc --out-dir ./pages

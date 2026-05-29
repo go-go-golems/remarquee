@@ -1,6 +1,7 @@
 package rmdoc
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
+	pdf "github.com/unidoc/unipdf/v3/model"
 )
 
 func repoRootFromThisFile(t *testing.T) string {
@@ -46,6 +48,31 @@ func TestRenderV6Command_Smoke(t *testing.T) {
 	}
 	if len(b) < 8 || string(b[:5]) != "%PDF-" {
 		t.Fatalf("expected PDF output, got prefix %q", string(b[:8]))
+	}
+}
+
+func TestRenderV6Command_PagesSubset(t *testing.T) {
+	cmd, err := NewRenderV6Command()
+	if err != nil {
+		t.Fatalf("NewRenderV6Command: %v", err)
+	}
+
+	tmp := t.TempDir()
+	out := filepath.Join(tmp, "out.pdf")
+
+	parsedValues := newDefaultParsedValues(t, cmd.CommandDescription, map[string]interface{}{
+		"file":  filepath.Join(repoRootFromThisFile(t), "cmd", "remarquee-ui", "testdata", "cpage-pdf.rmdoc"),
+		"out":   out,
+		"force": true,
+		"pages": "1",
+	})
+
+	if err := cmd.Run(context.Background(), parsedValues); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	if got := countPDFPages(t, out); got != 1 {
+		t.Fatalf("pages=%d want=1", got)
 	}
 }
 
@@ -105,4 +132,21 @@ func TestRenderV6Command_CloudSmoke(t *testing.T) {
 	if len(b) < 8 || string(b[:5]) != "%PDF-" {
 		t.Fatalf("expected PDF output, got prefix %q", string(b[:8]))
 	}
+}
+
+func countPDFPages(t *testing.T, path string) int {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	r, err := pdf.NewPdfReader(bytes.NewReader(b))
+	if err != nil {
+		t.Fatalf("NewPdfReader: %v", err)
+	}
+	n, err := r.GetNumPages()
+	if err != nil {
+		t.Fatalf("GetNumPages: %v", err)
+	}
+	return n
 }
