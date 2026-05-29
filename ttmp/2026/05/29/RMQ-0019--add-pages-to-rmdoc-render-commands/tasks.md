@@ -11,30 +11,30 @@
 
 ### 2. Shared page selector
 
-- [ ] Add a command-layer page selection parser for comma-separated 1-based pages and inclusive ranges
-- [ ] Validate selectors against the source document page count
-- [ ] Add focused parser unit tests
+- [x] Add a command-layer page selection parser for comma-separated 1-based pages and inclusive ranges
+- [x] Validate selectors against the source document page count
+- [x] Add focused parser unit tests
 
 ### 3. Wire `rmdoc render-v6`
 
-- [ ] Add the `--pages` flag and settings field
-- [ ] Dispatch subset requests to `MergeRMDocV6OntoBackgroundPDFWithInfoForPages`
-- [ ] Preserve full-document behavior when `--pages` is omitted
-- [ ] Include selected pages in Glaze output
-- [ ] Add/adjust V6 command tests
+- [x] Add the `--pages` flag and settings field
+- [x] Dispatch subset requests to `MergeRMDocV6OntoBackgroundPDFWithInfoForPages`
+- [x] Preserve full-document behavior when `--pages` is omitted
+- [x] Include selected pages in Glaze output
+- [x] Add/adjust V6 command tests
 
 ### 4. Wire `rmdoc render-legacy`
 
-- [ ] Add the `--pages` flag and settings field
-- [ ] Generate a temporary all-pages legacy PDF for subset requests
-- [ ] Extract requested PDF pages into the final output
-- [ ] Preserve full-document behavior when `--pages` is omitted
-- [ ] Include selected pages in Glaze output
-- [ ] Add/adjust legacy command tests
+- [x] Add the `--pages` flag and settings field
+- [x] Generate a temporary all-pages legacy PDF for subset requests
+- [x] Extract requested PDF pages into the final output
+- [x] Preserve full-document behavior when `--pages` is omitted
+- [x] Include selected pages in Glaze output
+- [x] Add/adjust legacy command tests
 
 ### 5. Documentation and validation
 
-- [ ] Update README examples for `render-v6 --pages` and `render-legacy --pages`
-- [ ] Run focused Go tests for touched packages
-- [ ] Run command smoke tests against local fixtures
-- [ ] Update diary, changelog, and file relations after implementation commits
+- [x] Update README examples for `render-v6 --pages` and `render-legacy --pages`
+- [x] Run focused Go tests for touched packages
+- [x] Run command smoke tests against local fixtures
+- [x] Update diary, changelog, and file relations after implementation commits

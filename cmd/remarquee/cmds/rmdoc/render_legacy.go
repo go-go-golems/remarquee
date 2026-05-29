@@ -3,6 +3,7 @@ package rmdoc
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
@@ -25,8 +26,9 @@ type RenderLegacyCommand struct {
 }
 
 type RenderLegacySettings struct {
-	File string `glazed:"file"`
-	Out  string `glazed:"out"`
+	File  string `glazed:"file"`
+	Out   string `glazed:"out"`
+	Pages string `glazed:"pages"`
 
 	Force           bool `glazed:"force"`
 	AddPageNumbers  bool `glazed:"add-page-numbers"`
@@ -61,6 +63,12 @@ func NewRenderLegacyCommand() (*RenderLegacyCommand, error) {
 			fields.TypeBool,
 			fields.WithDefault(false),
 			fields.WithHelp("Overwrite output file if it exists"),
+		),
+		fields.New(
+			"pages",
+			fields.TypeString,
+			fields.WithDefault(""),
+			fields.WithHelp("1-based page numbers/ranges to render, for example 1, 1,3,5, or 2-4 (default: all pages)"),
 		),
 		fields.New(
 			"add-page-numbers",
@@ -126,11 +134,13 @@ func (c *RenderLegacyCommand) Run(ctx context.Context, parsedValues *values.Valu
 }
 
 type renderLegacyExecution struct {
-	Input       string
-	InputSource string
-	Output      string
-	Schema      string
-	Type        string
+	Input         string
+	InputSource   string
+	Output        string
+	Schema        string
+	Type          string
+	Pages         int
+	SelectedPages string
 }
 
 func (c *RenderLegacyCommand) execute(ctx context.Context, s *RenderLegacySettings) (*renderLegacyExecution, error) {
@@ -158,23 +168,51 @@ func (c *RenderLegacyCommand) execute(ctx context.Context, s *RenderLegacySettin
 	if err := ensureOutputWritable(out, s.Force); err != nil {
 		return nil, err
 	}
-	opts := rmapi_annotations.PdfGeneratorOptions{
-		AddPageNumbers:  s.AddPageNumbers,
-		AllPages:        s.AllPages,
-		AnnotationsOnly: s.AnnotationsOnly,
-	}
-
-	g := rmapi_annotations.CreatePdfGenerator(input.LocalPath, out, opts)
-	if err := g.Generate(); err != nil {
+	selection, err := parsePageSelection1Based(s.Pages, len(doc.Pages))
+	if err != nil {
 		return nil, err
 	}
 
+	renderOut := out
+	cleanup := func() {}
+	if !selection.All {
+		tmpFile, err := os.CreateTemp("", "remarquee-render-legacy-*.pdf")
+		if err != nil {
+			return nil, errors.Wrap(err, "create temporary legacy render pdf")
+		}
+		renderOut = tmpFile.Name()
+		if err := tmpFile.Close(); err != nil {
+			_ = os.Remove(renderOut)
+			return nil, errors.Wrap(err, "close temporary legacy render pdf")
+		}
+		cleanup = func() { _ = os.Remove(renderOut) }
+	}
+	defer cleanup()
+
+	opts := rmapi_annotations.PdfGeneratorOptions{
+		AddPageNumbers:  s.AddPageNumbers,
+		AllPages:        s.AllPages || !selection.All,
+		AnnotationsOnly: s.AnnotationsOnly,
+	}
+
+	g := rmapi_annotations.CreatePdfGenerator(input.LocalPath, renderOut, opts)
+	if err := g.Generate(); err != nil {
+		return nil, err
+	}
+	if !selection.All {
+		if err := extractPDFPages(renderOut, out, selection.Pages1); err != nil {
+			return nil, err
+		}
+	}
+
 	return &renderLegacyExecution{
-		Input:       input.RequestedPath,
-		InputSource: input.Source,
-		Output:      out,
-		Schema:      schemaString(doc.Schema),
-		Type:        docTypeString(doc.Type),
+		Input:         input.RequestedPath,
+		InputSource:   input.Source,
+		Output:        out,
+		Schema:        schemaString(doc.Schema),
+		Type:          docTypeString(doc.Type),
+		Pages:         len(doc.Pages),
+		SelectedPages: formatPages1Based(selection.Pages1),
 	}, nil
 }
 
@@ -202,6 +240,8 @@ func (c *RenderLegacyCommand) RunIntoGlazeProcessor(
 		types.MRP("output", res.Output),
 		types.MRP("schema", res.Schema),
 		types.MRP("type", res.Type),
+		types.MRP("pages", res.Pages),
+		types.MRP("selected_pages", res.SelectedPages),
 	)
 	return gp.AddRow(ctx, row)
 }
