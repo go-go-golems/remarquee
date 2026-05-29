@@ -1,7 +1,7 @@
 ---
 Title: Add --pages to rmdoc render commands
 Ticket: RMQ-0019
-Status: active
+Status: complete
 Topics:
     - cli
     - rmdoc
@@ -13,10 +13,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-05-29T13:15:37.375555319-04:00
+LastUpdated: 2026-05-29T13:56:58.978549265-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Add --pages to rmdoc render commands
 
