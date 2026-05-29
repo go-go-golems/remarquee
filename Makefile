@@ -59,3 +59,35 @@ REMARQUEE_BINARY=$(shell which remarquee)
 install:
 	go build -o ./dist/remarquee ./cmd/remarquee && \
 		cp ./dist/remarquee $(REMARQUEE_BINARY)
+
+.PHONY: logcopter-generate
+logcopter-generate:
+	GOWORK=off go tool logcopter-gen -include-main -var zlog -area-prefix go-go-golems.remarquee -strip-prefix github.com/go-go-golems/remarquee ./cmd/... ./pkg/...
+
+.PHONY: logcopter-check
+logcopter-check:
+	GOWORK=off go tool logcopter-gen -include-main -var zlog -area-prefix go-go-golems.remarquee -strip-prefix github.com/go-go-golems/remarquee -check ./cmd/... ./pkg/...
+
+GLAZED_LINT_BIN ?= /tmp/glazed-lint
+GLAZED_LINT_PKG ?= github.com/go-go-golems/glazed/cmd/tools/glazed-lint
+GLAZED_VERSION ?= v1.3.6
+
+.PHONY: glazed-lint-build glazed-lint
+
+glazed-lint-build:
+	@echo "Building glazed-lint from Glazed module..."
+	@if [ -n "$(GLAZED_VERSION)" ]; then \
+		echo "Installing $(GLAZED_LINT_PKG)@$(GLAZED_VERSION)"; \
+		GOBIN=$(dir $(GLAZED_LINT_BIN)) GOWORK=off go install $(GLAZED_LINT_PKG)@$(GLAZED_VERSION); \
+	else \
+		echo "Installing $(GLAZED_LINT_PKG) from workspace/module"; \
+		GOBIN=$(dir $(GLAZED_LINT_BIN)) go install $(GLAZED_LINT_PKG); \
+	fi
+
+# Remarquee has several legacy Cobra/device/upload helper commands that predate
+# the Glazed CLI policy; keep the rollout gate enabled and scope exceptions to
+# those legacy command trees.
+GLAZED_LINT_ALLOW_PATHS ?= cmd/build-remarquee-ui-web/,cmd/remarquee/cmds/device/,cmd/remarquee/cmds/rmdsl/,cmd/remarquee/cmds/cloud/,cmd/remarquee/cmds/upload/,cmd/remarquee/cmds/rmdoc/,cmd/remarquee-ui/
+
+glazed-lint: glazed-lint-build
+	GOWORK=off go vet -vettool=$(GLAZED_LINT_BIN) -glazedclilint.allow-paths=$(GLAZED_LINT_ALLOW_PATHS) ./cmd/... ./pkg/...

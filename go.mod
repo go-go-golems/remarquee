@@ -1,8 +1,6 @@
 module github.com/go-go-golems/remarquee
 
-go 1.26.2
-
-toolchain go1.26.3
+go 1.26.3
 
 require (
 	dagger.io/dagger v0.20.3
@@ -10,6 +8,7 @@ require (
 	github.com/duckdb/duckdb-go/v2 v2.10502.0
 	github.com/go-go-golems/geppetto v0.11.17
 	github.com/go-go-golems/glazed v1.2.7
+	github.com/go-go-golems/logcopter v0.1.0
 	github.com/google/uuid v1.6.0
 	github.com/juruen/rmapi v0.0.25
 	github.com/pkg/errors v0.9.1
@@ -160,19 +159,19 @@ require (
 	go.opentelemetry.io/otel v1.41.0 // indirect
 	go.opentelemetry.io/otel/metric v1.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.41.0 // indirect
-	golang.org/x/crypto v0.49.0 // indirect
+	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
 	golang.org/x/image v0.25.0 // indirect
-	golang.org/x/mod v0.34.0 // indirect
-	golang.org/x/net v0.52.0 // indirect
+	golang.org/x/mod v0.36.0 // indirect
+	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260311193753-579e4da9a98c // indirect
-	golang.org/x/term v0.41.0 // indirect
-	golang.org/x/text v0.35.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260508192327-42602be52be6 // indirect
+	golang.org/x/term v0.43.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.43.0 // indirect
+	golang.org/x/tools v0.45.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.272.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260217215200-42d3e9bedb6d // indirect
@@ -182,3 +181,5 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+tool github.com/go-go-golems/logcopter/cmd/logcopter-gen

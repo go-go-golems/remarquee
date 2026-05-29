@@ -29,7 +29,7 @@ type AuthSettings struct {
 // the reMarkable cloud.
 func forceSchemaV4(apiCtx api.ApiCtx) {
 	v := reflect.ValueOf(apiCtx)
-	if v.Kind() != reflect.Ptr || v.IsNil() {
+	if v.Kind() != reflect.Pointer || v.IsNil() {
 		return
 	}
 	v = v.Elem()
