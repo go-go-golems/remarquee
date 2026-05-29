@@ -1,8 +1,6 @@
 module github.com/go-go-golems/remarquee
 
-go 1.26.2
-
-toolchain go1.26.3
+go 1.26.3
 
 require (
 	dagger.io/dagger v0.20.3
