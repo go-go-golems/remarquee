@@ -55,3 +55,13 @@ Annotated the RMQ-0019 diary with planning and implementation commit hashes (dc7
 
 - /home/manuel/workspaces/2026-05-29/add-pages-render/remarquee/ttmp/2026/05/29/RMQ-0019--add-pages-to-rmdoc-render-commands/reference/01-diary.md — Commit hashes added
 
+
+## 2026-05-29
+
+Ran go generate ./... to create cmd/remarquee-ui/frontend/dist, then verified go test ./... passes.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-29/add-pages-render/remarquee/cmd/remarquee-ui/frontend/dist/index.html — Generated UI dist asset used by embed validation
+- /home/manuel/workspaces/2026-05-29/add-pages-render/remarquee/ttmp/2026/05/29/RMQ-0019--add-pages-to-rmdoc-render-commands/reference/01-diary.md — Recorded generation and full-test validation
+
