@@ -84,5 +84,10 @@ glazed-lint-build:
 		GOBIN=$(dir $(GLAZED_LINT_BIN)) go install $(GLAZED_LINT_PKG); \
 	fi
 
+# Remarquee has several legacy Cobra/device/upload helper commands that predate
+# the Glazed CLI policy; keep the rollout gate enabled and scope exceptions to
+# those legacy command trees.
+GLAZED_LINT_ALLOW_PATHS ?= cmd/build-remarquee-ui-web/,cmd/remarquee/cmds/device/,cmd/remarquee/cmds/rmdsl/,cmd/remarquee/cmds/cloud/,cmd/remarquee/cmds/upload/,cmd/remarquee/cmds/rmdoc/,cmd/remarquee-ui/
+
 glazed-lint: glazed-lint-build
-	GOWORK=off go vet -vettool=$(GLAZED_LINT_BIN) ./cmd/... ./pkg/...
+	GOWORK=off go vet -vettool=$(GLAZED_LINT_BIN) -glazedclilint.allow-paths=$(GLAZED_LINT_ALLOW_PATHS) ./cmd/... ./pkg/...
