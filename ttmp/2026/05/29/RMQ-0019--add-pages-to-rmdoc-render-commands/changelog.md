@@ -46,3 +46,12 @@ Recorded pre-commit failure caused by missing cmd/remarquee-ui/frontend/dist emb
 - /home/manuel/workspaces/2026-05-29/add-pages-render/remarquee/cmd/remarquee-ui/embed.go — Existing pre-commit typecheck failure due missing frontend/dist
 - /home/manuel/workspaces/2026-05-29/add-pages-render/remarquee/ttmp/2026/05/29/RMQ-0019--add-pages-to-rmdoc-render-commands/reference/01-diary.md — Failure details recorded
 
+
+## 2026-05-29
+
+Annotated the RMQ-0019 diary with planning and implementation commit hashes (dc7684c, 982f2a9).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-29/add-pages-render/remarquee/ttmp/2026/05/29/RMQ-0019--add-pages-to-rmdoc-render-commands/reference/01-diary.md — Commit hashes added
+

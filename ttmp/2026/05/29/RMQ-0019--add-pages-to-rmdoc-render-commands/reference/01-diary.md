@@ -49,6 +49,8 @@ This step produced the planning artifacts that implementation should follow: a d
 
 **Inferred user intent:** Make large `.rmdoc` rendering workflows more practical by allowing selected page rendering, while keeping a reviewable trail of design, implementation, validation, and commits.
 
+**Commit (docs):** dc7684c0a2ef95c65d8d4767438f0e6f273ca90f — "Docs: plan rmdoc pages render support"
+
 ### What I did
 - Ran repository discovery from the workspace and identified `remarquee` as the target repo.
 - Created ticket `RMQ-0019` with topics `cli,rmdoc,rendering,remarkable`.
@@ -118,6 +120,8 @@ The implementation keeps omitted `--pages` behavior unchanged by treating an emp
 **Assistant interpretation:** Implement the planned `--pages` selector on both render commands, validate it with tests and smoke commands, and keep the ticket diary current.
 
 **Inferred user intent:** Ship a usable page-subset rendering option with enough tests and documentation for future maintainers to trust the behavior.
+
+**Commit (code):** 982f2a9fab1e8ee3cd3b08246b29c8da5a6310d6 — "Add page selection to rmdoc render commands"
 
 ### What I did
 - Added `cmd/remarquee/cmds/rmdoc/pages.go` with:
