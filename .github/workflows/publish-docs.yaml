@@ -1,0 +1,29 @@
+name: Publish docs
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish-docs:
+    name: Publish docs
+    permissions:
+      contents: read
+      id-token: write
+    uses: go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@main
+    with:
+      package_name: remarquee
+      package_version: ${{ github.ref_name }}
+      export_command: GOWORK=off go run ./cmd/remarquee help export --format sqlite --output-path .docsctl/help.sqlite
+      sqlite_path: .docsctl/help.sqlite
+      docsctl_install_command: go install github.com/go-go-golems/glazed/cmd/docsctl@latest
+      vault_role: docsctl-remarquee-publisher
+      vault_token_role: docsctl-remarquee-publisher
+      registry_url: https://docs-registry.yolo.scapegoat.dev
+      verify_packages_url: https://docs.yolo.scapegoat.dev/api/packages
+      verify_publish: true
