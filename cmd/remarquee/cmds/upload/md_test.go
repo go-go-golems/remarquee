@@ -271,6 +271,69 @@ func TestUploadMarkdownRejectsSanitizedNameCollisions(t *testing.T) {
 	}
 }
 
+func TestUploadMarkdownPDFOnlyContinuesAfterConversionFailure(t *testing.T) {
+	td := t.TempDir()
+	pandoc := filepath.Join(td, "fake-pandoc.sh")
+	script := `#!/bin/sh
+input=""
+output=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    *.md) input="$1" ;;
+    -o) shift; output="$1" ;;
+  esac
+  shift
+done
+if grep -q 'FAIL_CONVERSION' "$input"; then
+  echo 'synthetic conversion failure' >&2
+  exit 42
+fi
+printf '%%PDF-1.7 synthetic' > "$output"
+`
+	if err := os.WriteFile(pandoc, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	good := filepath.Join(td, "good.md")
+	bad := filepath.Join(td, "bad.md")
+	if err := os.WriteFile(good, []byte("# Good\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bad, []byte("# Bad\n\nFAIL_CONVERSION\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	outDir := filepath.Join(td, "out")
+
+	cmd := NewUploadMarkdownCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{
+		"--pdf-only",
+		"--pandoc", pandoc,
+		"--output-dir", outDir,
+		good,
+		bad,
+	})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected aggregate conversion error")
+	}
+	if !strings.Contains(err.Error(), "failed pandoc conversion") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(outDir, "good.pdf")); statErr != nil {
+		t.Fatalf("expected successful file to be generated: %v", statErr)
+	}
+	if _, statErr := os.Stat(filepath.Join(outDir, "bad.pdf")); statErr == nil {
+		t.Fatal("expected failed file not to produce a PDF")
+	}
+	if !strings.Contains(out.String(), "good.pdf") || !strings.Contains(out.String(), "bad.md") {
+		t.Fatalf("expected output to report both successful and failed files, got:\n%s", out.String())
+	}
+}
+
 func TestUploadMarkdownRejectsInvalidWorkers(t *testing.T) {
 	td := t.TempDir()
 	md := filepath.Join(td, "draft.md")

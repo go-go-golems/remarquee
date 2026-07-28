@@ -41,6 +41,41 @@ func TestConvertMarkdownFileToPDFHandlesThematicBreakAndFencedYAML(t *testing.T)
 	}
 }
 
+func TestConvertMarkdownFileToPDFHandlesBundleThematicBreakAndFencedYAML(t *testing.T) {
+	pandocAvailable(t)
+
+	td := t.TempDir()
+	firstPath := filepath.Join(td, "first.md")
+	secondPath := filepath.Join(td, "second.md")
+	if err := os.WriteFile(firstPath, []byte("# First\n\nParagraph.\n\n---\n\n```yaml\n---\nfirst: true\n---\n```\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(secondPath, []byte("# Second\n\nAnother paragraph.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	bundleDir := t.TempDir()
+	body, err := BuildBundleMarkdown(context.Background(), []BundleInput{
+		{Path: firstPath, Title: "First"},
+		{Path: secondPath, Title: "Second"},
+	}, bundleDir, nil, false)
+	if err != nil {
+		t.Fatalf("failed to build bundle Markdown: %v", err)
+	}
+
+	bundlePath := filepath.Join(bundleDir, "bundle.md")
+	if err := os.WriteFile(bundlePath, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	outPDF := filepath.Join(td, "bundle.pdf")
+	if err := ConvertMarkdownFileToPDF(context.Background(), bundlePath, outPDF, DefaultPandocOptions()); err != nil {
+		t.Fatalf("bundle thematic break and fenced YAML conversion failed: %v", err)
+	}
+	if _, err := os.Stat(outPDF); err != nil {
+		t.Fatalf("expected bundle PDF: %v", err)
+	}
+}
+
 func TestConvertMarkdownFileToPDFHandlesHashInInputFilename(t *testing.T) {
 	pandocAvailable(t)
 
