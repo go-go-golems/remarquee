@@ -33,6 +33,7 @@ remarquee upload md <path...> [flags]
 
 Before running pandoc:
 - YAML frontmatter is stripped (docmgr-style `--- ... ---`)
+- Pandoc's `yaml_metadata_block` extension is disabled so ordinary `---` thematic breaks are not parsed as YAML
 - list spacing is normalized so pandoc recognizes lists reliably
 
 ### Flags (high-signal)
