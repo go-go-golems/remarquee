@@ -24,4 +24,4 @@
 - [x] Decide whether a typed conversion error is needed and improve diagnostics if required.
 - [x] Update user-facing Markdown upload documentation.
 - [ ] Run package tests, upload-command tests, and full repository validation.
-- [ ] Record the implementation commit and final test evidence in the diary and changelog.
+- [x] Record the implementation commit and final test evidence in the diary and changelog.

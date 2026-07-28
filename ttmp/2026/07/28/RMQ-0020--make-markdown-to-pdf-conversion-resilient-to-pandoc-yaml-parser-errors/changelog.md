@@ -45,3 +45,12 @@ Step 6: Added bundle and batch continuation regression tests and documented yaml
 
 - /home/manuel/workspaces/2026-07-28/fix-remarquee-md/remarquee/cmd/remarquee/cmds/upload/md_test.go — Verify independent batch conversion continues after one failure
 
+
+## 2026-07-28
+
+Step 7: Final implementation audit recorded. Focused tests and docmgr validation pass; full suite remains blocked by missing cmd/remarquee-ui/frontend/dist.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-07-28/fix-remarquee-md/remarquee/ttmp/2026/07/28/RMQ-0020--make-markdown-to-pdf-conversion-resilient-to-pandoc-yaml-parser-errors/reference/01-investigation-diary.md — Final implementation evidence and handoff instructions
+

@@ -561,3 +561,90 @@ The batch fixture uses a temporary shell executable that:
 - writes a minimal `%PDF-1.7` file for successful inputs.
 
 This tests continuation, output creation, and aggregate failure reporting without depending on reMarkable authentication.
+
+## Step 7: Final implementation audit and handoff
+
+The implementation is complete for the ticket’s requested behavior: shared conversion disables Pandoc YAML metadata blocks, direct and bundle conversions cover the regression, batch conversion continues after independent failures, and the user-facing reference explains the new contract. The code and documentation were committed separately so reviewers can inspect the behavior change independently from the long-form handoff.
+
+**Commits:**
+
+- `5bbc3411b7db7d4a0ceb82cb2bafb83e4b2f5626` — `fix(mdpf): disable Pandoc YAML metadata blocks`
+- `955626a31ec57b3141220a6f0dca1556d5a2426a` — `test(upload): cover resilient Markdown conversion`
+- `e9a17b680028a64348e90861aacef985ea0ac4cf` — `docs(RMQ-0020): record resilient Markdown conversion`
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Complete and commit the implementation, maintain the diary, and leave the ticket with clear validation evidence and known limitations.
+
+**Inferred user intent:** Make the change reviewable and ready for a maintainer to merge without losing the investigation context.
+
+### What I did
+
+- Reviewed the three focused commits and their file scopes.
+- Confirmed `docmgr doctor --ticket RMQ-0020 --stale-after 30` passes.
+- Confirmed focused mdpdf and upload tests pass with the locally required Go toolchain override.
+- Confirmed the full test suite reaches all unrelated packages but is blocked by the missing embedded frontend directory.
+- Marked completed implementation, test, documentation, and diary tasks in the ticket.
+
+### Why
+
+A final audit distinguishes completed behavior from environmental validation that cannot pass in the current checkout. This prevents claiming that `go test ./...` passed when `cmd/remarquee-ui` cannot compile without generated `frontend/dist` assets.
+
+### What worked
+
+The requested implementation and focused validation are complete. The shared converter now handles the original failure class, and independent batch processing remains intact.
+
+### What didn't work
+
+The full repository command remains red for the pre-existing generated-asset issue:
+
+```text
+cmd/remarquee-ui/embed.go:8:12: pattern frontend/dist: no matching files found
+```
+
+The failure is outside the changed packages and was also observed by the pre-commit hook.
+
+### What I learned
+
+The correct completion boundary for RMQ-0020 is the shared Markdown conversion contract plus focused tests. Generating frontend assets would add unrelated build output and obscure the change, so it remains a follow-up environment task.
+
+### What was tricky to build
+
+The final state contains both passing focused tests and a failing full-suite command. The handoff must report both precisely, including the `GOWORK=off GOTOOLCHAIN=auto` workaround and the missing `frontend/dist` path.
+
+### What warrants a second pair of eyes
+
+- Confirm the three commits are appropriately separated for review.
+- Confirm maintainers agree that Pandoc metadata should remain unavailable from generated body Markdown.
+- Confirm CI or the normal frontend build creates `cmd/remarquee-ui/frontend/dist` before running repository-wide tests.
+
+### What should be done in the future
+
+- Generate frontend assets and rerun `go test ./...` in the repository's normal build environment.
+- If Pandoc metadata support is needed later, add an explicit metadata API rather than re-enabling implicit YAML parsing.
+
+### Code review instructions
+
+```bash
+cd /home/manuel/workspaces/2026-07-28/fix-remarquee-md/remarquee
+GOWORK=off GOTOOLCHAIN=auto go test ./pkg/mdpdf ./cmd/remarquee/cmds/upload -count=1
+docmgr doctor --ticket RMQ-0020 --stale-after 30
+git show --stat 5bbc3411b7db7d4a0ceb82cb2bafb83e4b2f5626
+git show --stat 955626a31ec57b3141220a6f0dca1556d5a2426a
+```
+
+### Technical details
+
+Expected final behavior for the original shape:
+
+```text
+source Markdown with ordinary ---
+    -> StripYAMLFrontmatter leaves body unchanged
+    -> preprocessing writes temporary input.md
+    -> Pandoc reads Markdown with yaml_metadata_block disabled
+    -> --- is handled as Markdown, not YAML
+    -> XeLaTeX writes PDF
+    -> upload md uploads the generated PDF
+```
