@@ -53,6 +53,40 @@ const defaultLatexHeader = `\usepackage{enumitem}
 \geometry{margin=1in}
 `
 
+func buildPandocArgs(inputPath string, outputPath string, opts PandocOptions, headerPaths []string) []string {
+	// The converter strips docmgr-style frontmatter before invoking Pandoc.
+	// Disable Pandoc's YAML metadata-block extension so ordinary Markdown
+	// thematic breaks (---) are not interpreted as metadata delimiters.
+	argv := []string{
+		"--from=markdown-yaml_metadata_block",
+		inputPath,
+		"-o", outputPath,
+		"--pdf-engine=" + opts.PDFEngine,
+		"--standalone",
+		"-V", "mainfont=" + opts.MainFont,
+		"-V", "monofont=" + opts.MonoFont,
+		"-V", "geometry:" + opts.Geometry,
+	}
+	for _, headerPath := range headerPaths {
+		argv = append(argv, "-H", headerPath)
+	}
+
+	if opts.TOC {
+		argv = append(argv, "--toc")
+		if opts.TOCDepth > 0 {
+			argv = append(argv, fmt.Sprintf("--toc-depth=%d", opts.TOCDepth))
+		}
+	}
+	if opts.HighlightStyle != "" {
+		argv = append(argv, "--highlight-style="+opts.HighlightStyle)
+	}
+	if opts.Listings {
+		argv = append(argv, "--listings")
+	}
+
+	return argv
+}
+
 func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string, opts PandocOptions) error {
 	absOutPDF, err := filepath.Abs(outPDF)
 	if err != nil {
@@ -142,31 +176,7 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 		headerPaths = append(headerPaths, extraHeaderPath)
 	}
 
-	argv := []string{
-		inputPath,
-		"-o", absOutPDF,
-		"--pdf-engine=" + opts.PDFEngine,
-		"--standalone",
-		"-V", "mainfont=" + opts.MainFont,
-		"-V", "monofont=" + opts.MonoFont,
-		"-V", "geometry:" + opts.Geometry,
-	}
-	for _, headerPath := range headerPaths {
-		argv = append(argv, "-H", headerPath)
-	}
-
-	if opts.TOC {
-		argv = append(argv, "--toc")
-		if opts.TOCDepth > 0 {
-			argv = append(argv, fmt.Sprintf("--toc-depth=%d", opts.TOCDepth))
-		}
-	}
-	if opts.HighlightStyle != "" {
-		argv = append(argv, "--highlight-style="+opts.HighlightStyle)
-	}
-	if opts.Listings {
-		argv = append(argv, "--listings")
-	}
+	argv := buildPandocArgs(inputPath, absOutPDF, opts, headerPaths)
 
 	cmd := exec.CommandContext(ctx, opts.PandocPath, argv...) // #nosec G204 -- this package intentionally invokes the configured pandoc binary with explicit argv.
 	// Set working directory to tmpDir so pandoc resolves relative image

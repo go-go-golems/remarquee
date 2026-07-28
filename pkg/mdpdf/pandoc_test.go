@@ -17,6 +17,30 @@ func pandocAvailable(t *testing.T) {
 	t.Skip("pandoc is not installed in a standard location")
 }
 
+func TestConvertMarkdownFileToPDFHandlesThematicBreakAndFencedYAML(t *testing.T) {
+	pandocAvailable(t)
+
+	td := t.TempDir()
+	mdPath := filepath.Join(td, "thematic-break.md")
+	mdContent := "# Thematic break regression\n\nParagraph before the separator.\n\n---\n\n## After the separator\n\n```yaml\n---\nkey: value\n---\n```\n"
+	if err := os.WriteFile(mdPath, []byte(mdContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	outPDF := filepath.Join(td, "out.pdf")
+	if err := ConvertMarkdownFileToPDF(context.Background(), mdPath, outPDF, DefaultPandocOptions()); err != nil {
+		t.Fatalf("thematic break and fenced YAML conversion failed: %v", err)
+	}
+
+	pdfBytes, err := os.ReadFile(outPDF)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pdfBytes) < 4 || string(pdfBytes[:4]) != "%PDF" {
+		t.Fatalf("expected PDF output, got prefix %q", string(pdfBytes[:min(len(pdfBytes), 16)]))
+	}
+}
+
 func TestConvertMarkdownFileToPDFHandlesHashInInputFilename(t *testing.T) {
 	pandocAvailable(t)
 
