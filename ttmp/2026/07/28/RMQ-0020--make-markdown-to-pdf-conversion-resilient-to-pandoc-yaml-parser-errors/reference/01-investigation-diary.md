@@ -571,6 +571,7 @@ The implementation is complete for the ticket’s requested behavior: shared con
 - `5bbc3411b7db7d4a0ceb82cb2bafb83e4b2f5626` — `fix(mdpf): disable Pandoc YAML metadata blocks`
 - `955626a31ec57b3141220a6f0dca1556d5a2426a` — `test(upload): cover resilient Markdown conversion`
 - `e9a17b680028a64348e90861aacef985ea0ac4cf` — `docs(RMQ-0020): record resilient Markdown conversion`
+- `4917b184f8f40614ec9dad0691ecc06bf3d40669` — `docs(RMQ-0020): finalize implementation handoff`
 
 ### Prompt Context
 
@@ -647,4 +648,82 @@ source Markdown with ordinary ---
     -> --- is handled as Markdown, not YAML
     -> XeLaTeX writes PDF
     -> upload md uploads the generated PDF
+```
+
+## Step 8: Verify the original user document end to end
+
+The final smoke test exercised the actual user-provided document through the Go CLI in PDF-only mode. This confirms that the shared change works not only in the compact regression fixture but also against the original 6,275-line design document that previously produced Pandoc exit status 64.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Verify the implemented behavior against the exact original failure after committing the change.
+
+**Inferred user intent:** Ensure the reported command is genuinely fixed, not merely covered by synthetic tests.
+
+### What I did
+
+Ran:
+
+```bash
+cd /home/manuel/workspaces/2026-07-28/fix-remarquee-md/remarquee
+rm -rf /tmp/rmq-0020-original
+GOWORK=off GOTOOLCHAIN=auto go run ./cmd/remarquee upload md \
+  --pdf-only \
+  --output-dir /tmp/rmq-0020-original \
+  /home/manuel/Downloads/scraper_workflow_framework_design.md
+```
+
+### Why
+
+The original document contains the exact pattern that triggered the parser: many standalone `---` separators after prose, along with fenced examples. A successful CLI run validates command wiring, preprocessing, Pandoc invocation, XeLaTeX output, and PDF-only reporting together.
+
+### What worked
+
+The command completed successfully:
+
+```text
+OK: generated /tmp/rmq-0020-original/scraper_workflow_framework_design.pdf
+-rw-rw-r-- 1 manuel manuel 394K Jul 28 06:27 /tmp/rmq-0020-original/scraper_workflow_framework_design.pdf
+```
+
+The final documentation bundle was also re-uploaded after implementation:
+
+```text
+OK: uploaded RMQ-0020 Markdown Conversion Resilience.pdf -> /ai/2026/07/28/RMQ-0020
+```
+
+### What didn't work
+
+No new failure occurred in the original-document smoke test. The repository-wide frontend prerequisite remains the only known validation blocker.
+
+### What I learned
+
+The fix is effective at the user-facing command boundary. No source edit or manual separator replacement is required.
+
+### What was tricky to build
+
+The smoke test had to use `--pdf-only` to avoid cloud authentication while still exercising the real Cobra command and conversion path. The output directory was removed before the run so a stale PDF could not make the result look successful.
+
+### What warrants a second pair of eyes
+
+Open the generated PDF manually if visual review is required. The automated check proves successful PDF generation, not typography or semantic quality of every section.
+
+### What should be done in the future
+
+Run the same smoke test in CI or release packaging with the supported Pandoc and XeLaTeX versions.
+
+### Code review instructions
+
+- Inspect `/tmp/rmq-0020-original/scraper_workflow_framework_design.pdf` after reproducing the command.
+- Confirm the command exits zero and prints `OK: generated`.
+- Re-run focused package tests before merging.
+
+### Technical details
+
+The production behavior is now:
+
+```text
+original Markdown -> shared mdpdf preprocessing -> Pandoc with YAML metadata blocks disabled -> XeLaTeX -> 394K PDF
 ```

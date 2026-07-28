@@ -54,3 +54,12 @@ Step 7: Final implementation audit recorded. Focused tests and docmgr validation
 
 - /home/manuel/workspaces/2026-07-28/fix-remarquee-md/remarquee/ttmp/2026/07/28/RMQ-0020--make-markdown-to-pdf-conversion-resilient-to-pandoc-yaml-parser-errors/reference/01-investigation-diary.md — Final implementation evidence and handoff instructions
 
+
+## 2026-07-28
+
+Step 8: Verified the original 6,275-line user document end to end with go run upload md --pdf-only; generated a 394K PDF and re-uploaded the final bundle to /ai/2026/07/28/RMQ-0020.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-07-28/fix-remarquee-md/remarquee/pkg/mdpdf/pandoc.go — Original-document smoke test confirms shared parser fix
+
