@@ -727,3 +727,80 @@ The production behavior is now:
 ```text
 original Markdown -> shared mdpdf preprocessing -> Pandoc with YAML metadata blocks disabled -> XeLaTeX -> 394K PDF
 ```
+
+## Step 9: Generate frontend assets and clear repository-wide validation
+
+The previously known full-suite blocker was resolved by running the repository’s existing frontend generation path locally. The generated `cmd/remarquee-ui/frontend/dist` and `node_modules` directories are ignored build artifacts, so no unrelated frontend files were added to Git. With those assets present, the complete Go test suite passed.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Proceed with the previously identified next step: generate the missing frontend assets and rerun full validation.
+
+**Inferred user intent:** Remove the environmental validation blocker and finish RMQ-0020 with a clean repository-wide test result.
+
+### What I did
+
+- Read `cmd/remarquee-ui/Makefile`, `cmd/remarquee-ui/gen.go`, and `cmd/build-remarquee-ui-web/main.go` to identify the supported build path.
+- Ran:
+
+```bash
+BUILD_WEB_LOCAL=1 GOWORK=off GOTOOLCHAIN=auto go generate ./cmd/remarquee-ui
+```
+
+- This installed the locked pnpm dependencies and built the Vite frontend into the ignored `frontend/dist` directory.
+- Ran:
+
+```bash
+GOWORK=off GOTOOLCHAIN=auto go test ./... -count=1
+```
+
+- Confirmed all packages, including `cmd/remarquee-ui`, `pkg/mdpdf`, and `cmd/remarquee/cmds/upload`, passed.
+
+### Why
+
+The missing `frontend/dist` directory was the only known cause of the full test failure. The repository already provides a generator and Makefile contract, so using that path avoids inventing a workaround or committing generated artifacts.
+
+### What worked
+
+Frontend generation completed with Vite output:
+
+```text
+dist/index.html                   0.46 kB
+dist/assets/index-CmzDbLuU.css    6.03 kB
+dist/assets/index-R68KD1oi.js   236.49 kB
+```
+
+The full repository test suite completed successfully with no failures. Git status remained clean because frontend build outputs are ignored.
+
+### What didn't work
+
+The default `go` workspace remains stale relative to the module patch versions, so validation used `GOWORK=off GOTOOLCHAIN=auto`. This is an environment/toolchain invocation detail, not a test failure.
+
+### What I learned
+
+`cmd/build-remarquee-ui-web` supports a documented `BUILD_WEB_LOCAL=1` path that uses the pinned pnpm version from the frontend package configuration. The generated assets are intentionally excluded from source control.
+
+### What was tricky to build
+
+The correct command must disable the stale workspace and allow Go to select the module-required toolchain. The frontend output must exist before `go test ./...`, but it should not be staged.
+
+### What warrants a second pair of eyes
+
+Confirm CI uses an equivalent frontend-generation step before repository-wide Go tests, or otherwise ensures `cmd/remarquee-ui/frontend/dist` exists in test jobs.
+
+### What should be done in the future
+
+Document the `GOWORK=off GOTOOLCHAIN=auto` requirement or update `go.work` and installed Go versions in a separate repository-tooling change.
+
+### Code review instructions
+
+```bash
+cd /home/manuel/workspaces/2026-07-28/fix-remarquee-md/remarquee
+BUILD_WEB_LOCAL=1 GOWORK=off GOTOOLCHAIN=auto go generate ./cmd/remarquee-ui
+GOWORK=off GOTOOLCHAIN=auto go test ./... -count=1
+git status --short
+```
+
+Expected result: all tests pass and generated frontend directories remain ignored.

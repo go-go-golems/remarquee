@@ -63,3 +63,17 @@ Step 8: Verified the original 6,275-line user document end to end with go run up
 
 - /home/manuel/workspaces/2026-07-28/fix-remarquee-md/remarquee/pkg/mdpdf/pandoc.go — Original-document smoke test confirms shared parser fix
 
+
+## 2026-07-28
+
+Step 9: Generated ignored frontend assets with the supported BUILD_WEB_LOCAL path and confirmed GOWORK=off GOTOOLCHAIN=auto go test ./... -count=1 passes across the repository.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-07-28/fix-remarquee-md/remarquee/cmd/build-remarquee-ui-web/main.go — Existing frontend generation path used to satisfy embedded dist prerequisite
+
+
+## 2026-07-28
+
+Ticket closed
+

@@ -23,5 +23,5 @@
 - [x] Add or preserve batch continuation coverage with one failed and one successful conversion.
 - [x] Decide whether a typed conversion error is needed and improve diagnostics if required.
 - [x] Update user-facing Markdown upload documentation.
-- [ ] Run package tests, upload-command tests, and full repository validation.
+- [x] Run package tests, upload-command tests, and full repository validation.
 - [x] Record the implementation commit and final test evidence in the diary and changelog.

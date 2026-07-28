@@ -1,7 +1,7 @@
 ---
 Title: Make Markdown to PDF conversion resilient to Pandoc YAML parser errors
 Ticket: RMQ-0020
-Status: active
+Status: complete
 Topics:
     - remarquee
     - upload
@@ -17,11 +17,12 @@ Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: "Intern-ready analysis and implementation guide for preventing Pandoc YAML parser failures caused by ordinary Markdown thematic breaks."
-LastUpdated: 2026-07-28T06:20:00-04:00
-WhatFor: "Track and implement the shared mdpdf fix for resilient Markdown-to-PDF conversion."
-WhenToUse: "Read the design doc before changing Markdown preprocessing, Pandoc arguments, or upload conversion tests."
+Summary: Intern-ready analysis and implementation guide for preventing Pandoc YAML parser failures caused by ordinary Markdown thematic breaks.
+LastUpdated: 2026-07-28T07:10:49.61677151-04:00
+WhatFor: Track and implement the shared mdpdf fix for resilient Markdown-to-PDF conversion.
+WhenToUse: Read the design doc before changing Markdown preprocessing, Pandoc arguments, or upload conversion tests.
 ---
+
 
 # Make Markdown to PDF conversion resilient to Pandoc YAML parser errors
 
