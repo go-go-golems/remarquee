@@ -34,7 +34,7 @@ type PutSettings struct {
 var _ glazecmds.BareCommand = &PutCommand{}
 
 func NewPutCommand() (*PutCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

@@ -42,7 +42,7 @@ type RenderV6PNGSettings struct {
 var _ glazecmds.BareCommand = &RenderV6PNGCommand{}
 
 func NewRenderV6PNGCommand() (*RenderV6PNGCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

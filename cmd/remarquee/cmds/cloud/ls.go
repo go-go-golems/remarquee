@@ -44,13 +44,11 @@ var _ glazecmds.BareCommand = &LsCommand{}
 var _ glazecmds.GlazeCommand = &LsCommand{}
 
 func NewLsCommand() (*LsCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection(
+	glazedLayer, err := settings.NewStructuredOutputSection(
 		// Default to JSON output in glaze mode for machine-readable structured output
-		settings.WithOutputSectionOptions(
-			schema.WithDefaults(map[string]interface{}{
-				"output": "json",
-			}),
-		),
+		schema.WithDefaults(map[string]interface{}{
+			"format": "json",
+		}),
 	)
 	if err != nil {
 		return nil, err

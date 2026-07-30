@@ -31,7 +31,7 @@ type RmSettings struct {
 var _ glazecmds.BareCommand = &RmCommand{}
 
 func NewRmCommand() (*RmCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

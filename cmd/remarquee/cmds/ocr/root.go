@@ -44,7 +44,7 @@ const defaultSystemPrompt = "You are an OCR engine. Extract all legible text fro
 const defaultUserPrompt = "OCR this image."
 
 func NewOcrCommand() (*OcrCommand, error) {
-	glazedSection, err := glazedsettings.NewGlazedSection()
+	glazedSection, err := glazedsettings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}
