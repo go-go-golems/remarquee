@@ -25,7 +25,7 @@ type VersionSettings struct {
 var _ glazecmds.BareCommand = &VersionCommand{}
 
 func NewVersionCommand() (*VersionCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

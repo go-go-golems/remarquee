@@ -11,7 +11,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig"
 	rmapi_annotations "github.com/juruen/rmapi/annotations"
@@ -42,10 +41,7 @@ var _ glazecmds.BareCommand = &RenderLegacyCommand{}
 var _ glazecmds.GlazeCommand = &RenderLegacyCommand{}
 
 func NewRenderLegacyCommand() (*RenderLegacyCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
-	if err != nil {
-		return nil, err
-	}
+
 	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
@@ -109,7 +105,7 @@ Notes:
 - For cPages/V6 documents, this will return an error (V6 rendering not implemented yet).
 `),
 		glazecmds.WithFlags(flags...),
-		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(commandSettingsLayer),
 	)
 
 	return &RenderLegacyCommand{CommandDescription: cmdDesc}, nil

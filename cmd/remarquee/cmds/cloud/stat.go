@@ -32,13 +32,11 @@ var _ glazecmds.BareCommand = &StatCommand{}
 var _ glazecmds.GlazeCommand = &StatCommand{}
 
 func NewStatCommand() (*StatCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection(
+	glazedLayer, err := settings.NewStructuredOutputSection(
 		// Default to JSON output in glaze mode for machine-readable structured output
-		settings.WithOutputSectionOptions(
-			schema.WithDefaults(map[string]interface{}{
-				"output": "json",
-			}),
-		),
+		schema.WithDefaults(map[string]interface{}{
+			"format": "json",
+		}),
 	)
 	if err != nil {
 		return nil, err
@@ -60,8 +58,8 @@ Examples:
   remarquee cloud stat /
   remarquee cloud stat /Books
   remarquee cloud stat /Books/paper.pdf
-  remarquee cloud stat /Books/paper.pdf --with-glaze-output --output json
-  remarquee cloud stat /Books/paper.pdf --with-glaze-output --output yaml
+  remarquee cloud stat /Books/paper.pdf --with-glaze-output --format json
+  remarquee cloud stat /Books/paper.pdf --with-glaze-output --format yaml
 `),
 		glazecmds.WithFlags(
 			// Auth flags

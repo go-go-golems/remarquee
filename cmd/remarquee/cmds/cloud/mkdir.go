@@ -28,7 +28,7 @@ type MkdirSettings struct {
 var _ glazecmds.BareCommand = &MkdirCommand{}
 
 func NewMkdirCommand() (*MkdirCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

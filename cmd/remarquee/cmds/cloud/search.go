@@ -41,7 +41,7 @@ type SearchSettings struct {
 var _ glazecmds.BareCommand = &SearchCommand{}
 
 func NewSearchCommand() (*SearchCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

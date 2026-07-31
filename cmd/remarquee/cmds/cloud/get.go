@@ -29,7 +29,7 @@ type GetSettings struct {
 var _ glazecmds.BareCommand = &GetCommand{}
 
 func NewGetCommand() (*GetCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

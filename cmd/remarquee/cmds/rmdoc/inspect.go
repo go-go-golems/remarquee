@@ -10,7 +10,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig"
 	pkg_rmdoc "github.com/go-go-golems/remarquee/pkg/rmdoc"
@@ -30,10 +29,7 @@ var _ glazecmds.BareCommand = &InspectCommand{}
 var _ glazecmds.GlazeCommand = &InspectCommand{}
 
 func NewInspectCommand() (*InspectCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
-	if err != nil {
-		return nil, err
-	}
+
 	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
@@ -47,7 +43,7 @@ Inspect a local .rmdoc file and print a deterministic page plan derived from .co
 
 Examples:
   remarquee rmdoc inspect file.rmdoc
-  remarquee rmdoc inspect file.rmdoc --with-glaze-output --output json
+  remarquee rmdoc inspect file.rmdoc --with-glaze-output --format json
 `),
 		glazecmds.WithFlags(
 			fields.New(
@@ -58,7 +54,7 @@ Examples:
 				fields.WithHelp("Path to the .rmdoc file"),
 			),
 		),
-		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(commandSettingsLayer),
 	)
 
 	return &InspectCommand{CommandDescription: cmdDesc}, nil

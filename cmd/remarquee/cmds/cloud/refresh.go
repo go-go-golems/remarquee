@@ -29,13 +29,11 @@ var _ glazecmds.BareCommand = &RefreshCommand{}
 var _ glazecmds.GlazeCommand = &RefreshCommand{}
 
 func NewRefreshCommand() (*RefreshCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection(
+	glazedLayer, err := settings.NewStructuredOutputSection(
 		// Default to JSON output in glaze mode for machine-readable structured output
-		settings.WithOutputSectionOptions(
-			schema.WithDefaults(map[string]interface{}{
-				"output": "json",
-			}),
-		),
+		schema.WithDefaults(map[string]interface{}{
+			"format": "json",
+		}),
 	)
 	if err != nil {
 		return nil, err
@@ -62,8 +60,8 @@ Examples:
   remarquee cloud refresh
   remarquee cloud refresh --non-interactive
   remarquee cloud refresh --reauth
-  remarquee cloud refresh --with-glaze-output --output json
-  remarquee cloud refresh --with-glaze-output --output yaml
+  remarquee cloud refresh --with-glaze-output --format json
+  remarquee cloud refresh --with-glaze-output --format yaml
 `),
 		glazecmds.WithFlags(
 			fields.New(
