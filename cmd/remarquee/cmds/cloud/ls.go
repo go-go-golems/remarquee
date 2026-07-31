@@ -71,9 +71,9 @@ Examples:
   remarquee cloud ls /
   remarquee cloud ls /Books
   remarquee cloud ls /Books --long --time
-  remarquee cloud ls /Books --with-glaze-output --output json
-  remarquee cloud ls /Books --with-glaze-output --output yaml
-  remarquee cloud ls /Books --with-glaze-output --fields name,type,modified_time
+  remarquee cloud ls /Books --with-glaze-output --format json
+  remarquee cloud ls /Books --with-glaze-output --format yaml
+  remarquee cloud ls /Books --with-glaze-output --output-fields name,type,modified_time
 `),
 		glazecmds.WithFlags(
 			// Auth flags

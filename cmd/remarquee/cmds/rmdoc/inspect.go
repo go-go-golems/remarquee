@@ -43,7 +43,7 @@ Inspect a local .rmdoc file and print a deterministic page plan derived from .co
 
 Examples:
   remarquee rmdoc inspect file.rmdoc
-  remarquee rmdoc inspect file.rmdoc --with-glaze-output --output json
+  remarquee rmdoc inspect file.rmdoc --with-glaze-output --format json
 `),
 		glazecmds.WithFlags(
 			fields.New(

@@ -68,9 +68,9 @@ Examples:
   remarquee cloud find /Books
   remarquee cloud find /Books ".*pdf$"
   remarquee cloud find /Books "Selfish"
-  remarquee cloud find /Books --with-glaze-output --output json
-  remarquee cloud find /Books --with-glaze-output --output yaml
-  remarquee cloud find /Books --with-glaze-output --fields name,type,path
+  remarquee cloud find /Books --with-glaze-output --format json
+  remarquee cloud find /Books --with-glaze-output --format yaml
+  remarquee cloud find /Books --with-glaze-output --output-fields name,type,path
 `),
 		glazecmds.WithFlags(
 			// Auth flags

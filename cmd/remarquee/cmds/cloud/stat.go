@@ -58,8 +58,8 @@ Examples:
   remarquee cloud stat /
   remarquee cloud stat /Books
   remarquee cloud stat /Books/paper.pdf
-  remarquee cloud stat /Books/paper.pdf --with-glaze-output --output json
-  remarquee cloud stat /Books/paper.pdf --with-glaze-output --output yaml
+  remarquee cloud stat /Books/paper.pdf --with-glaze-output --format json
+  remarquee cloud stat /Books/paper.pdf --with-glaze-output --format yaml
 `),
 		glazecmds.WithFlags(
 			// Auth flags

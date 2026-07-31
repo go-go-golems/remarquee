@@ -60,8 +60,8 @@ Examples:
   remarquee cloud refresh
   remarquee cloud refresh --non-interactive
   remarquee cloud refresh --reauth
-  remarquee cloud refresh --with-glaze-output --output json
-  remarquee cloud refresh --with-glaze-output --output yaml
+  remarquee cloud refresh --with-glaze-output --format json
+  remarquee cloud refresh --with-glaze-output --format yaml
 `),
 		glazecmds.WithFlags(
 			fields.New(
