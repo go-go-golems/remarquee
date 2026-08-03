@@ -462,7 +462,7 @@ for each page in scope:
 - **Decision:** (c), via the `includeUnannotated = !selection.All` derivation.
 - **Rationale:** This is exactly the legacy behavior users already know: rmapi skips unannotated pages unless `AllPages` (`annotations/pdf.go:96`), and the legacy CLI forces `AllPages` when a subset is selected (`render_legacy.go:194`). Skipping by default avoids a 44-page PDF with 41 blank pages; emitting selected blanks avoids the "I asked for pages 1-4 and got 3 pages" confusion.
 - **Consequences:** Output page count is not always equal to input page count — this must be documented in help text and in the Glaze output (see Phase 3 `selected_pages` row field). Legacy's `AllPages` forcing exists for a technical reason (index alignment for post-extraction) that does not apply to v6's pre-selection architecture; we adopt its *user-visible* semantics, not its mechanism.
-- **Status:** proposed
+- **Status:** accepted (implemented 2026-08-03)
 
 ### Decision: DR-3 — page geometry reuses the existing overlay-only canvas math
 
@@ -479,7 +479,7 @@ for each page in scope:
 - **Decision:** (b).
 - **Rationale:** Self-describing, stays in the `-v6*` namespace, and cannot collide with either existing default. (c) would collide with `render-legacy`'s default for the same input file.
 - **Consequences:** One conditional in `execute`; must be covered by a CLI test.
-- **Status:** proposed
+- **Status:** accepted (implemented 2026-08-03)
 
 ### Decision: DR-5 — do not open the payload PDF in annotations-only mode
 

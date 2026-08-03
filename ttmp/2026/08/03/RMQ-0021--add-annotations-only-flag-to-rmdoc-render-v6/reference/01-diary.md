@@ -445,3 +445,50 @@ With the library renderer in place, this step exposed `--annotations-only` on bo
 ### Technical details
 - Glaze row gained `annotations_only` (bool).
 - Default outputs: `<input>-v6-annotations.pdf` (render-v6), `<base>-v6-annotations.pdf` + `-page-XXX.png` (render-v6-png).
+
+## Step 9: Phase 4 — README, full-suite validation, ticket close-out
+
+Final phase: user-facing docs, whole-repo regression run, and ticket bookkeeping. The feature is complete on this branch: both v6 verbs support `--annotations-only`, validated end-to-end on the real workbook through the `--cloud` path.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 5)
+
+**Assistant interpretation:** Execute Phase 4 and close out the implementation.
+
+**Inferred user intent:** Same as Step 5.
+
+**Commit (code):** see commit at end of step — "docs(RMQ-0021): README examples + final validation (Phase 4)"
+
+### What I did
+- README: added `--annotations-only` examples for `render-v6` (plain + `--pages`) and `render-v6-png` in the "Render local .rmdoc archives" section.
+- Full suite: `go build ./...` ok; `go test ./... -count=1` → zero failures (including `cmd/remarquee-ui`, which compiles thanks to the gitignored placeholder dist from Step 6).
+- Bookkeeping: tasks 5–6 checked; changelog updated with phase results and commit hashes; `docmgr doctor --ticket RMQ-0021` re-run.
+
+### Why
+- Close out per the deliverable checklist: docs updated, tests green, ticket state consistent.
+
+### What worked
+- No regressions anywhere in the repo test suite after all three code phases.
+
+### What didn't work
+- Nothing.
+
+### What I learned
+- n/a
+
+### What was tricky to build
+- n/a
+
+### What warrants a second pair of eyes
+- All open review points from Steps 6–8 (xref math, typed-text/highlight paths lacking fixtures, all-blank-output UX, PNG prefix change).
+
+### What should be done in the future
+- Push branch + PR; follow-ups recorded in the design doc (typed-text/highlight fixtures via rmdsl; render-v6-png legacy-schema probe; possible package split for binary-level unidoc separation).
+- Optional: re-upload the updated ticket docs to reMarkable (design doc gained DR-6, Phase 3b, accepted statuses; diary gained steps 5–9).
+
+### Code review instructions
+- Commits in order: ee1be8e (scope docs), 0be07ed (Phase 1 refactor), 796fd6d (Phase 2 renderer + stdlib writer), 1594eae (Phases 3+3b CLI), this commit (Phase 4 docs). Review design doc DR-1..DR-6 against the code.
+
+### Technical details
+- n/a
