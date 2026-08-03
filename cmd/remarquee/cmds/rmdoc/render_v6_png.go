@@ -37,6 +37,8 @@ type RenderV6PNGSettings struct {
 	DPI      int    `glazed:"dpi"`
 	PDFToPPM string `glazed:"pdftoppm"`
 	Force    bool   `glazed:"force"`
+
+	AnnotationsOnly bool `glazed:"annotations-only"`
 }
 
 var _ glazecmds.BareCommand = &RenderV6PNGCommand{}
@@ -60,7 +62,10 @@ selected pages with Poppler's pdftoppm.
 
 Notes:
 - This command currently uses Poppler for rasterization.
-- Output PNG names follow: <basename>-v6-page-XXX.png.
+- With --annotations-only, the intermediate PDF contains only annotation content
+  on blank pages (no background PDF), one page per requested --pages entry.
+- Output PNG names follow: <basename>-v6-page-XXX.png (or <basename>-v6-annotations-page-XXX.png
+  with --annotations-only).
 `),
 		glazecmds.WithFlags(
 			fields.New(
@@ -105,6 +110,12 @@ Notes:
 				fields.TypeBool,
 				fields.WithDefault(false),
 				fields.WithHelp("Overwrite existing PNG/PDF outputs"),
+			),
+			fields.New(
+				"annotations-only",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Export annotations only (no background PDF); one blank-background page per requested --pages entry"),
 			),
 		),
 		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
@@ -154,6 +165,9 @@ func (c *RenderV6PNGCommand) Run(ctx context.Context, parsedValues *values.Value
 		base = base[:len(base)-len(ext)]
 	}
 	prefix := base + "-v6"
+	if s.AnnotationsOnly {
+		prefix = base + "-v6-annotations"
+	}
 
 	pdfOut := strings.TrimSpace(s.PDFOut)
 	if pdfOut == "" {
@@ -172,7 +186,14 @@ func (c *RenderV6PNGCommand) Run(ctx context.Context, parsedValues *values.Value
 		}
 	}
 
-	res, err := rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx, s.File, rmdocrender.V6MergeOptions{}, pageIndices)
+	var res *rmdocrender.V6MergeResult
+	if s.AnnotationsOnly {
+		// Every requested page maps 1:1 onto an output page (blank when the page
+		// has no annotations), so the rasterize mapping below stays aligned.
+		res, err = rmdocrender.RenderRMDocV6AnnotationsOnlyWithInfo(ctx, s.File, rmdocrender.V6MergeOptions{}, pageIndices, true)
+	} else {
+		res, err = rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx, s.File, rmdocrender.V6MergeOptions{}, pageIndices)
+	}
 	if err != nil {
 		return err
 	}

@@ -30,7 +30,8 @@ type RenderV6Settings struct {
 	Out   string `glazed:"out"`
 	Pages string `glazed:"pages"`
 
-	Force bool `glazed:"force"`
+	Force           bool `glazed:"force"`
+	AnnotationsOnly bool `glazed:"annotations-only"`
 
 	CloudInputSettings
 }
@@ -68,6 +69,12 @@ func NewRenderV6Command() (*RenderV6Command, error) {
 			fields.WithHelp("1-based page numbers/ranges to render, for example 1, 1,3,5, or 2-4 (default: all pages)"),
 		),
 		fields.New(
+			"annotations-only",
+			fields.TypeBool,
+			fields.WithDefault(false),
+			fields.WithHelp("Export annotations only (no background PDF); unannotated pages are skipped unless explicitly selected with --pages"),
+		),
+		fields.New(
 			"file",
 			fields.TypeString,
 			fields.WithIsArgument(true),
@@ -88,6 +95,9 @@ Render a V6 (cPages) .rmdoc to an annotated PDF using the Go V6 parser + merge p
 
 Notes:
 - Only supports PDF-backed/notebook cPages archives (not EPUB).
+- With --annotations-only, output contains only annotation content (strokes,
+  smart highlights, typed text) on blank pages: pages you did not draw on are
+  skipped, unless explicitly selected with --pages (then they are emitted blank).
 - This is still a milestone renderer (brush fidelity, typed text output, and PNGs are future work).
 `),
 		glazecmds.WithFlags(flags...),
@@ -116,13 +126,14 @@ func (c *RenderV6Command) Run(ctx context.Context, parsedValues *values.Values) 
 }
 
 type renderV6Execution struct {
-	Input         string
-	InputSource   string
-	Output        string
-	Schema        string
-	Type          string
-	Pages         int
-	SelectedPages string
+	Input           string
+	InputSource     string
+	Output          string
+	Schema          string
+	Type            string
+	Pages           int
+	SelectedPages   string
+	AnnotationsOnly bool
 }
 
 func archiveHasV6RM(ctx context.Context, rmdocPath string, doc *pkg_rmdoc.Document) (bool, error) {
@@ -167,7 +178,11 @@ func (c *RenderV6Command) execute(ctx context.Context, s *RenderV6Settings) (*re
 
 	out := s.Out
 	if out == "" {
-		out = defaultOutputPath(input.LocalPath, "-v6.pdf")
+		if s.AnnotationsOnly {
+			out = defaultOutputPath(input.LocalPath, "-v6-annotations.pdf")
+		} else {
+			out = defaultOutputPath(input.LocalPath, "-v6.pdf")
+		}
 	}
 	if err := ensureOutputWritable(out, s.Force); err != nil {
 		return nil, err
@@ -179,9 +194,15 @@ func (c *RenderV6Command) execute(ctx context.Context, s *RenderV6Settings) (*re
 	}
 
 	var res *rmdocrender.V6MergeResult
-	if selection.All {
+	switch {
+	case s.AnnotationsOnly:
+		// Annotations-only: blank pages with only annotation content. Unannotated
+		// pages are skipped unless the user explicitly selected a page subset
+		// (render-legacy parity: --pages forces AllPages there).
+		res, err = rmdocrender.RenderRMDocV6AnnotationsOnlyWithInfo(ctx, input.LocalPath, rmdocrender.V6MergeOptions{}, selection.Indices0, !selection.All)
+	case selection.All:
 		res, err = rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfo(ctx, input.LocalPath, rmdocrender.V6MergeOptions{})
-	} else {
+	default:
 		res, err = rmdocrender.MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx, input.LocalPath, rmdocrender.V6MergeOptions{}, selection.Indices0)
 	}
 	if err != nil {
@@ -192,13 +213,14 @@ func (c *RenderV6Command) execute(ctx context.Context, s *RenderV6Settings) (*re
 	}
 
 	return &renderV6Execution{
-		Input:         input.RequestedPath,
-		InputSource:   input.Source,
-		Output:        out,
-		Schema:        schemaString(doc.Schema),
-		Type:          docTypeString(doc.Type),
-		Pages:         len(doc.Pages),
-		SelectedPages: formatPages1Based(selection.Pages1),
+		Input:           input.RequestedPath,
+		InputSource:     input.Source,
+		Output:          out,
+		Schema:          schemaString(doc.Schema),
+		Type:            docTypeString(doc.Type),
+		Pages:           len(doc.Pages),
+		SelectedPages:   formatPages1Based(selection.Pages1),
+		AnnotationsOnly: s.AnnotationsOnly,
 	}, nil
 }
 
@@ -228,6 +250,7 @@ func (c *RenderV6Command) RunIntoGlazeProcessor(
 		types.MRP("type", res.Type),
 		types.MRP("pages", res.Pages),
 		types.MRP("selected_pages", res.SelectedPages),
+		types.MRP("annotations_only", res.AnnotationsOnly),
 	)
 	return gp.AddRow(ctx, row)
 }

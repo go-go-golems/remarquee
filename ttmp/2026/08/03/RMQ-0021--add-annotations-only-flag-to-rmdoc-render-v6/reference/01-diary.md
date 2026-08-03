@@ -389,3 +389,59 @@ Phase 2 started exactly per the design doc (renderer reusing the unipdf page bui
 ### Technical details
 - Blank page size: 1404×1872 units × rmv6Scale × cairoSVGScale ≈ 335.3×447.0 pt.
 - Workbook annotations-only page size: 606.709×515.249 pt (bbox widened by margin compensation — the user's right-margin notes extend past the default screen half-width; same math as the composite path).
+
+## Step 8: Phases 3 + 3b — CLI wiring for render-v6 and render-v6-png
+
+With the library renderer in place, this step exposed `--annotations-only` on both v6 verbs, exactly per the design (plus the user's Phase 3b scope extension), and validated end-to-end through the real CLI including the `--cloud` path on the workbook.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 5)
+
+**Assistant interpretation:** Execute Phases 3 and 3b from the design doc.
+
+**Inferred user intent:** Same as Step 5 — per-phase, reviewable, diary-kept implementation.
+
+**Commit (code):** see commit at end of step — "feat(RMQ-0021): --annotations-only flag for render-v6 and render-v6-png (Phases 3+3b)"
+
+### What I did
+- `cmd/remarquee/cmds/rmdoc/render_v6.go`: added `AnnotationsOnly` to `RenderV6Settings` and `renderV6Execution`, flag definition (help text mirrors legacy + skip semantics), default output suffix `-v6-annotations.pdf` (DR-4), a `switch` in `execute` routing to `RenderRMDocV6AnnotationsOnlyWithInfo(..., selection.Indices0, !selection.All)` (DR-2 derivation), `annotations_only` in the Glaze row, and long-help bullets.
+- `cmd/remarquee/cmds/rmdoc/render_v6_png.go`: same flag on the PNG verb; branch calls the annotations-only renderer with `includeUnannotated=true` (explicit pages list + 1:1 rasterize mapping); output prefix becomes `<base>-v6-annotations` for both the intermediate PDF and PNGs.
+- CLI tests (`render_v6_test.go` +3, new `render_v6_png_test.go` +1): skip semantics (1 page from the 2-page/1-annotated fixture), subset blank emission (`--pages 1,2` → 2 pages), default output name via `t.Chdir`, PNG smoke with pdftoppm producing `-v6-annotations-page-001/002.png`.
+- End-to-end validation through the built CLI:
+  - `render-v6 --cloud --non-interactive "/ai/.../TTC Garden Human Calibration Workbook" --annotations-only --pages 1-3` → 3 pages.
+  - `render-v6 workbook.rmdoc --annotations-only` (all 44 pages) → 3 pages (skip semantics).
+  - `pdftotext | grep -c Unlicensed` → 0 (DR-6 holds through the CLI too).
+  - `--with-glaze-output --output json` → row contains `"annotations_only": true`.
+  - `render-v6-png cpage-pdf.rmdoc --pages 1 --annotations-only` → PNG shows handwriting only, white canvas.
+- Flipped DR-2 and DR-4 to accepted in the design doc (all six DRs now accepted).
+
+### Why
+- Per design doc phases; the png verb needs `includeUnannotated=true` always because its rasterize loop maps requested pages 1:1 to PDF pages.
+
+### What worked
+- The glazed plumbing was exactly the three touch points predicted in the design doc (settings struct, flags slice, execute branch).
+- Two `edit` anchors missed on the first pass (long-help strings end with `` ` `` `),` not `` ` `` `,`); re-issued with corrected text — second attempt clean.
+
+### What didn't work
+- PNG test first failed: `pdftoppm not found on PATH: exec: ""`. Cause: `newDefaultParsedValues` does not apply flag defaults — unset `pdftoppm`/`dpi` decode to zero values. Fix: pass `"pdftoppm": "pdftoppm", "dpi": 100` explicitly in the test map.
+
+### What I learned
+- The repo's glazed test helper bypasses the cobra/parser layer where defaults are normally filled in; any CLI test must set every flag the code path reads (or the command's `WithDefault` is silently ignored).
+
+### What was tricky to build
+- Nothing beyond the anchor/default-value issues above; the branch logic was a direct application of DR-2's derivation (`includeUnannotated = !selection.All`).
+
+### What warrants a second pair of eyes
+- `--pages` + `--annotations-only` on a selection whose pages are ALL unannotated now yields an all-blank PDF (legacy parity) — confirm this is the desired UX vs. an error/empty PDF.
+- The PNG prefix change (`-v6-annotations-`) — no in-repo consumers found.
+
+### What should be done in the future
+- Phase 4: README examples, final full-suite run, ticket bookkeeping, closing diary step.
+
+### Code review instructions
+- `git show` this commit; focus on `render_v6.go` execute switch and `render_v6_png.go` Run branch. Run `go test ./cmd/remarquee/cmds/rmdoc/ -count=1 -run AnnotationsOnly -v` and the end-to-end commands listed above.
+
+### Technical details
+- Glaze row gained `annotations_only` (bool).
+- Default outputs: `<input>-v6-annotations.pdf` (render-v6), `<base>-v6-annotations.pdf` + `-page-XXX.png` (render-v6-png).

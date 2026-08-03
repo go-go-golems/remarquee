@@ -150,3 +150,85 @@ func countPDFPages(t *testing.T, path string) int {
 	}
 	return n
 }
+
+func annotationsOnlyFixturePath(t *testing.T, name string) string {
+	t.Helper()
+	return filepath.Join(repoRootFromThisFile(t), "cmd", "remarquee-ui", "testdata", "generated", name)
+}
+
+func TestRenderV6Command_AnnotationsOnly(t *testing.T) {
+	cmd, err := NewRenderV6Command()
+	if err != nil {
+		t.Fatalf("NewRenderV6Command: %v", err)
+	}
+
+	tmp := t.TempDir()
+	out := filepath.Join(tmp, "out.pdf")
+
+	parsedValues := newDefaultParsedValues(t, cmd.CommandDescription, map[string]interface{}{
+		"file":             annotationsOnlyFixturePath(t, "fake-cpages-pdf-v6-sample-rm.rmdoc"),
+		"out":              out,
+		"force":            true,
+		"annotations-only": true,
+	})
+
+	if err := cmd.Run(context.Background(), parsedValues); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	// Fixture has 2 UI pages but only page 1 annotated: skip semantics -> 1 page.
+	if got := countPDFPages(t, out); got != 1 {
+		t.Fatalf("pages=%d want=1 (unannotated page should be skipped)", got)
+	}
+}
+
+func TestRenderV6Command_AnnotationsOnlyPagesSubset(t *testing.T) {
+	cmd, err := NewRenderV6Command()
+	if err != nil {
+		t.Fatalf("NewRenderV6Command: %v", err)
+	}
+
+	tmp := t.TempDir()
+	out := filepath.Join(tmp, "out.pdf")
+
+	parsedValues := newDefaultParsedValues(t, cmd.CommandDescription, map[string]interface{}{
+		"file":             annotationsOnlyFixturePath(t, "fake-cpages-pdf-v6-sample-rm.rmdoc"),
+		"out":              out,
+		"force":            true,
+		"annotations-only": true,
+		"pages":            "1,2",
+	})
+
+	if err := cmd.Run(context.Background(), parsedValues); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	// Explicitly selected pages are emitted even when unannotated (blank page 2).
+	if got := countPDFPages(t, out); got != 2 {
+		t.Fatalf("pages=%d want=2 (explicitly selected pages must be emitted)", got)
+	}
+}
+
+func TestRenderV6Command_AnnotationsOnlyDefaultOutName(t *testing.T) {
+	cmd, err := NewRenderV6Command()
+	if err != nil {
+		t.Fatalf("NewRenderV6Command: %v", err)
+	}
+
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+
+	parsedValues := newDefaultParsedValues(t, cmd.CommandDescription, map[string]interface{}{
+		"file":             annotationsOnlyFixturePath(t, "fake-cpages-pdf-v6-sample-rm.rmdoc"),
+		"annotations-only": true,
+	})
+
+	if err := cmd.Run(context.Background(), parsedValues); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	want := "fake-cpages-pdf-v6-sample-rm-v6-annotations.pdf"
+	if _, err := os.Stat(filepath.Join(tmp, want)); err != nil {
+		t.Fatalf("expected default output %s: %v", want, err)
+	}
+}
