@@ -249,7 +249,13 @@ Ground-truth facts about the example document, gathered 2026-08-03 (commands in 
 | `render-v6 --pages 1-3` | ✅ 3-page annotated PDF | ran it |
 | `render-legacy --annotations-only` | ❌ `Error: Unknown header` | ran it |
 
-What the current `render-v6` output contains for these pages: the letter-size worksheet pages (tables, printed questions) with the user's handwritten check marks, crosses, and short pen annotations merged on top — i.e. the composite. An annotations-only render of pages 1–3 should instead show a blank (white) page carrying only the strokes — and, because all three selected pages are annotated, should still produce exactly 3 pages.
+What the current `render-v6` output contains for these pages (verified by rasterizing the composite render to PNG at 100 dpi and inspecting each page):
+
+- **Page 1** — printed contents table, workbook header, case metadata for `luna-deer-resistant-screen`, and a "Score sheet" table (six dimensions × columns 0/1/2). Annotations: a dark check mark in the "2" column of the "task completion" row; a tall dark curly brace spanning the score table's right edge; a dark cursive note in the right margin ("i am not sure these are all that useful, I think i might just annotate things by hand"); and broad pale red/pink highlighter strokes behind that note block.
+- **Page 2** — printed "Customer-visible conversation" (User prompt, Assistant answer about deer-resistant evergreen screens), "Practical selection checklist" bullets, "Planting layout" numbered list. Annotations: a red/pink cursive margin note top-right ("this all seems a bit long, remember that this is an assistant in a convo") with an arrow leader pointing into the Assistant paragraph; small caret marks at checklist bullets; a tall dark curly brace in the left margin spanning the checklist section.
+- **Page 3** — printed continuation bullets and "Rendered source cards" (repeated "Arborvitae Privacy Trees" cards with excerpts). Annotations: a red/pink cursive note top-right ("this definitely should be ...") with an arrow leader, and a red/pink underline beneath the first excerpt line.
+
+An annotations-only render of pages 1–3 should show each of those stroke sets on a blank white page of (approximately) the same canvas size — the check mark, braces, cursive notes, arrow leaders, carets, and highlighter bands, with none of the printed worksheet content. Because all three selected pages are annotated, it should still produce exactly 3 pages.
 
 Because the document is `schema=legacy` with V6 `.rm` files, it exercises the `archiveHasV6RM` probe in `render-v6` (`render_v6.go:128-141`, `159-166`). Any implementation must keep working for this hybrid case, not just for cPages fixtures.
 

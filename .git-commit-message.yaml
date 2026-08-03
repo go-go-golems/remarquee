@@ -1,0 +1,14 @@
+title: "📝 docs(RMQ-0021): complete diary + worked-example visuals; upload bundle to reMarkable"
+description: |
+  Finalizes the RMQ-0021 ticket deliverables: diary step 4 (visual verification
+  of TTC Garden workbook pages 1-3 via read tool, bookkeeping, doctor, upload),
+  concrete annotation inventory in the design guide's worked example, changelog
+  entry for the reMarkable upload (/ai/2026/08/03/RMQ-0021).
+  No source code changes; no new APIs or CLI commands.
+tests:
+  - name: docmgr doctor --ticket RMQ-0021 --stale-after 30
+    result: pass (all checks)
+  - name: remarquee upload bundle --dry-run
+    result: pass (2 docs, remote-dir /ai/2026/08/03/RMQ-0021)
+  - name: remarquee cloud ls /ai/2026/08/03/RMQ-0021 --long --non-interactive
+    result: pass (bundle listed)

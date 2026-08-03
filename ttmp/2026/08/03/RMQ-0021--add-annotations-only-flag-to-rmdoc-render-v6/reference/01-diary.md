@@ -108,7 +108,7 @@ The user pointed at a concrete document on the tablet to use as the running exam
 
 ### What didn't work
 - `cloud get --out <file>` is not a valid flag combination; error output was terse. Fix: use `--out-dir` and accept the document-name-derived filename.
-- `ask_questions_about_images` on the rasterized pages failed with a VLM backend TLS error (`remote error: tls: bad record MAC`) — visual description of the example pages deferred; will retry or fall back to pdfinfo/structure-level facts.
+- `ask_questions_about_images` on the rasterized pages failed twice with VLM backend errors (`remote error: tls: bad record MAC`, then an aborted call with partial output). Workaround per user instruction ("Use the read() tool"): read the PNGs directly with the `read` tool, which attaches images to the conversation — this produced a full accurate page-by-page description now embedded in the design doc's worked example.
 
 ### What I learned
 - Modern devices write V6 `.rm` files even into legacy-schema archives; schema detection alone cannot pick the renderer — the `archiveHasV6RM` probe exists precisely for this.
@@ -140,7 +140,7 @@ With evidence in hand, this step created RMQ-0021 and wrote the primary delivera
 
 **Inferred user intent:** Same as Step 1.
 
-**Commit (code):** none yet (docs to be committed next)
+**Commit (code):** db38ea1 — "docs(RMQ-0021): analysis/design/implementation guide for render-v6 --annotations-only" (ticket docs; no source changes)
 
 ### What I did
 - `docmgr ticket create-ticket --ticket RMQ-0021 --title "Add --annotations-only flag to rmdoc render-v6" --topics cli,rmdoc,rendering,remarkable` → `ttmp/2026/08/03/RMQ-0021--add-annotations-only-flag-to-rmdoc-render-v6`.
@@ -180,3 +180,57 @@ With evidence in hand, this step created RMQ-0021 and wrote the primary delivera
 ### Technical details
 - Ticket dir: `ttmp/2026/08/03/RMQ-0021--add-annotations-only-flag-to-rmdoc-render-v6/`
 - Design doc: `design-doc/01-analysis-design-and-implementation-guide-for-render-v6-annotations-only.md` (~42 KB)
+
+## Step 4: Visual verification of the example pages, ticket bookkeeping, and reMarkable upload
+
+This closing step verified what the example pages actually look like (so the guide's worked example describes real annotation content, not guesses), finished docmgr bookkeeping, validated with doctor, committed, and uploaded the bundle to the reMarkable cloud.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Use the read() tool"
+
+**Assistant interpretation:** After the VLM-based image QA tool failed twice, the user wants the example page PNGs inspected by attaching them via the `read` tool instead.
+
+**Inferred user intent:** Get an accurate visual description of workbook pages 1–3 into the design doc using a reliable path.
+
+**Commit (code):** db38ea1 — "docs(RMQ-0021): analysis/design/implementation guide for render-v6 --annotations-only" (from Step 3); final bookkeeping commit follows this step.
+
+### What I did
+- Read `/tmp/ttc-workbook/v6-{1,2,3}.png` with the `read` tool (image attachments) and wrote a precise page-by-page annotation description into the design doc's worked example (check mark in score sheet, tall curly braces, red/pink cursive margin notes with arrow leaders, carets, pale red/pink highlighter bands).
+- Updated `index.md` overview, `tasks.md` (5 TODO implementation phases, 5 DONE analysis items).
+- Related 7 files to the design doc via `docmgr doc relate` (absolute paths, `path:reason` format).
+- `docmgr changelog update --ticket RMQ-0021` with the evidence summary.
+- `docmgr doctor --ticket RMQ-0021 --stale-after 30` → ✅ all checks passed.
+- Committed ticket docs: db38ea1 (6 files, 901 insertions).
+- Upload: `remarquee status` ok; `cloud account --non-interactive` ok (user=wesen@ruinwesen.com); `upload bundle --dry-run` clean; real `upload bundle` → `OK: uploaded RMQ-0021 render-v6 annotations-only design guide.pdf -> /ai/2026/08/03/RMQ-0021`; verified with `cloud ls /ai/2026/08/03/RMQ-0021 --long --non-interactive`.
+
+### Why
+- The deliverable contract was: ticket + intern-ready guide + diary + reMarkable upload, with doctor validation before upload and dry-run before real upload.
+
+### What worked
+- The `read` tool path gave a complete, reliable visual inventory of all three pages; the worked example now describes concrete strokes the implementer can eyeball against their output.
+- Doctor passed on the first run; upload succeeded on the first real attempt after a clean dry-run.
+
+### What didn't work
+- `ask_questions_about_images` remained unreliable (TLS error, then aborted call with partial output) — superseded by the `read` tool per user instruction.
+
+### What I learned
+- The composite render of page 1 shows highlighter bands *behind* the cursive note — a good visual test for the future implementation: annotations-only output must preserve both the dark pen strokes and the pale shader/highlighter strokes with their alpha.
+
+### What was tricky to build
+- n/a (verification/bookkeeping phase)
+
+### What warrants a second pair of eyes
+- The worked-example descriptions are agent-interpreted visuals; spot-check against the tablet or the PNGs in `/tmp/ttc-workbook/` if precision matters for goldens later.
+
+### What should be done in the future
+- Execute implementation Phases 1–4 from the design doc (tracked in tasks.md).
+- After implementation, re-render the workbook with `--annotations-only --pages 1-3` and visually compare against the composite PNGs from this session.
+
+### Code review instructions
+- Bundle on the tablet: `/ai/2026/08/03/RMQ-0021/RMQ-0021 render-v6 annotations-only design guide` (design doc + diary with ToC depth 2).
+- Local docs: `ttmp/2026/08/03/RMQ-0021--add-annotations-only-flag-to-rmdoc-render-v6/`.
+
+### Technical details
+- Remote dir: `/ai/2026/08/03/RMQ-0021`
+- Bundle contents: design-doc/01 + reference/01-diary
