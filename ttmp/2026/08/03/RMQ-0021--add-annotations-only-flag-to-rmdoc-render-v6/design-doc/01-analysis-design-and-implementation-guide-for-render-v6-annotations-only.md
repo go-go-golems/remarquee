@@ -453,7 +453,7 @@ for each page in scope:
 - **Decision:** (b) — new `RenderRMDocV6AnnotationsOnlyWithInfo` in `pkg/rmdoc/render/v6_annotations_only.go`.
 - **Rationale:** The merge loops are golden-test-covered rendering code (`golden_remarks_test.go`); threading a mode switch through them triples their branching complexity and risks regressions in the default path. A dedicated function reuses the same unexported helpers (`buildOverlayOnlyPageBBoxScaled`, `applySmartHighlightsScaled`, `maxStrokeWidthScreenUnits`) because it lives in the same package, keeps the default path byte-identical, and is far easier for a new engineer to read in isolation. It also lets us skip building the background PDF entirely (DR-5), which option (a) would make awkward.
 - **Consequences:** A third copy of the small "read rm → parse → extract" prologue appears; mitigated by Phase 1 extracting the canvas-bbox computation into a shared helper used by all three loops. If the merge loops are ever refactored into one, the annotations-only function should join that refactor.
-- **Status:** proposed
+- **Status:** accepted (implemented 2026-08-03)
 
 ### Decision: DR-2 — page emission semantics (skip vs blank)
 
@@ -470,7 +470,7 @@ for each page in scope:
 - **Decision:** (a) — reuse `buildOverlayOnlyPageBBoxScaled` with the identical bbox/scale computation.
 - **Rationale:** Zero new rendering code; output is byte-for-byte consistent with what the current pipeline already produces for blank-background pages, so reviewers can eyeball annotations-only pages against existing renders of inserted/notebook pages; strokes that extend beyond the default screen area are not clipped (the bbox union handles them); smart highlights and typed text inherit their already-validated positioning.
 - **Consequences:** Page sizes can vary slightly per page (stroke-extent padding), matching existing behavior rather than legacy's fixed 445×594 pt. Parity with legacy is behavioral (blank pages, annotation content), not geometric; this is acceptable because v6 already uses different geometry than rmapi everywhere.
-- **Status:** proposed
+- **Status:** accepted (implemented 2026-08-03)
 
 ### Decision: DR-4 — default output filename
 
@@ -488,11 +488,18 @@ for each page in scope:
 - **Decision:** (b).
 - **Rationale:** Real speed and memory win on large payloads (the workbook's 44-page letter PDF; the 12 MB `cpage-pdf.rmdoc` fixture); removes a failure mode (corrupt/encrypted payload would break an annotations-only export that doesn't need it); blank-page emission needs only the device size constants.
 - **Consequences:** Page *geometry* can no longer be derived from the payload (DR-3 makes this moot). `doc` is still opened for the page plan and pageIDs.
-- **Status:** proposed
+- **Status:** accepted (implemented 2026-08-03)
+
+### Decision: DR-6 — annotations-only output is written by a minimal stdlib PDF writer, not unipdf
+
+- **Context:** The Phase 2 prototype reused the unipdf-based page builders and produced a red "Unlicensed UniDoc" watermark on every page when the rmapi `go:linkname` community-license hack (`rmapi/annotations/license.go`) was not linked into the binary. Depending on AGPL unipdf plus a fragile linkname init for a feature that only *writes* a simple PDF is unnecessary risk.
+- **Options considered:** (a) keep unipdf builders and rely on rmapi's license init (works through the CLI today, breaks for any consumer that doesn't import rmapi, and keeps AGPL code in the path); (b) switch to another PDF library (gofpdf/pdfcpu — new dependency, weak highlight-annotation support); (c) hand-roll a minimal PDF writer for this path only.
+- **Decision:** (c) — a small stdlib-only writer (`pkg/rmdoc/render/v6_annotations_only_pdf.go`): page objects with MediaBox/CropBox, FlateDecode content streams, inline ExtGState/base-14 font resource dicts, indirect Highlight annotation dicts, classic xref table. No unipdf import anywhere in the annotations-only call chain (the `pkg/rmdoc` parser layer is already unidoc-free, verified with `go list -deps`).
+- **Rationale:** The output grammar is tiny and fully under our control (stroke polylines, typed text with base-14 fonts, highlight quads). `buildOverlayOpsBBoxScaled` already emits the content stream as a plain string, proving the rendering logic is library-agnostic; only page/resource/xref assembly was unipdf-coupled. Tests still parse our output with the unipdf *reader* (test-only usage) plus poppler (`pdfinfo`, `pdftoppm`), so validity is verified by an independent implementation.
+- **Consequences:** The composite merge path (`MergeRMDocV6OntoBackground*`) keeps unipdf — reading/compositing real PDFs is out of scope to replace. Stroke/text/highlight emission logic is re-implemented in the new ops builder (mirroring `buildOverlayOpsBBoxScaled`/`appendTypedTextOpsBBoxScaled`/`applySmartHighlightsScaled`); the two implementations must be kept in sync for styling (widths, alphas, colors, font sizes). Output bytes differ from unipdf's (different object layout) — acceptable, since semantics are what matter and there are no goldens for this new path.
+- **Status:** accepted (implemented 2026-08-03)
 
 ## Implementation Phases
-
-All work happens on branch `task/remarquee-v6-only-annotations`. Run `go test ./... -count=1` and `gofmt -w <files>` at the end of every phase; commit per phase.
 
 ### Phase 1 — extract the shared canvas-bbox helper (`pkg/rmdoc/render/v6_merge_background.go`)
 
@@ -510,7 +517,7 @@ Also extract the `blankDeviceSizedPage()` one-pager used by DR-2 (a `pdf.PdfPage
 
 ### Phase 2 — the annotations-only renderer (`pkg/rmdoc/render/v6_annotations_only.go`, new)
 
-Implement `RenderRMDocV6AnnotationsOnlyWithInfo` per the pseudocode above. Error messages should copy the style of `MergeRMDocV6OntoBackgroundPDFWithInfoForPages` (`v6_merge_background.go:511-523`): wrap with `errors.Wrapf` including page index and pageID.
+Implement `RenderRMDocV6AnnotationsOnlyWithInfo` per the pseudocode above, emitting pages through the stdlib writer from DR-6 (`v6_annotations_only_pdf.go`): a stroke/text ops builder mirroring `buildOverlayOpsBBoxScaled` + `appendTypedTextOpsBBoxScaled`, and highlight dict building mirroring `applySmartHighlightsScaled`. No unipdf imports.
 
 Unit tests in `pkg/rmdoc/render/v6_annotations_only_test.go` (new) — fixtures already exist in `cmd/remarquee-ui/testdata/generated/`:
 

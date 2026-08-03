@@ -331,3 +331,61 @@ First code change of the implementation: the annotation canvas bbox computation 
 
 ### Technical details
 - Helpers live in `pkg/rmdoc/render/v6_merge_background.go` directly above `buildOverlayOnlyPageBBoxScaled`.
+
+## Step 7: Phase 2 — annotations-only renderer, rewritten stdlib-only after the unipdf watermark discovery (DR-6)
+
+Phase 2 started exactly per the design doc (renderer reusing the unipdf page builders), passed all six new unit tests, and rendered the workbook correctly — but the smoke PDF had a red "Unlicensed UniDoc" watermark on every page. Root-causing that led to a design change (DR-6): the annotations-only path now writes its PDF with a minimal stdlib-only writer and has no unipdf dependency at all.
+
+### Prompt Context
+
+**User prompt (verbatim):** "can we do it without unidoc?" and then "perfect, what's next?"
+
+**Assistant interpretation:** The user wants the annotations-only feature to avoid unipdf if feasible; after confirming feasibility (parser layer already unidoc-free; we only write a simple PDF), implement it that way.
+
+**Inferred user intent:** No AGPL/watermark entanglement for the new feature; keep the change scoped (not a wholesale unipdf removal from the composite pipeline).
+
+**Commit (code):** see commit at end of step — "feat(RMQ-0021): annotations-only V6 renderer with stdlib PDF writer (Phase 2, DR-6)"
+
+### What I did
+- Prototyped `RenderRMDocV6AnnotationsOnlyWithInfo` on unipdf builders first: 6/6 new unit tests passed; workbook smoke rendered 3 pages (skip mode) / 4 pages (subset+blank mode).
+- Discovered watermark: `pdftotext annonly-all.pdf - | grep -c Unlicensed` → 3; composite renders → 0. Root cause: unipdf's AGPL community watermark is suppressed only by rmapi's `annotations/license.go` `go:linkname` init, which runs only when rmapi is linked into the binary; my standalone smoke program imported only `pkg/rmdoc/render`.
+- Feasibility check for dropping unipdf: `go list -deps ./pkg/rmdoc | grep unidoc` → empty (parser layer is unidoc-free); the only unipdf-coupled pieces in the annotations-only path were page/resource/xref assembly — `buildOverlayOpsBBoxScaled` already emits content streams as plain strings.
+- Added DR-6 to the design doc and rewrote Phase 2 stdlib-only:
+  - `pkg/rmdoc/render/v6_annotations_only_pdf.go` (new): minimal PDF writer — catalog/pages/page objects, zlib content streams, inline ExtGState + base-14 font dicts, indirect Highlight annot dicts, classic xref/trailer; helpers `pdfNum`, `pdfEscapeString`, `alphaGStateNameStr`, `buildResourcesDict`.
+  - `pkg/rmdoc/render/v6_annotations_only.go` (rewritten): ops builders mirroring `buildOverlayOpsBBoxScaled` (stroke state machine w/gs/J/RG, m/l/S paths), `appendTypedTextOpsBBoxScaled` (BT/Tf/Tm/Tj), and `applySmartHighlightsScaled` (quad points + union rect); `blankDevicePageSpec()` for DR-2 blank pages.
+- Validation: all 6 unit tests pass against the stdlib writer (tests parse output with the unipdf *reader* as an independent implementation); `qpdf --check` clean; `pdfinfo` correct (3 pages, 606.709×515.249pt); `grep -c Unlicensed` → 0; rasterized pages visually identical to the unipdf prototype, watermark gone.
+- Flipped DR-1, DR-3, DR-5, DR-6 to "accepted (implemented 2026-08-03)" in the design doc.
+
+### Why
+- Watermark-free output without depending on a `go:linkname` hack in a vendored fork; smaller conceptual surface for a feature that only writes a simple PDF; the parser layer being unidoc-free made it cheap.
+
+### What worked
+- The mirror-the-existing-ops approach: stroke state machine, text emission, and highlight quads were ported line-by-line from the unipdf versions, so styling (widths, alphas, colors, font sizes) matches the composite pipeline exactly.
+- Independent validation: unipdf reader in tests + qpdf + poppler all accept the hand-rolled output.
+
+### What didn't work
+- First stdlib-writer test run failed with `GetAllContentStreams(1): zlib: invalid header`. Cause: `compress/flate` emits raw DEFLATE, but PDF `/FlateDecode` expects zlib (RFC 1950, 2-byte header + adler32). Fix: `compress/zlib`. One retry, then green.
+
+### What I learned
+- unipdf's watermark behavior is process-global and license-key-driven; any binary that renders via unipdf without rmapi linked gets watermarked output — worth remembering for future remarquee-ui/API work.
+- Diary correction for Step 6: the Phase 1 commit initially failed lefthook twice — (1) pre-existing `cmd/remarquee-ui/embed.go: pattern frontend/dist` failure (fixed locally with a gitignored placeholder `frontend/dist/index.html`), (2) `nonamedreturns` lint on the two new helpers (fixed by un-naming returns, which briefly broke the build via `stBBox, ok =` needing `:=`). Final Phase 1 commit (0be07ed) passed hooks cleanly.
+
+### What was tricky to build
+- Getting PDF byte-level details right by hand: xref entries must be exactly 20 bytes (`%010d 00000 n \n`), the binary comment line after `%PDF-1.7`, zlib-vs-raw-deflate, and PDF literal string escaping (`\`, `(`, `)`, octal for non-ASCII). Symptom-driven debugging: unipdf's reader error messages pointed at the stream filter first.
+- Keeping HighlightsXTranslation aligned with *emitted* pages (blank pages contribute a 0 entry), which differs from the merge path's per-background-page indexing; documented on the function.
+
+### What warrants a second pair of eyes
+- `writeSimplePDF` object numbering/xref math (simple but byte-exact).
+- Typed-text emission is untested by fixtures (no fixture has RootText); the port mirrors `appendTypedTextOpsBBoxScaled` but has no golden. Consider a DSL-generated fixture (`rmdsl compile`) with typed text in a follow-up.
+- Highlight annotations: fixture has no glyph ranges either; logic mirrors `applySmartHighlightsScaled` but is only exercised on the real workbook (which has none on pages 1-3).
+
+### What should be done in the future
+- Phase 3/3b CLI wiring (render-v6, render-v6-png), Phase 4 docs + cloud validation.
+- Optional: move annotations-only renderer to its own package if binary-level unidoc separation is ever required (currently same package as the unipdf merge code, so unipdf is still *linked*; it is just never *executed* for this path).
+
+### Code review instructions
+- Start at `pkg/rmdoc/render/v6_annotations_only.go` (public function + ops builders), then `v6_annotations_only_pdf.go` (writer). Compare ops against `buildOverlayOpsBBoxScaled`/`applySmartHighlightsScaled` in `v6_merge_background.go`. Run `go test ./pkg/rmdoc/render/ -count=1 -run TestRenderV6AnnotationsOnly -v`.
+
+### Technical details
+- Blank page size: 1404×1872 units × rmv6Scale × cairoSVGScale ≈ 335.3×447.0 pt.
+- Workbook annotations-only page size: 606.709×515.249 pt (bbox widened by margin compensation — the user's right-margin notes extend past the default screen half-width; same math as the composite path).

@@ -3,7 +3,7 @@
 ## TODO
 
 - [x] 1. Phase 1: extract `annotationCanvasBBox` + `overlayOnlyPageGeometry` helpers in pkg/rmdoc/render/v6_merge_background.go (byte-identical refactor)
-- [ ] 2. Phase 2: implement `RenderRMDocV6AnnotationsOnlyWithInfo` in pkg/rmdoc/render/v6_annotations_only.go + unit tests
+- [x] 2. Phase 2: implement `RenderRMDocV6AnnotationsOnlyWithInfo` in pkg/rmdoc/render/v6_annotations_only.go + unit tests
 - [ ] 3. Phase 3: wire `--annotations-only` flag in cmd/remarquee/cmds/rmdoc/render_v6.go + glaze field + CLI tests
 - [ ] 4. Phase 3b: wire `--annotations-only` flag in cmd/remarquee/cmds/rmdoc/render_v6_png.go (scope extension per user)
 - [ ] 5. Phase 4: README/help updates + manual validation on TTC Garden workbook via --cloud
