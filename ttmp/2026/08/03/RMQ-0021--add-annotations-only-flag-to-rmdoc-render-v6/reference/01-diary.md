@@ -234,3 +234,50 @@ This closing step verified what the example pages actually look like (so the gui
 ### Technical details
 - Remote dir: `/ai/2026/08/03/RMQ-0021`
 - Bundle contents: design-doc/01 + reference/01-diary
+
+## Step 5: Scope extension — render-v6-png gets the flag too; implementation begins
+
+The user extended the scope mid-flight: `render-v6-png` should also receive `--annotations-only`, and asked to implement the phases task by task with diary and commits. This step records the scope change and the implementation kickoff; the actual phases follow in subsequent steps.
+
+### Prompt Context
+
+**User prompt (verbatim):** "render-v6-png should get it too. 
+
+let's go task by task and implement a keep a detailed diary and ocmmit at appropriate intervals"
+
+**Assistant interpretation:** Add `--annotations-only` to `render-v6-png` as well, then execute the design doc's phases one at a time, keeping the diary current and committing at each phase boundary.
+
+**Inferred user intent:** Move from design to implementation now, with reviewable per-phase commits and a paper trail.
+
+**Commit (code):** none (scope/doc updates only)
+
+### What I did
+- Updated `tasks.md`: added Phase 3b (render-v6-png wiring) between Phase 3 and Phase 4; refined Phase 1 wording to the two actual helpers (`annotationCanvasBBox`, `overlayOnlyPageGeometry`).
+- Updated the design doc: scope in/out sections (render-v6-png in scope; its legacy-schema restriction explicitly out), new "Phase 3b" section with flag derivation rationale (`includeUnannotated=true` because render-v6-png always has an explicit pages list and needs 1:1 page mapping), open question 1 marked resolved.
+
+### Why
+- Keep the design doc and tasks honest before code changes begin, so later phases review against current docs.
+
+### What worked
+- The design anticipated this as "open question 1", so the extension slots into the existing plan without re-design: the png verb rasterizes the library renderer's output, so the flag is a thin pass-through.
+
+### What didn't work
+- Nothing.
+
+### What I learned
+- `render-v6-png` hard-requires `SchemaCPages` (no `archiveHasV6RM` probe), so the workbook example cannot exercise it; recorded as out of scope with a note that relaxing the schema check is a separate change.
+
+### What was tricky to build
+- Deciding `includeUnannotated` for the png verb: it always has an explicit pages list (default "1"), and its rasterize loop maps `PDFPage = i+1` to requested labels 1:1, so skipping unannotated pages would corrupt the mapping. Always true.
+
+### What warrants a second pair of eyes
+- The prefix change for png outputs (`-v6-annotations-` vs `-v6-`) — confirm it doesn't break any external script (none found in repo).
+
+### What should be done in the future
+- Phases 1–4 per tasks.md.
+
+### Code review instructions
+- Diff of this step is docs-only: `tasks.md`, design doc scope/Phase 3b sections.
+
+### Technical details
+- n/a

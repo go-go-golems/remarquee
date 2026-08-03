@@ -82,6 +82,7 @@ Two facts in that output drive the whole design:
 ### In scope
 
 - Add an `--annotations-only` boolean flag to `remarquee rmdoc render-v6`.
+- Add an `--annotations-only` boolean flag to `remarquee rmdoc render-v6-png` (scope extension requested by the user on 2026-08-03; resolves open question 1).
 - A new exported renderer in `pkg/rmdoc/render` that produces a PDF of annotation content (strokes, smart highlights, typed text) on blank pages, without reading or compositing the background payload PDF.
 - Correct interplay with the existing `--pages` subset selector (RMQ-0019).
 - Unit and CLI smoke tests, plus manual validation against the workbook example.
@@ -89,7 +90,8 @@ Two facts in that output drive the whole design:
 
 ### Out of scope
 
-- `render-v6-png` and `vlm-validate` (they share the same library primitive and are natural follow-ups, but no CLI change is requested for them).
+- `vlm-validate` (shares the same library primitive; a natural follow-up, but no CLI change is requested for it).
+- The schema restriction of `render-v6-png` (it rejects legacy-schema archives with V6 `.rm` files, unlike `render-v6` which probes via `archiveHasV6RM`); relaxing it is a separate behavioral change.
 - The `remarquee-ui` HTTP API (`cmd/remarquee-ui/api/render.go`), which currently hard-codes `AnnotationsOnly: false` for its rmapi legacy path.
 - EPUB-backed documents (already rejected by both verbs).
 - Template backgrounds for notebooks (a known later milestone, see `BuildBackgroundPDF` docs at `pkg/rmdoc/render/background.go:29-36`).
@@ -537,6 +539,13 @@ CLI tests in `cmd/remarquee/cmds/rmdoc/render_v6_test.go` (same `newDefaultParse
 - `TestRenderV6Command_AnnotationsOnlyPagesSubset`: sample fixture with `pages: "1,2"`, expect 2 pages (blank second page, DR-2).
 - `TestRenderV6Command_AnnotationsOnlyDefaultOutName`: assert default output ends with `-v6-annotations.pdf` (DR-4).
 
+### Phase 3b — PNG verb wiring (`cmd/remarquee/cmds/rmdoc/render_v6_png.go`)
+
+1. Add `AnnotationsOnly bool \`glazed:"annotations-only"\`` to `RenderV6PNGSettings` and a flag definition mirroring the render-v6 help text.
+2. In `Run`, branch on `s.AnnotationsOnly`: call `RenderRMDocV6AnnotationsOnlyWithInfo(ctx, s.File, rmdocrender.V6MergeOptions{}, pageIndices, true)`. `includeUnannotated` is always true here because `render-v6-png` requires an explicit `--pages` list (default `"1"`), and the 1:1 mapping between requested pages and rasterized PDF pages must hold.
+3. When the flag is set, use output prefix `<basename>-v6-annotations` (instead of `<basename>-v6`) for both the intermediate PDF and the PNG names (DR-4 spirit).
+4. Manual smoke: `render-v6-png` on `cmd/remarquee-ui/testdata/cpage-pdf.rmdoc --pages 1 --annotations-only`.
+
 ### Phase 4 — docs, manual validation, handoff
 
 - README: add one example line next to the existing `render-v6` examples.
@@ -575,7 +584,7 @@ CLI tests in `cmd/remarquee/cmds/rmdoc/render_v6_test.go` (same `newDefaultParse
 
 ### Open questions
 
-1. Should `render-v6-png` grow the same flag (it rasterizes the merged PDF, so it would be a one-line pass-through)? Follow-up ticket.
+1. ~~Should `render-v6-png` grow the same flag?~~ **Resolved 2026-08-03: yes** — user explicitly requested it; implemented in Phase 3b.
 2. Should the blank-page size for `includeUnannotated` pages equal the *payload* page size instead of the device size? That would require reading the payload (violates DR-5); revisit only if users ask.
 3. Do we want outline/bookmark preservation ever? Legacy explicitly drops outlines on subset extraction; v6 has no outlines today. Non-goal.
 
