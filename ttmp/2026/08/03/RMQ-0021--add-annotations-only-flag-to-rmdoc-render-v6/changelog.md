@@ -35,3 +35,8 @@ Implemented --annotations-only for render-v6 and render-v6-png across 4 phases: 
 - /home/manuel/workspaces/2026-08-03/remarquee-v6-only-annotations/remarquee/pkg/rmdoc/render/v6_annotations_only.go — New renderer
 - /home/manuel/workspaces/2026-08-03/remarquee-v6-only-annotations/remarquee/pkg/rmdoc/render/v6_annotations_only_pdf.go — Stdlib PDF writer (DR-6)
 
+
+## 2026-08-03
+
+Re-uploaded updated design guide + diary bundle (DR-6, Phases 1-4, diary steps 5-9) to reMarkable /ai/2026/08/03/RMQ-0021 after implementation completed
+
