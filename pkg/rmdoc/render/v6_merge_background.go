@@ -376,17 +376,7 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 		// BBox: match rmc/remarks minimum extents of a full screen. This prevents
 		// "annotation bbox" shrinkage from clipping root text/highlights and keeps
 		// merge math stable for text-only pages.
-		defaultBBox := rmdoc.BBox{
-			MinX: -float64(rmv6ScreenWidth) / 2.0,
-			MaxX: float64(rmv6ScreenWidth) / 2.0,
-			MinY: 0,
-			MaxY: float64(rmv6ScreenHeight),
-		}
-		stBBox, ok := rmdoc.BBoxForStrokes(strokes, 0)
-		bbox := defaultBBox
-		if ok && !stBBox.IsEmpty() {
-			bbox = bbox.Union(stBBox)
-		}
+		bbox, stBBox, ok := annotationCanvasBBox(strokes)
 
 		// Background dims + rotation.
 		w0, h0, rot, err := pageBoxDims(bgPage)
@@ -403,34 +393,8 @@ func MergeRMDocV6OntoBackgroundPDFWithInfo(ctx context.Context, rmdocPath string
 			// directly (no show_pdf_page scaling). That PDF is produced by CairoSVG, which applies the
 			// implicit 0.75 px->pt scale factor (72/96).
 			//
-			// To match remarks across both notebooks and inserted blank pages in PDF-backed docs,
-			// render using the bbox-derived page size (so strokes outside the default canvas are kept),
-			// with the CairoSVG-effective scale.
-			scale := rmv6Scale * cairoSVGScale
-			pad := maxStrokeWidthScreenUnits(strokes) / 2.0
-			if pad < 1.0 {
-				pad = 1.0
-			}
-			bboxWithPad := bbox.Expand(pad)
-			if ok && !stBBox.IsEmpty() {
-				defaultMinX := -float64(rmv6ScreenWidth) / 2.0
-				defaultMaxX := float64(rmv6ScreenWidth) / 2.0
-				leftMargin := stBBox.MinX - defaultMinX
-				rightMargin := defaultMaxX - stBBox.MaxX
-				if leftMargin < 0 {
-					leftMargin = 0
-				}
-				if rightMargin < 0 {
-					rightMargin = 0
-				}
-				if leftMargin > rightMargin {
-					bboxWithPad.MaxX += leftMargin - rightMargin
-				} else if rightMargin > leftMargin {
-					bboxWithPad.MinX -= rightMargin - leftMargin
-				}
-			}
-			pageW := xxScaled((bboxWithPad.MaxX-bboxWithPad.MinX)+1, scale)
-			pageH := yyScaled((bboxWithPad.MaxY-bboxWithPad.MinY)+1, scale)
+			// Render using the bbox-derived page size with the CairoSVG-effective scale.
+			bboxWithPad, pageW, pageH, scale := overlayOnlyPageGeometry(strokes, bbox, stBBox, ok)
 
 			mergedPage, err := buildOverlayOnlyPageBBoxScaled(pageW, pageH, strokes, tree.RootText, textParagraphs, bboxWithPad, scale, opts)
 			if err != nil {
@@ -612,17 +576,7 @@ func MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx context.Context, rmdocPat
 			continue
 		}
 
-		defaultBBox := rmdoc.BBox{
-			MinX: -float64(rmv6ScreenWidth) / 2.0,
-			MaxX: float64(rmv6ScreenWidth) / 2.0,
-			MinY: 0,
-			MaxY: float64(rmv6ScreenHeight),
-		}
-		stBBox, ok := rmdoc.BBoxForStrokes(strokes, 0)
-		bbox := defaultBBox
-		if ok && !stBBox.IsEmpty() {
-			bbox = bbox.Union(stBBox)
-		}
+		bbox, stBBox, ok := annotationCanvasBBox(strokes)
 
 		w0, h0, rot, err := pageBoxDims(bgPage)
 		if err != nil {
@@ -633,31 +587,7 @@ func MergeRMDocV6OntoBackgroundPDFWithInfoForPages(ctx context.Context, rmdocPat
 
 		bgContent, _ := bgPage.GetAllContentStreams()
 		if strings.TrimSpace(bgContent) == "" {
-			scale := rmv6Scale * cairoSVGScale
-			pad := maxStrokeWidthScreenUnits(strokes) / 2.0
-			if pad < 1.0 {
-				pad = 1.0
-			}
-			bboxWithPad := bbox.Expand(pad)
-			if ok && !stBBox.IsEmpty() {
-				defaultMinX := -float64(rmv6ScreenWidth) / 2.0
-				defaultMaxX := float64(rmv6ScreenWidth) / 2.0
-				leftMargin := stBBox.MinX - defaultMinX
-				rightMargin := defaultMaxX - stBBox.MaxX
-				if leftMargin < 0 {
-					leftMargin = 0
-				}
-				if rightMargin < 0 {
-					rightMargin = 0
-				}
-				if leftMargin > rightMargin {
-					bboxWithPad.MaxX += leftMargin - rightMargin
-				} else if rightMargin > leftMargin {
-					bboxWithPad.MinX -= rightMargin - leftMargin
-				}
-			}
-			pageW := xxScaled((bboxWithPad.MaxX-bboxWithPad.MinX)+1, scale)
-			pageH := yyScaled((bboxWithPad.MaxY-bboxWithPad.MinY)+1, scale)
+			bboxWithPad, pageW, pageH, scale := overlayOnlyPageGeometry(strokes, bbox, stBBox, ok)
 
 			mergedPage, err := buildOverlayOnlyPageBBoxScaled(pageW, pageH, strokes, tree.RootText, textParagraphs, bboxWithPad, scale, opts)
 			if err != nil {
@@ -750,6 +680,63 @@ func displayDims(w0, h0 float64, rotation int64) (float64, float64) {
 		w, h = h, w
 	}
 	return w, h
+}
+
+// annotationCanvasBBox computes the annotation canvas bbox for a page: the
+// full-screen default bbox (matching rmc/remarks minimum extents, which prevents
+// "annotation bbox" shrinkage from clipping root text/highlights and keeps merge
+// math stable for text-only pages) unioned with the stroke bbox when strokes exist.
+func annotationCanvasBBox(strokes []rmdoc.Stroke) (rmdoc.BBox, rmdoc.BBox, bool) {
+	bbox := rmdoc.BBox{
+		MinX: -float64(rmv6ScreenWidth) / 2.0,
+		MaxX: float64(rmv6ScreenWidth) / 2.0,
+		MinY: 0,
+		MaxY: float64(rmv6ScreenHeight),
+	}
+	stBBox, ok := rmdoc.BBoxForStrokes(strokes, 0)
+	if ok && !stBBox.IsEmpty() {
+		bbox = bbox.Union(stBBox)
+	}
+	return bbox, stBBox, ok
+}
+
+// overlayOnlyPageGeometry computes the padded canvas bbox, page dimensions, and
+// scale used by the overlay-only (blank/annotations-only) rendering path.
+//
+// When a background page has no content stream, remarks inserts the rmc-produced
+// SVG PDF directly (no show_pdf_page scaling). That PDF is produced by CairoSVG,
+// which applies the implicit 0.75 px->pt scale factor (72/96). To match remarks
+// across both notebooks and inserted blank pages in PDF-backed docs, we render
+// using the bbox-derived page size (so strokes outside the default canvas are
+// kept) with the CairoSVG-effective scale, and compensate asymmetric left/right
+// margins so the canvas stays centered over the default screen extents.
+func overlayOnlyPageGeometry(strokes []rmdoc.Stroke, bbox, stBBox rmdoc.BBox, ok bool) (rmdoc.BBox, float64, float64, float64) {
+	scale := rmv6Scale * cairoSVGScale
+	pad := maxStrokeWidthScreenUnits(strokes) / 2.0
+	if pad < 1.0 {
+		pad = 1.0
+	}
+	bboxWithPad := bbox.Expand(pad)
+	if ok && !stBBox.IsEmpty() {
+		defaultMinX := -float64(rmv6ScreenWidth) / 2.0
+		defaultMaxX := float64(rmv6ScreenWidth) / 2.0
+		leftMargin := stBBox.MinX - defaultMinX
+		rightMargin := defaultMaxX - stBBox.MaxX
+		if leftMargin < 0 {
+			leftMargin = 0
+		}
+		if rightMargin < 0 {
+			rightMargin = 0
+		}
+		if leftMargin > rightMargin {
+			bboxWithPad.MaxX += leftMargin - rightMargin
+		} else if rightMargin > leftMargin {
+			bboxWithPad.MinX -= rightMargin - leftMargin
+		}
+	}
+	pageW := xxScaled((bboxWithPad.MaxX-bboxWithPad.MinX)+1, scale)
+	pageH := yyScaled((bboxWithPad.MaxY-bboxWithPad.MinY)+1, scale)
+	return bboxWithPad, pageW, pageH, scale
 }
 
 func buildOverlayOnlyPageBBoxScaled(width, height float64, strokes []rmdoc.Stroke, rt *rmdoc.RMV6RootText, paragraphs []rmdoc.RMV6TextParagraph, bbox rmdoc.BBox, scale float64, opts V6MergeOptions) (*pdf.PdfPage, error) {

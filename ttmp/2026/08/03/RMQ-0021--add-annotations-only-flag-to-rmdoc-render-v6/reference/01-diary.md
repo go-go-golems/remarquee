@@ -281,3 +281,53 @@ let's go task by task and implement a keep a detailed diary and ocmmit at approp
 
 ### Technical details
 - n/a
+
+## Step 6: Phase 1 — byte-identical extraction of canvas geometry helpers
+
+First code change of the implementation: the annotation canvas bbox computation and the overlay-only page geometry (padding + margin compensation + page dims) were inline-duplicated in both merge loops. They are now two shared helpers, which Phase 2's annotations-only renderer will also call. Proven byte-identical on real documents, not just unit tests.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 5)
+
+**Assistant interpretation:** Execute Phase 1 from the design doc.
+
+**Inferred user intent:** Refactor first, prove no behavior change, then build the feature on the shared helpers.
+
+**Commit (code):** see commit at end of step — "refactor(RMQ-0021): extract annotation canvas geometry helpers (Phase 1)"
+
+### What I did
+- Added `annotationCanvasBBox(strokes) (bbox, stBBox, ok)` and `overlayOnlyPageGeometry(strokes, bbox, stBBox, ok) (bboxWithPad, pageW, pageH, scale)` to `pkg/rmdoc/render/v6_merge_background.go` (placed just before `buildOverlayOnlyPageBBoxScaled`), moving the doc comments about rmc/remarks/CairoSVG semantics onto the helpers.
+- Replaced both inline copies: loop 1 (`MergeRMDocV6OntoBackgroundPDFWithInfo`) and loop 2 (`...ForPages`) now call the helpers. The two blocks were textually identical except anchors, so `edit` oldText needed distinguishing context (loop 1 has a leading comment block; loop 2 has none).
+- Baseline note: `go test ./...` has a pre-existing failure unrelated to this ticket — `cmd/remarquee-ui/embed.go:8:12: pattern frontend/dist: no matching files found` (frontend not built in this worktree). All relevant packages (`./pkg/rmdoc/... ./cmd/remarquee/...`) were green before the change.
+- Byte-identity proof: rendered two documents before (git stash) and after (stash pop) the refactor and compared MD5s:
+  - workbook `--pages 1-3` (exercises loop 2): `93395dc8d9d1c7c8a9390b33204ab902` == identical.
+  - `cpage-pdf.rmdoc` full doc (exercises loop 1 incl. blank-background branch): `ac3ea926a8dc30300b500406802dd25b` == identical.
+- `gofmt -l` clean, `go vet ./pkg/rmdoc/render/` clean, `go test ./pkg/rmdoc/... ./cmd/remarquee/cmds/rmdoc/... -count=1` green.
+
+### Why
+- DR-1 in the design doc: the annotations-only renderer reuses the exact geometry of the existing overlay-only path; sharing one implementation eliminates drift between the (now three) per-page loops.
+
+### What worked
+- The stash/stash-pop MD5 comparison gives much stronger evidence than "tests pass": output bytes on real renders are unchanged.
+
+### What didn't work
+- Nothing.
+
+### What I learned
+- The repo's test suite has the pre-existing `frontend/dist` embed failure in `cmd/remarquee-ui`; scoping test runs to `./pkg/rmdoc/... ./cmd/remarquee/...` is the right baseline for this ticket.
+
+### What was tricky to build
+- The two inline blocks were character-identical, so the edit tool's uniqueness constraint required anchoring on surrounding context differences (comment presence in loop 1, `pageBoxDims` error string wording in loop 2). Symptom: risk of "oldText matches multiple regions"; solution: include the distinguishing lines in each oldText.
+
+### What warrants a second pair of eyes
+- Confirm no semantic difference between the extracted helpers and the old inline code (read `annotationCanvasBBox`/`overlayOnlyPageGeometry` side by side with git show HEAD~1 of the two loops).
+
+### What should be done in the future
+- Phase 2 builds `RenderRMDocV6AnnotationsOnlyWithInfo` on these helpers.
+
+### Code review instructions
+- `git show` this commit; check `pkg/rmdoc/render/v6_merge_background.go` helpers against the removed inline blocks; re-run the MD5 comparison if desired (commands in "What I did").
+
+### Technical details
+- Helpers live in `pkg/rmdoc/render/v6_merge_background.go` directly above `buildOverlayOnlyPageBBoxScaled`.
