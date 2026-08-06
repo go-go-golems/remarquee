@@ -3,14 +3,22 @@ package rmdoc
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
 
-func TestRenderV6PNGCommand_AnnotationsOnlySmoke(t *testing.T) {
-	if _, err := os.Stat("/usr/bin/pdftoppm"); err != nil {
-		t.Skip("pdftoppm not available")
+// requirePdftoppm skips PNG rasterization tests when poppler's pdftoppm is not
+// installed (e.g. minimal CI environments).
+func requirePdftoppm(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("pdftoppm"); err != nil {
+		t.Skip("pdftoppm not available on PATH")
 	}
+}
+
+func TestRenderV6PNGCommand_AnnotationsOnlySmoke(t *testing.T) {
+	requirePdftoppm(t)
 
 	cmd, err := NewRenderV6PNGCommand()
 	if err != nil {
@@ -46,6 +54,8 @@ func TestRenderV6PNGCommand_AnnotationsOnlySmoke(t *testing.T) {
 
 // PR #21 review: render-v6-png must accept range selectors like "1-2".
 func TestRenderV6PNGCommand_PagesRange(t *testing.T) {
+	requirePdftoppm(t)
+
 	cmd, err := NewRenderV6PNGCommand()
 	if err != nil {
 		t.Fatalf("NewRenderV6PNGCommand: %v", err)

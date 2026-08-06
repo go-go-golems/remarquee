@@ -598,3 +598,37 @@ The PR became CONFLICTING after main absorbed PR #20 (glazed structured-output m
 
 ### Technical details
 - n/a
+
+## Step 12: CI hygiene — skip PNG tests when pdftoppm is absent
+
+`go test ./...` in an environment without poppler failed on `TestRenderV6PNGCommand_PagesRange` (`pdftoppm not found on PATH`). Root cause: the range test had no skip guard, and the smoke test's guard checked a hardcoded `/usr/bin/pdftoppm` instead of PATH resolution.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Run go test ./..." (pasted output showing `--- FAIL: TestRenderV6PNGCommand_PagesRange ... pdftoppm: executable file not found in $PATH`)
+
+**Assistant interpretation:** Make the PNG verb's tests robust in environments without poppler.
+
+**Inferred user intent:** A clean `go test ./...` everywhere, including CI/minimal containers.
+
+**Commit (code):** see commit at end of step — "test(RMQ-0021): skip render-v6-png tests when pdftoppm is unavailable"
+
+### What I did
+- Added `requirePdftoppm(t)` helper using `exec.LookPath("pdftoppm")` (same resolution the command itself uses) in `render_v6_png_test.go`; called it from both PNG tests; removed the hardcoded `/usr/bin/pdftoppm` stat guard.
+- Verified both modes locally: with pdftoppm → both tests PASS; with `env PATH=/tmp/empty-path go test -run TestRenderV6PNG` → both SKIP and the package reports ok.
+- Full suite re-run: zero failures, 12 packages ok.
+
+### What worked
+- Simulating CI with a stripped PATH caught/exposed the exact failure mode from the pasted output.
+
+### What I learned
+- Any test that shells out to an external binary must guard with `exec.LookPath` and skip; hardcoded absolute paths are not portable guards.
+
+### What warrants a second pair of eyes
+- n/a
+
+### What should be done in the future
+- If CI is added for this repo, install poppler-utils to keep these as real tests rather than skips.
+
+### Code review instructions
+- One-file diff: `cmd/remarquee/cmds/rmdoc/render_v6_png_test.go`.
