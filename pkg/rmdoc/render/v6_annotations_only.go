@@ -24,6 +24,7 @@ import (
 
 	"github.com/go-go-golems/remarquee/pkg/rmdoc"
 	"github.com/pkg/errors"
+	"golang.org/x/text/encoding/charmap"
 )
 
 // RenderRMDocV6AnnotationsOnlyWithInfo renders only V6 annotation content
@@ -136,8 +137,12 @@ func RenderRMDocV6AnnotationsOnlyWithInfo(
 		bboxWithPad, pageW, pageH, scale := overlayOnlyPageGeometry(strokes, bbox, stBBox, ok)
 
 		xTranslation := -xxScaled(bboxWithPad.MinX, scale)
+		// Highlights must be translated by the same canvas origin as strokes/text:
+		// strokes use (p.Y - bbox.MinY) but glyph rectangles are absolute screen
+		// coords, so pass the vertical translation explicitly (PR #21 review).
+		yTranslation := -yyScaled(bboxWithPad.MinY, scale)
 		spec := buildAnnotationsOnlyPageSpec(strokes, tree.RootText, textParagraphs, glyphRanges,
-			bboxWithPad, pageW, pageH, scale, xTranslation, opts)
+			bboxWithPad, pageW, pageH, scale, xTranslation, yTranslation, opts)
 		pages = append(pages, spec)
 		highlightsXTranslation = append(highlightsXTranslation, xTranslation)
 	}
@@ -173,7 +178,7 @@ func buildAnnotationsOnlyPageSpec(
 	paragraphs []rmdoc.RMV6TextParagraph,
 	glyphRanges []rmdoc.RMV6GlyphRange,
 	bbox rmdoc.BBox,
-	pageW, pageH, scale, xTranslation float64,
+	pageW, pageH, scale, xTranslation, yTranslation float64,
 	opts V6MergeOptions,
 ) pdfPageSpec {
 	var b strings.Builder
@@ -263,7 +268,7 @@ func buildAnnotationsOnlyPageSpec(
 
 			fmt.Fprintf(&b, "/%s %s Tf\n", fontName, pdfNum(fontSize))
 			fmt.Fprintf(&b, "1 0 0 1 %s %s Tm\n", pdfNum(x), pdfNum(y))
-			fmt.Fprintf(&b, "(%s) Tj\n", pdfEscapeString(text))
+			fmt.Fprintf(&b, "(%s) Tj\n", pdfEscapeString(string(encodeWinAnsiText(text))))
 		}
 		b.WriteString("ET\n")
 	}
@@ -274,7 +279,7 @@ func buildAnnotationsOnlyPageSpec(
 		content:    b.String(),
 		alphas:     alphas,
 		needsFonts: needsFonts,
-		annots:     buildHighlightAnnots(glyphRanges, xTranslation, pageH, scale),
+		annots:     buildHighlightAnnots(glyphRanges, xTranslation, yTranslation, pageH, scale),
 	}
 }
 
@@ -301,9 +306,36 @@ func typedTextFontForStyleStr(style uint8) (string, float64) {
 	}
 }
 
+// encodeWinAnsiText converts UTF-8 text to Windows-1252 (WinAnsiEncoding)
+// bytes for use with the base-14 fonts. Runes that WinAnsi cannot represent
+// (CJK, emoji, ...) are replaced with '?' — mojibake-free degradation instead
+// of emitting raw UTF-8 bytes, which PDF viewers would misread as separate
+// single-byte character codes (PR #21 review). Full Unicode support would
+// require an embedded CID font with Identity-H, a deliberate non-goal for the
+// stdlib writer.
+func encodeWinAnsiText(s string) []byte {
+	enc := charmap.Windows1252.NewEncoder()
+	out := make([]byte, 0, len(s))
+	for _, r := range s {
+		b, err := enc.Bytes([]byte(string(r)))
+		if err != nil || len(b) != 1 {
+			out = append(out, '?')
+			continue
+		}
+		out = append(out, b[0])
+	}
+	return out
+}
+
 // buildHighlightAnnots mirrors applySmartHighlightsScaled: glyph-range
 // rectangles become PDF Highlight annotations with quad points.
-func buildHighlightAnnots(glyphRanges []rmdoc.RMV6GlyphRange, xTranslation, pageHeight, scale float64) []pdfHighlightAnnot {
+//
+// Note: unlike applySmartHighlightsScaled, this function takes yTranslation so
+// highlights land on the same canvas origin as strokes and typed text
+// ((coord - bbox.MinY) * scale). The merge pipeline's blank-background branch
+// has the same missing-translation issue; fixing it there changes
+// golden-covered composite output, so it is tracked as a follow-up.
+func buildHighlightAnnots(glyphRanges []rmdoc.RMV6GlyphRange, xTranslation, yTranslation, pageHeight, scale float64) []pdfHighlightAnnot {
 	var annots []pdfHighlightAnnot
 	for _, gr := range glyphRanges {
 		if len(gr.Rectangles) == 0 {
@@ -320,9 +352,11 @@ func buildHighlightAnnots(glyphRanges []rmdoc.RMV6GlyphRange, xTranslation, page
 			x1 := xxScaled(rect.X, scale) + xTranslation
 			x2 := x1 + xxScaled(rect.W, scale)
 
-			// rect.Y is in screen coords (top-origin, y down). Convert to PDF (bottom-origin, y up).
-			yTop := pageHeight - yyScaled(rect.Y, scale)
-			yBottom := pageHeight - yyScaled(rect.Y+rect.H, scale)
+			// rect.Y is in screen coords (top-origin, y down). Convert to PDF
+			// (bottom-origin, y up), applying the canvas origin translation so
+			// highlights align with strokes ((y - bbox.MinY) * scale).
+			yTop := pageHeight - yyScaled(rect.Y, scale) - yTranslation
+			yBottom := pageHeight - yyScaled(rect.Y+rect.H, scale) - yTranslation
 
 			quads = append(quads, x1, yTop, x2, yTop, x1, yBottom, x2, yBottom)
 

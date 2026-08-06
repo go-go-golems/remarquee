@@ -130,16 +130,6 @@ func (c *RenderV6PNGCommand) Run(ctx context.Context, parsedValues *values.Value
 		return err
 	}
 
-	pages, err := parsePages1Based(s.Pages)
-	if err != nil {
-		return err
-	}
-
-	pageIndices := make([]int, 0, len(pages))
-	for _, p := range pages {
-		pageIndices = append(pageIndices, p-1)
-	}
-
 	doc, err := pkg_rmdoc.OpenFile(ctx, s.File)
 	if err != nil {
 		return err
@@ -150,6 +140,15 @@ func (c *RenderV6PNGCommand) Run(ctx context.Context, parsedValues *values.Value
 	if doc.Type == pkg_rmdoc.DocTypeEPUB {
 		return errors.New("render-v6-png: epub not supported")
 	}
+
+	// Use the shared range-aware page selection parser (same as render-v6 /
+	// render-legacy): accepts "1", "1,3,5", and ranges like "2-4" (PR #21 review).
+	selection, err := parsePageSelection1Based(s.Pages, len(doc.Pages))
+	if err != nil {
+		return err
+	}
+	pages := selection.Pages1
+	pageIndices := selection.Indices0
 
 	outDir := strings.TrimSpace(s.OutDir)
 	if outDir == "" {

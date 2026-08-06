@@ -492,3 +492,62 @@ Final phase: user-facing docs, whole-repo regression run, and ticket bookkeeping
 
 ### Technical details
 - n/a
+
+## Step 10: PR #21 code review — three P2 fixes (text encoding, highlight Y translation, PNG page ranges)
+
+The PR received three P2 review comments from the Codex connector bot. All three were legitimate; all three are fixed in this step, plus one related latent bug in the merge pipeline was identified and documented as a follow-up rather than fixed here (it would alter golden-covered output).
+
+### Prompt Context
+
+**User prompt (verbatim):** "Address code review issues : https://github.com/go-go-golems/remarquee/pull/21"
+
+**Assistant interpretation:** Fetch the PR review comments, fix the issues, validate, commit, push, and respond on the PR.
+
+**Inferred user intent:** Keep the PR mergeable and review-clean.
+
+**Commit (code):** see commit at end of step — "fix(RMQ-0021): address PR #21 review (WinAnsi text encoding, highlight Y translation, PNG page ranges)"
+
+### What I did
+- Fetched review comments via `gh api repos/go-go-golems/remarquee/pulls/21/comments`. Three P2s from chatgpt-codex-connector[bot]:
+  1. `pdfEscapeString` emitted raw UTF-8 bytes (é → `\303\251`) against base-14 fonts without a Unicode encoding → mojibake.
+  2. `buildHighlightAnnots` omitted the canvas `bbox.MinY` Y translation that strokes/typed text apply → highlights shifted vertically.
+  3. README example `render-v6-png --pages 2-4` fails: the PNG verb's `parsePages1Based` (vlm_validate.go:338) is comma-only.
+- Fix 1: new `encodeWinAnsiText` (rune-by-rune Windows-1252 via `golang.org/x/text/encoding/charmap`, unrepresentable → `?`), font dicts gain `/Encoding /WinAnsiEncoding`, Tj strings go through it. Unit test covers é (0xE9), € (0x80), smart quotes, CJK → `?`.
+- Fix 2: `buildAnnotationsOnlyPageSpec`/`buildHighlightAnnots` now take `yTranslation = -yyScaled(bboxWithPad.MinY, scale)`; quads and rect use `pageH - y*scale - yTranslation`. Unit test pins exact quad/rect values with yTranslation=12.
+- Fix 3: `render_v6_png.go` now opens the doc first and uses the shared range-aware `parsePageSelection1Based` (same parser as render-v6/render-legacy); labels/indices come from the selection. CLI test with `--pages 1-2` produces both PNGs.
+- `go mod tidy` (x/text indirect → direct). Full suite: 12 packages ok, zero failures. Workbook re-validation: 3 pages, qpdf clean.
+- Documented latent merge-path issue: `applySmartHighlightsScaled` has the same missing-Y-translation in the blank-background branches of both merge loops; not fixed here because it changes golden-covered composite output — recorded as open question 4 in the design doc.
+
+### Why
+- Review-driven quality gate before merge.
+
+### What worked
+- x/text was already in go.mod (indirect), so the WinAnsi fix needed no new dependency.
+- The reviewer's suggestion "or change the PNG command to use the range-aware page-selection parser" was strictly better than editing the README — it fixes the verb for everyone and makes the example true.
+
+### What didn't work
+- Test compile failed once: `undefined: rmdoc` in the test file (new synthetic glyph-range test needed the import). One-line fix.
+
+### What I learned
+- The merge pipeline's blank-background branch carries the same highlight/Y-translation misalignment (bbox.Expand(pad) always makes MinY ≤ -1 while highlight math assumed MinY=0). Small (~pad*scale ≈ 3-4pt) but real; needs golden-aware fixing in its own ticket.
+
+### What was tricky to build
+- Verifying the sign of the Y translation: stroke y_pdf = pageH − (y − bbox.MinY)·scale = pageH − y·scale − yTranslation with yTranslation = −bbox.MinY·scale (bbox.MinY is negative after padding, so yTranslation is positive and highlights move down to meet the strokes). Pinned by the unit test.
+
+### What warrants a second pair of eyes
+- CP1252 replacement-char degradation for non-Latin scripts (documented as deliberate; full Unicode needs a CID font).
+- The reorder in render-v6-png Run (doc opened before page parsing) — behavior only differs in error precedence for invalid --pages vs invalid file.
+
+### What should be done in the future
+- Ticket the merge-path highlight misalignment (open question 4).
+- Merge PR #21 after CI.
+
+### Code review instructions
+- Diff this commit: `pkg/rmdoc/render/v6_annotations_only.go` (yTranslation + encodeWinAnsiText), `v6_annotations_only_pdf.go` (WinAnsiEncoding font dicts), `render_v6_png.go` (parser swap), plus 3 new tests. Run `go test ./pkg/rmdoc/render/ ./cmd/remarquee/cmds/rmdoc/ -count=1`.
+
+### Technical details
+- Review comments: discussions r3708390590 (encoding), r3708390595 (Y translation), r3708390599 (PNG ranges).
+
+### Addendum (same step): branch rebase mismatch
+
+The first attempt to push the review fixes failed non-fast-forward: the local worktree branch had silently been rebased onto `28edc01` (PR #20, glazed structured-output migration) with all ticket commits duplicated under new hashes, while the GitHub PR head (`wesen/task/remarquee-v6-only-annotations`) still pointed at the pre-rebase line ending in `cf79c72` (confirmed via review-comment commit_id). Resolution: `git reset --hard` to the PR head, then re-applied the review fixes on that line — library/test/docs files checked out verbatim from the fix commit (PR #20 never touched them), the `render_v6_png.go` parser swap re-applied by hand (PR #20 did touch that file), and the `go.mod` x/text direct-dependency edit adapted to the old base's version (v0.37.0, not v0.39.0). Lesson: after any external rebase of the working branch, verify `git status`/base before committing; when pushing fails non-fast-forward, diff both lines before choosing reset-vs-rebase.

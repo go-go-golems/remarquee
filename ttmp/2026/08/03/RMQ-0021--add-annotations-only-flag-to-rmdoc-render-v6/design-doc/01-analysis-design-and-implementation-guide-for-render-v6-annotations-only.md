@@ -594,6 +594,8 @@ CLI tests in `cmd/remarquee/cmds/rmdoc/render_v6_test.go` (same `newDefaultParse
 1. ~~Should `render-v6-png` grow the same flag?~~ **Resolved 2026-08-03: yes** — user explicitly requested it; implemented in Phase 3b.
 2. Should the blank-page size for `includeUnannotated` pages equal the *payload* page size instead of the device size? That would require reading the payload (violates DR-5); revisit only if users ask.
 3. Do we want outline/bookmark preservation ever? Legacy explicitly drops outlines on subset extraction; v6 has no outlines today. Non-goal.
+4. **Merge-path highlight misalignment (found via PR #21 review):** `applySmartHighlightsScaled` does not apply the canvas `bbox.MinY` translation, so in the merge pipeline's blank-background branch (`v6_merge_background.go` both loops) smart highlights are shifted vertically by `pad*scale` relative to strokes — the same bug class the review found in the annotations-only port. Fixing it changes golden-covered composite output, so it is a separate ticket, not folded into RMQ-0021.
+5. Typed text beyond WinAnsi (CJK/emoji) currently degrades to `?` in annotations-only output (PR #21 fix); full Unicode needs an embedded CID font with Identity-H — a deliberate non-goal for the stdlib writer.
 
 ## References
 

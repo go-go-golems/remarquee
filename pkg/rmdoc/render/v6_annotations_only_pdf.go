@@ -98,10 +98,12 @@ func buildResourcesDict(alphas []float64, needsFonts bool) string {
 		parts = append(parts, gs.String())
 	}
 	if needsFonts {
+		// WinAnsiEncoding so that WinAnsi-encoded strings (see encodeWinAnsiText)
+		// map to the right glyphs in the base-14 fonts.
 		parts = append(parts, "/Font <<"+
-			" /RMQTxtPlain << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"+
-			" /RMQTxtBold << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>"+
-			" /RMQTxtHeading << /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>"+
+			" /RMQTxtPlain << /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"+
+			" /RMQTxtBold << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"+
+			" /RMQTxtHeading << /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>"+
 			" >>")
 	}
 	if len(parts) == 0 {

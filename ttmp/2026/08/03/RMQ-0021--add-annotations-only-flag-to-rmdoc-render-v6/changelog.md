@@ -40,3 +40,13 @@ Implemented --annotations-only for render-v6 and render-v6-png across 4 phases: 
 
 Re-uploaded updated design guide + diary bundle (DR-6, Phases 1-4, diary steps 5-9) to reMarkable /ai/2026/08/03/RMQ-0021 after implementation completed
 
+
+## 2026-08-05
+
+PR #21 review fixes: WinAnsi/CP1252 typed-text encoding with WinAnsiEncoding font dicts (no more mojibake); smart-highlight Y translation aligned with stroke canvas; render-v6-png switched to range-aware parsePageSelection1Based; documented latent merge-path highlight misalignment as follow-up open question
+
+### Related Files
+
+- /home/manuel/workspaces/2026-08-03/remarquee-v6-only-annotations/remarquee/cmd/remarquee/cmds/rmdoc/render_v6_png.go — range-aware page parser
+- /home/manuel/workspaces/2026-08-03/remarquee-v6-only-annotations/remarquee/pkg/rmdoc/render/v6_annotations_only.go — encodeWinAnsiText + yTranslation
+

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-go-golems/remarquee/pkg/rmdoc"
 	pdf "github.com/unidoc/unipdf/v3/model"
 )
 
@@ -186,5 +187,52 @@ func TestRenderV6AnnotationsOnly_NoBackgroundXObject(t *testing.T) {
 	}
 	if !strings.Contains(cs, "rmv6-overlay") {
 		t.Fatalf("expected overlay marker on emitted page")
+	}
+}
+
+// PR #21 review: typed text must be WinAnsi-encoded for the base-14 fonts.
+func TestEncodeWinAnsiText(t *testing.T) {
+	cases := []struct {
+		in   string
+		want []byte
+	}{
+		{"hello", []byte("hello")},
+		{"caf\u00e9", []byte{'c', 'a', 'f', 0xe9}},       // é -> single WinAnsi byte
+		{"\u20ac12", []byte{0x80, '1', '2'}},             // € -> 0x80 in CP1252
+		{"\u4e2d\u6587", []byte{'?', '?'}},               // CJK not representable -> '?'
+		{"a\u201cb\u201d", []byte{'a', 0x93, 'b', 0x94}}, // smart quotes exist in CP1252
+	}
+	for _, tc := range cases {
+		if got := encodeWinAnsiText(tc.in); !bytes.Equal(got, tc.want) {
+			t.Errorf("encodeWinAnsiText(%q) = %v, want %v", tc.in, got, tc.want)
+		}
+	}
+}
+
+// PR #21 review: highlights must be translated by the same canvas origin as
+// strokes ((y - bbox.MinY) * scale).
+func TestBuildHighlightAnnots_YTranslation(t *testing.T) {
+	gr := []rmdoc.RMV6GlyphRange{{
+		Color:      rmdoc.PenColorYellow,
+		Rectangles: []rmdoc.RMV6Rectangle{{X: 10, Y: 100, W: 50, H: 20}},
+	}}
+
+	annots := buildHighlightAnnots(gr, 0, 12, 596, 1)
+	if len(annots) != 1 {
+		t.Fatalf("annots=%d want=1", len(annots))
+	}
+	a := annots[0]
+	// yTop = 596 - 100 - 12 = 484; yBottom = 596 - 120 - 12 = 464
+	wantQuads := []float64{10, 484, 60, 484, 10, 464, 60, 464}
+	if len(a.quads) != len(wantQuads) {
+		t.Fatalf("quads=%v want=%v", a.quads, wantQuads)
+	}
+	for i := range wantQuads {
+		if a.quads[i] != wantQuads[i] {
+			t.Fatalf("quads=%v want=%v", a.quads, wantQuads)
+		}
+	}
+	if a.rect != [4]float64{10, 464, 60, 484} {
+		t.Fatalf("rect=%v want=[10 464 60 484]", a.rect)
 	}
 }
