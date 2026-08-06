@@ -32,7 +32,7 @@ type BuildBackgroundSettings struct {
 var _ glazecmds.BareCommand = &BuildBackgroundCommand{}
 
 func NewBuildBackgroundCommand() (*BuildBackgroundCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

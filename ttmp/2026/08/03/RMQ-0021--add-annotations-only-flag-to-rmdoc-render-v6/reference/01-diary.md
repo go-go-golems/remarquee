@@ -551,3 +551,50 @@ The PR received three P2 review comments from the Codex connector bot. All three
 ### Addendum (same step): branch rebase mismatch
 
 The first attempt to push the review fixes failed non-fast-forward: the local worktree branch had silently been rebased onto `28edc01` (PR #20, glazed structured-output migration) with all ticket commits duplicated under new hashes, while the GitHub PR head (`wesen/task/remarquee-v6-only-annotations`) still pointed at the pre-rebase line ending in `cf79c72` (confirmed via review-comment commit_id). Resolution: `git reset --hard` to the PR head, then re-applied the review fixes on that line — library/test/docs files checked out verbatim from the fix commit (PR #20 never touched them), the `render_v6_png.go` parser swap re-applied by hand (PR #20 did touch that file), and the `go.mod` x/text direct-dependency edit adapted to the old base's version (v0.37.0, not v0.39.0). Lesson: after any external rebase of the working branch, verify `git status`/base before committing; when pushing fails non-fast-forward, diff both lines before choosing reset-vs-rebase.
+
+## Step 11: Resolve merge conflict with main (glazed migration, PR #20)
+
+The PR became CONFLICTING after main absorbed PR #20 (glazed structured-output migration). Resolved by merging origin/main into the feature branch rather than rebasing — the previous step's rebase confusion argued for the explicit, history-preserving option.
+
+### Prompt Context
+
+**User prompt (verbatim):** "resolve git merge conflict ."
+
+**Assistant interpretation:** Make PR #21 mergeable again by resolving its conflict with main.
+
+**Inferred user intent:** Unblock the merge.
+
+**Commit (code):** merge commit at end of step — "merge: resolve go.mod conflict with origin/main (glazed migration)"
+
+### What I did
+- `git merge origin/main` (28edc01): `render_v6.go` and `render_v6_png.go` auto-merged; only `go.mod` conflicted (x/* dependency block: my x/text-made-direct vs main's version bumps).
+- Resolution: kept main's newer versions (sync v0.21.0, sys v0.46.0, term v0.44.0, text v0.39.0) and preserved x/text as a direct dependency (my only go.mod change).
+- `go mod tidy`; `go build ./...` OK; `go test ./... -count=1` → 12 packages ok, zero failures.
+- Post-migration CLI sanity: `--with-glaze-output --output json` no longer exists; migrated flag is `--format json` — verified the glaze row still emits `annotations_only`/`selected_pages`; `--annotations-only --pages 1-3` on the workbook still yields 3 pages.
+
+### Why
+- Restore PR mergeability with main's glazed v1.4.2 API included.
+
+### What worked
+- Git auto-merged both Go files because PR #20 and RMQ-0021 touched disjoint regions (command constructors vs settings/execute).
+
+### What didn't work
+- `--output json` (pre-migration flag) exits 1 — expected behavior change from PR #20, not a regression of this branch; use `--format json`.
+
+### What I learned
+- The glazed v1.4.2 migration renamed structured-output flags (`--output` → `--format`, plus `--output-fields`); any docs/scripts using the old flag names break. The RMQ-0021 design guide doesn't reference the old flags, so no doc changes needed.
+
+### What was tricky to build
+- n/a (single-file textual conflict)
+
+### What warrants a second pair of eyes
+- Confirm no other repo docs/scripts still reference `--output json` for glaze output (out of scope here; noted).
+
+### What should be done in the future
+- Merge PR #21.
+
+### Code review instructions
+- `git show` the merge commit; only `go.mod` was manual. Re-run the sanity commands above if desired.
+
+### Technical details
+- n/a

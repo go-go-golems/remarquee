@@ -11,7 +11,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig"
 	"github.com/pkg/errors"
@@ -40,10 +39,7 @@ var _ glazecmds.BareCommand = &RenderV6Command{}
 var _ glazecmds.GlazeCommand = &RenderV6Command{}
 
 func NewRenderV6Command() (*RenderV6Command, error) {
-	glazedLayer, err := settings.NewGlazedSection()
-	if err != nil {
-		return nil, err
-	}
+
 	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
@@ -101,7 +97,7 @@ Notes:
 - This is still a milestone renderer (brush fidelity, typed text output, and PNGs are future work).
 `),
 		glazecmds.WithFlags(flags...),
-		glazecmds.WithSections(glazedLayer, commandSettingsLayer),
+		glazecmds.WithSections(commandSettingsLayer),
 	)
 
 	return &RenderV6Command{CommandDescription: cmdDesc}, nil

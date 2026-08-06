@@ -25,7 +25,7 @@ type AccountSettings struct {
 var _ glazecmds.BareCommand = &AccountCommand{}
 
 func NewAccountCommand() (*AccountCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

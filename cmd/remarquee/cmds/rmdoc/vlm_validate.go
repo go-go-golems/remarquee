@@ -51,7 +51,7 @@ type VLMValidateSettings struct {
 var _ glazecmds.BareCommand = &VLMValidateCommand{}
 
 func NewVLMValidateCommand() (*VLMValidateCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

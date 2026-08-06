@@ -30,7 +30,7 @@ type MvSettings struct {
 var _ glazecmds.BareCommand = &MvCommand{}
 
 func NewMvCommand() (*MvCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}
