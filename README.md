@@ -122,8 +122,14 @@ remarquee rmdoc render-legacy ./notebook.rmdoc --pages 1,3-5 --out ./notebook-pa
 remarquee rmdoc render-v6 ./notebook.rmdoc --out ./notebook.pdf
 remarquee rmdoc render-v6 ./notebook.rmdoc --pages 2-4 --out ./notebook-pages.pdf
 
+# V6 annotations only (handwriting on blank pages, no background PDF);
+# pages without annotations are skipped unless explicitly selected via --pages
+remarquee rmdoc render-v6 ./notebook.rmdoc --annotations-only --out ./notebook-annotations.pdf
+remarquee rmdoc render-v6 ./notebook.rmdoc --annotations-only --pages 2-4 --out ./notebook-annotations-pages.pdf
+
 # Debug V6 rendering as page PNGs
 remarquee rmdoc render-v6-png ./notebook.rmdoc --out-dir ./pages
+remarquee rmdoc render-v6-png ./notebook.rmdoc --pages 2-4 --annotations-only --out-dir ./annotation-pages
 ```
 
 ### Capture the tablet framebuffer
