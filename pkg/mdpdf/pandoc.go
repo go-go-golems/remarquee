@@ -20,6 +20,13 @@ type PandocOptions struct {
 	LatexHeaderFile  string
 	ExtraLatexHeader string
 
+	// FromFormat is the pandoc input format string (the value of --from).
+	// Pandoc Markdown extensions can only be toggled inside this string, and
+	// pandoc's "last --from wins" rule means a hardcoded value silently
+	// overrides any wrapper script's own -f flags — so it is configurable.
+	// Empty means DefaultFromFormat.
+	FromFormat string
+
 	TOC      bool
 	TOCDepth int
 
@@ -35,6 +42,13 @@ type PandocOptions struct {
 	ResolveImages bool
 }
 
+// DefaultFromFormat is the pandoc input format used for markdown
+// conversion. The yaml_metadata_block extension is disabled so ordinary
+// Markdown thematic breaks (---) are not interpreted as metadata delimiters
+// (the converter strips docmgr-style frontmatter itself before invoking
+// pandoc).
+const DefaultFromFormat = "markdown-yaml_metadata_block"
+
 func DefaultPandocOptions() PandocOptions {
 	return PandocOptions{
 		PandocPath:    "pandoc",
@@ -42,6 +56,7 @@ func DefaultPandocOptions() PandocOptions {
 		MainFont:      "DejaVu Sans",
 		MonoFont:      "DejaVu Sans Mono",
 		Geometry:      "margin=1in",
+		FromFormat:    DefaultFromFormat,
 		ResolveImages: true,
 	}
 }
@@ -54,11 +69,12 @@ const defaultLatexHeader = `\usepackage{enumitem}
 `
 
 func buildPandocArgs(inputPath string, outputPath string, opts PandocOptions, headerPaths []string) []string {
-	// The converter strips docmgr-style frontmatter before invoking Pandoc.
-	// Disable Pandoc's YAML metadata-block extension so ordinary Markdown
-	// thematic breaks (---) are not interpreted as metadata delimiters.
+	fromFormat := opts.FromFormat
+	if fromFormat == "" {
+		fromFormat = DefaultFromFormat
+	}
 	argv := []string{
-		"--from=markdown-yaml_metadata_block",
+		"--from=" + fromFormat,
 		inputPath,
 		"-o", outputPath,
 		"--pdf-engine=" + opts.PDFEngine,

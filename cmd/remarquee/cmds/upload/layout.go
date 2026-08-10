@@ -15,6 +15,7 @@ func configureMarkdownPandocOptions(
 	monoFont string,
 	geometry string,
 	latexHeaderFile string,
+	pandocFrom string,
 	mermaidCfg *mdpdf.MermaidRendererConfig,
 ) (mdpdf.PandocOptions, error) {
 	opts := mdpdf.DefaultPandocOptions()
@@ -35,6 +36,9 @@ func configureMarkdownPandocOptions(
 	}
 	if flags.Changed("latex-header-file") {
 		opts.LatexHeaderFile = latexHeaderFile
+	}
+	if flags.Changed("pandoc-from") {
+		opts.FromFormat = pandocFrom
 	}
 
 	return opts, nil
