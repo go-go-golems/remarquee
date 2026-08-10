@@ -46,6 +46,7 @@ type uploadSourceSettings struct {
 	MonoFont        string
 	Geometry        string
 	LatexHeaderFile string
+	PandocFrom      string
 }
 
 type sourceInput struct {
@@ -120,6 +121,7 @@ Destination:
 	cmd.Flags().StringVar(&s.MonoFont, "monofont", "DejaVu Sans Mono", "Monospace font for code blocks")
 	cmd.Flags().StringVar(&s.Geometry, "geometry", "margin=1in", "LaTeX geometry setting passed to pandoc (default: margin=1in)")
 	cmd.Flags().StringVar(&s.LatexHeaderFile, "latex-header-file", "", "Optional path to a LaTeX header file to include (overrides built-in header)")
+	cmd.Flags().StringVar(&s.PandocFrom, "pandoc-from", mdpdf.DefaultFromFormat, "Pandoc input format string passed as --from (e.g. markdown-yaml_metadata_block+tex_math_single_backslash)")
 
 	return cmd
 }
@@ -161,6 +163,7 @@ func runUploadSource(ctx context.Context, cmd *cobra.Command, s *uploadSourceSet
 	pandocOpts.MonoFont = s.MonoFont
 	pandocOpts.Geometry = s.Geometry
 	pandocOpts.LatexHeaderFile = s.LatexHeaderFile
+	pandocOpts.FromFormat = s.PandocFrom
 	pandocOpts.HighlightStyle = strings.TrimSpace(s.Theme)
 	pandocOpts.Listings = s.Listings
 

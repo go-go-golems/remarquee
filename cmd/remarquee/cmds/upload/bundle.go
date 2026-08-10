@@ -40,6 +40,7 @@ type uploadBundleSettings struct {
 	Layout          string
 	Geometry        string
 	LatexHeaderFile string
+	PandocFrom      string
 
 	// Image flags.
 	ResolveImages bool
@@ -107,6 +108,7 @@ Safety:
 	cmd.Flags().StringVar(&s.Layout, "layout", mdpdf.MarkdownLayoutDefault, "Markdown layout preset: default|editor (editor adds wider margins and more annotation-friendly spacing)")
 	cmd.Flags().StringVar(&s.Geometry, "geometry", "margin=1in", "LaTeX geometry setting passed to pandoc (default: margin=1in)")
 	cmd.Flags().StringVar(&s.LatexHeaderFile, "latex-header-file", "", "Optional path to a LaTeX header file to include (overrides built-in header)")
+	cmd.Flags().StringVar(&s.PandocFrom, "pandoc-from", mdpdf.DefaultFromFormat, "Pandoc input format string passed as --from (e.g. markdown-yaml_metadata_block+tex_math_single_backslash)")
 
 	// Mermaid flags (Glazed section — shows in "Mermaid flags" help group).
 	if err := addMermaidFlagsToCommand(cmd); err != nil {
@@ -153,6 +155,7 @@ func runUploadBundle(ctx context.Context, cmd *cobra.Command, s *uploadBundleSet
 		s.MonoFont,
 		s.Geometry,
 		s.LatexHeaderFile,
+		s.PandocFrom,
 		mermaidCfg,
 	)
 	if err != nil {
