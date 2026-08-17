@@ -43,6 +43,10 @@ topics:
       description: Pandoc document conversion integration
     - slug: xelatex
       description: XeLaTeX PDF engine used by pandoc
+    - slug: dependency
+      description: Dependency pins and bumps (go.mod replace directives, fork tracking)
+    - slug: rmcloud
+      description: pkg/rmcloud — remarquee's thin rmapi sync15 glue layer
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

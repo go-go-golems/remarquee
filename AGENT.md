@@ -76,6 +76,4 @@ Avoid general statements like "created extensible foundation" or "this allows fo
 
 title: <title>
 description: <description>
-
-and store in directory root as .git-commit-message.yaml
 </gitGuidelines>
