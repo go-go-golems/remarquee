@@ -1,24 +1,46 @@
-title: "✨ feat(RMQ-0021): --annotations-only for rmdoc render-v6 and render-v6-png"
+title: ":wrench: fix(rmcloud): bump rmapi fork to sort root index by document ID (fixes #23)"
 description: |
-  Adds annotations-only V6 rendering with render-legacy parity across 4 phases.
-  New CLI flags:
-    - remarquee rmdoc render-v6 --annotations-only [--pages ...]: blank-page
-      annotations-only PDF (strokes, smart highlights, typed text); unannotated
-      pages skipped unless explicitly selected (then emitted blank); default
-      output <input>-v6-annotations.pdf; glaze row gains annotations_only
-    - remarquee rmdoc render-v6-png --annotations-only: same content as PNGs,
-      1:1 page mapping, <base>-v6-annotations prefix
-  New library API: render.RenderRMDocV6AnnotationsOnlyWithInfo(ctx, path,
-  V6MergeOptions, pageIndices, includeUnannotated).
-  DR-6: annotations-only PDF is written by a minimal stdlib-only writer
-  (pkg/rmdoc/render/v6_annotations_only_pdf.go) - no unipdf in this path,
-  no AGPL watermark, no go:linkname license hack.
+  All reMarkable cloud writes failed with HTTP 400 "invalid root schema" since
+  2026-08-17 (issue #23). Root cause: the pinned rmapi fork
+  (github.com/marcobarcelos/rmapi) serializes the root index (root.docSchema)
+  in raw slice order via HashTree.IndexReader(); the cloud now requires
+  entries strictly sorted by document ID. Two mutators break the order and
+  only re-hash: HashTree.Add() appends, HashTree.Remove() swap-deletes.
+  Reads kept working because HashTree.Mirror() sorts t.Docs on the read path.
+
+  Fix: repoint the go.mod replace directive from marcobarcelos/rmapi
+  (pre-fix, 2026-05-18) to FNStudios-NI/rmapi@f295d5466978, the head of
+  ddvk/rmapi#77 ("fix: sort root index by document ID before serializing").
+  That commit adds sort.Slice(t.Docs, ...) in HashTree.IndexReader() and
+  sort.Slice(d.Files, ...) in BlobDoc.IndexReaderWithSchema() at the single
+  serialization point, keeping the uploaded body and the Rehash()-derived
+  root hash consistent by construction. Both forks declare
+  `module github.com/juruen/rmapi`, so this is a drop-in dependency bump
+  with no application code change; the v4-always-emit behavior remarquee
+  relies on is preserved (it lives in upstream ddvk, not marcobarcelos).
+
+  Pinned by exact pseudo-version (immutable commit SHA) rather than branch
+  name for reproducibility. TODO(#23): once ddvk/rmapi#77 merges to ddvk
+  master, re-point the replace at the merge commit (or a ddvk tag) so we
+  track upstream.
+
+  No remarquee application code changed.
+
+commands:
+  - go mod edit -replace=...=github.com/FNStudios-NI/rmapi@v0.0.0-20260817154736-f295d5466978
+  - go mod tidy
+  - go build -o remarquee ./cmd/remarquee
+
 tests:
-  - name: go test ./... -count=1
-    result: pass (zero failures incl. cmd/remarquee-ui via gitignored placeholder dist)
-  - name: 6 library unit tests (fixtures) + 4 CLI tests
-    result: pass
-  - name: byte-identical refactor check (MD5 before/after Phase 1)
-    result: pass (workbook --pages 1-3 + full cpage-pdf.rmdoc)
-  - name: end-to-end TTC Garden workbook via --cloud
-    result: pass (3 pages; bare flag on 44-page doc also 3 pages; 0 watermarks; qpdf --check clean)
+  - go vet ./pkg/rmcloud/... ./cmd/remarquee/cmds/cloud/... ./cmd/remarquee/cmds/upload/... — PASS
+  - go test ./pkg/rmcloud/... ./cmd/remarquee/cmds/upload/... — PASS (pkg/rmcloud ok, upload ok)
+  - manual live (exact issue #23 repro): `remarquee cloud mkdir /ai/2026/08/17 --non-interactive` — was 400 "invalid root schema", now exit 0 (dir created)
+  - manual live: second Add in same session `cloud mkdir /ai/2026/08/17/rmq-0023-probe` — exit 0
+  - manual live: Remove (swap-delete path) `cloud rm .../rmq-0023-probe --yes` — exit 0
+  - manual live: cleanup `cloud rm /ai/2026/08/17 --yes` — exit 0; read confirms no trace
+  - verified sort.Slice present in pinned source: api/sync15/tree.go:178 (t.Docs), api/sync15/blobdoc.go:117 (d.Files)
+  - verified v4-always-emit behavior preserved in pinned source: api/sync15/tree.go:157
+
+files_changed:
+  - go.mod  (replace directive: marcobarcelos/rmapi -> FNStudios-NI/rmapi@f295d5466978)
+  - go.sum  (corresponding hash updates)
