@@ -259,9 +259,11 @@ For cloud operations, remarquee uses rmapi and the same general device-token flo
 For upload/rendering workflows, install the external tools required by the command you use:
 
 - `pandoc` for Markdown/source-to-PDF conversion
-- `xelatex` / TeX Live for PDF generation
+- `xelatex` / TeX Live for PDF generation, including `stmaryrd` (usually provided by `texlive-science` on Debian/Ubuntu) for mathematical symbols such as `\llbracket` and `\rrbracket`. The default preamble loads it; `--latex-header-file` replaces that preamble, so custom headers must load their own required packages.
 - DejaVu fonts, or pass custom font flags
 - Docker/container runtime if you use repository build steps that invoke Dagger
+
+Markdown list preprocessing preserves fenced code (backticks or tildes) and line-start display math (`$$ ... $$` or `\[ ... \]`). This prevents equation operators and code examples from being rewritten as lists. Single-backslash math still requires the appropriate Pandoc reader extension, for example `--pandoc-from=markdown-yaml_metadata_block+tex_math_single_backslash`. This protection is not a full Markdown parser for arbitrary raw LaTeX environments or container syntax.
 
 ---
 
