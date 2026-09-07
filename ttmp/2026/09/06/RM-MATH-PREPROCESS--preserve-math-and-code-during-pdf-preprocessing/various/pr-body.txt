@@ -1,0 +1,19 @@
+## Summary
+
+- Load `stmaryrd` in the default LaTeX header for `\llbracket` / `\rrbracket`; preserve custom-header replacement behavior and document the dependency.
+- Share a literal-region guard between list spacing and depth flattening. Preserve line-start `$$` / `\[` display math and backtick/tilde fenced code, including escaped closers, fence lengths and unclosed blocks.
+- Keep ordinary list rewriting outside protected regions and cover repeated bundle/conversion preprocessing.
+
+## Validation
+
+- Focused preprocessing/header tests and real Pandoc/XeLaTeX direct + bundle regressions: passed.
+- `go test ./pkg/mdpdf ./cmd/remarquee/cmds/upload -count=1`: passed.
+- Repository pre-commit `golangci-lint run -v`: 0 issues.
+- Repository pre-commit `go test ./...`: passed.
+- Fresh worktree initially lacked ignored `frontend/dist`; built it with pinned pnpm/frozen lockfile, then hooks passed without bypass. Generated assets are not committed.
+
+## Scope
+
+This is a targeted literal-region guard, not a complete Markdown parser for indented code, arbitrary raw LaTeX environments or container syntax. No public Go API or CLI flag was added. PDF integration tests skip absent external tooling; the default-header and preprocessing assertions remain unconditional.
+
+Ticket: `RM-MATH-PREPROCESS` (quick design and implementation diary under `ttmp/2026/09/06/`).

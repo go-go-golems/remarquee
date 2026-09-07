@@ -61,7 +61,8 @@ func DefaultPandocOptions() PandocOptions {
 	}
 }
 
-const defaultLatexHeader = `\usepackage{enumitem}
+const defaultLatexHeader = `\usepackage{stmaryrd}
+\usepackage{enumitem}
 \setlist[itemize]{leftmargin=*,topsep=0.5em,itemsep=0.3em,parsep=0.2em}
 \setlist[enumerate]{leftmargin=*,topsep=0.5em,itemsep=0.3em,parsep=0.2em}
 \usepackage{geometry}
