@@ -22,3 +22,7 @@ Implemented first sync-progress increment (c9f621e): stderr heartbeat/HTTP activ
 ## 2026-09-09
 
 Built real frontend assets with pinned pnpm 10.15.1 via npm exec. Whole-repository go test, go build, and go vet now pass. Installed updated CLI at ~/.local/bin/remarquee (source e6d0fc9) and verified account help; live cloud behavior remains unverified. Generated assets remain ignored.
+
+## 2026-09-09
+
+Opened PR #27 (https://github.com/go-go-golems/remarquee/pull/27) from fix/cloud-sync-progress-cancellation to main using the Pinocchio create-pull-request format. Preserved YAML title/body/changelog/release notes and documented API changes, local validation, and remaining limitations.

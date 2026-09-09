@@ -30,6 +30,9 @@ The original incident's cause remains unconfirmed; no live account/cache changes
 
 ## Key Links
 
+- [PR #27: Show cloud sync progress and make Ctrl-C cancel requests](https://github.com/go-go-golems/remarquee/pull/27)
+- [PR description, changelog, and release notes YAML](various/01-pull-request.yaml)
+
 - [Tree synchronization design and upstream findings](design-doc/01-tree-synchronization-progress-and-cancellation.md)
 - [Investigation and remediation plan](analysis/01-cloud-hang-investigation-and-remediation-plan.md)
 - [Diary](reference/01-diary.md)

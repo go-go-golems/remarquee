@@ -355,3 +355,62 @@ No application source changes in this step. Review the commands above and the ti
 ### Technical details
 
 Build tools: Node `v26.8.1`, npm `11.19.0`, pnpm `10.15.1`, Vite `7.3.2`, Go `go1.27.1 darwin/arm64`. Installed CLI: `/Users/manuel.odendahl/.local/bin/remarquee`. UI assets: `cmd/remarquee-ui/frontend/dist/`.
+
+## Step 6: Create the pull request using Pinocchio's description format
+
+Reviewed the four session commits against freshly fetched origin/main and created a dedicated feature branch without rewriting local main. Used the Pinocchio create-pull-request prompt's approach: concise sentence-case title, pragmatic bullets, explicit validation and API changes, plus a reusable YAML artifact containing changelog and release notes.
+
+Opened [PR #27](https://github.com/go-go-golems/remarquee/pull/27) against main. The description distinguishes tested progress/cancellation improvements from the still-unverified incident cause and exact document-count follow-up.
+
+### Prompt Context
+
+**User prompt (verbatim):** "use the instructions and the approach to create a PR for the fixes you did for remarquee"
+
+**Assistant interpretation:** Apply the previously located Pinocchio prompt and publish a PR for these changes.
+
+**Inferred user intent:** Provide a clear, reviewable change proposal with testing and user-facing release information.
+
+### What I did
+
+- Fetched origin and confirmed only this session's four commits were ahead of main; no existing open PR duplicated them.
+- Reviewed the bootstrap, streaming transport, progress reporter, interrupt handler, and README diff; whitespace checks passed.
+- Created and pushed `fix/cloud-sync-progress-cancellation`.
+- Wrote `various/01-pull-request.yaml` with title, body, single-line changelog, and release notes. Validated body wrapping: 51 lines, maximum 77 columns.
+- Used `gh pr create --base main --head fix/cloud-sync-progress-cancellation` with the YAML body extracted to stdin.
+- Recorded the PR URL and retained the YAML artifact in this ticket.
+
+### Why
+
+The PR should describe the actual shipped increment and breaking library signatures, not imply that every hang is fixed or that request counts represent document completion.
+
+### What worked
+
+Branch push and PR creation succeeded. Previously recorded whole-repository tests/build/vet and focused race tests are included as local validation; no live cloud validation is claimed.
+
+### What didn't work
+
+`python3 -c 'import yaml; print("PyYAML available")'` failed with `ModuleNotFoundError: No module named 'yaml'`. No dependency installation was needed: used standard-library Python for line-length validation and awk to extract the authored top-level YAML body block.
+
+### What I learned
+
+Origin/main still ends at the prior merged PR; the work can be proposed as a clean branch with all four session commits intact.
+
+### What was tricky to build
+
+Publishing from a feature branch avoids pushing directly to main. The generated release-note fields stay in the YAML artifact while the GitHub PR body receives the review-oriented description only.
+
+### What warrants a second pair of eyes
+
+Review body-lifetime cancellation, once-only cleanup, SIGINT fallback, and the documented library API removals. Check remote CI separately from the already-passing local tests.
+
+### What should be done in the future
+
+Review and merge PR #27 when CI/review is satisfactory; continue incident reproduction and dependency callback work through the remaining ticket tasks.
+
+### Code review instructions
+
+Start with the PR's Changes, Library API changes, Validation, and Limits sections. Consult the design and prior diary steps for source-level details and exact test outcomes.
+
+### Technical details
+
+PR: https://github.com/go-go-golems/remarquee/pull/27. Head: `fix/cloud-sync-progress-cancellation`. Base: `main`. No production code changed during PR preparation.
