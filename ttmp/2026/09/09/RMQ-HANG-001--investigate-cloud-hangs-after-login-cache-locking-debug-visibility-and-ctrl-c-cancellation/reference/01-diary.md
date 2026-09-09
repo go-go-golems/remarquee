@@ -290,3 +290,68 @@ Review the design's upstream comparison, README limitations, and new tests. Run 
 ### Technical details
 
 Upstream master checked: `aa60dac8a8dbb1b4eb6a25f2caf2f3daea573373`. Fork pin remains `f295d5466978954edabaae4c730d50d03740cfac`. No upstream code was pushed or dependency version changed.
+
+## Step 5: Build real UI assets, validate the whole repository, and install the CLI
+
+Built the actual TypeScript/Vite frontend, removing the missing-embed prerequisite rather than creating placeholder files. The entire Go test suite, build, and vet now pass, including remarquee-ui. Installed the updated CLI into the existing PATH location so the user runs the progress/cancellation implementation rather than the older binary.
+
+This is build and installation validation, not a live-cloud reproduction. No authentication command was executed beyond its help page; credentials and the live tree cache were not reset or cleared.
+
+### Prompt Context
+
+**User prompt (verbatim):** "build the ui assets. and can we now use the tool?"
+
+**Assistant interpretation:** Remove the UI build blocker, verify the whole repository, and make the updated tool available to run.
+
+**Inferred user intent:** Get a usable installed binary, not just passing targeted tests in a checkout.
+
+### What I did
+
+- Read the Makefile, frontend package manifest, and existing web build helper.
+- Found Node/npm installed but no pnpm or corepack executable. Used `npm exec` with the manifest's exact `pnpm@10.15.1` rather than install global tools or modify package-manager configuration.
+- In `cmd/remarquee-ui/frontend`, ran `npm exec --yes --package=pnpm@10.15.1 -- pnpm install --frozen-lockfile`, then `npm exec --yes --package=pnpm@10.15.1 -- pnpm run build`.
+- Ran `go test ./... -count=1`, `go build ./...`, and `go vet ./...`.
+- Installed with `GOBIN="$HOME/.local/bin" go install ./cmd/remarquee` and smoke-tested `"$HOME/.local/bin/remarquee" cloud account --help`.
+- Verified installed revision using `go version -m "$HOME/.local/bin/remarquee"` and checked Git status to ensure generated artifacts did not become tracked changes.
+
+### Why
+
+The previous installed binary predated this implementation. Passing tests would not change the behavior of `remarquee` on PATH until it was replaced. UI assets are also needed for whole-repository Go embedding, although the cloud CLI itself does not require the UI.
+
+### What worked
+
+- Frozen-lockfile installation succeeded without changing the manifest or lockfile.
+- TypeScript compilation and Vite production build passed (53 modules; HTML, CSS, and JS emitted under `frontend/dist`).
+- `go test ./... -count=1`: all packages passed, including `cmd/remarquee-ui`.
+- `go build ./...`: passed.
+- `go vet ./...`: passed.
+- Installed CLI help smoke test passed; build metadata reports clean source revision `e6d0fc9b61d7dcdea7a5ed21e4b8c0387af05c6d`, which includes implementation commit `c9f621e`.
+- Generated `dist` and `node_modules` are ignored; Git status was clean before this diary update.
+
+### What didn't work
+
+No build/test failures in this step. pnpm warned `Ignored build scripts: esbuild.` The production build succeeded using the installed platform package; no script approval or configuration change was needed.
+
+### What I learned
+
+The local helper assumes corepack and pnpm binaries, but the same frozen dependency installation and production build can run with the pinned pnpm through npm exec. No Docker/Dagger setup was necessary for this build-only task.
+
+### What was tricky to build
+
+Avoided silently switching package-manager versions or changing global pnpm store settings. Verified the install destination explicitly because the configured Go GOBIN is `~/go/bin`, while the existing user-facing command is `~/.local/bin/remarquee`.
+
+### What warrants a second pair of eyes
+
+All automated builds/tests pass, but the original live account hang has not yet been reproduced with the new binary. Progress begins at tree initialization; token bootstrap can still rely on the SIGINT watchdog rather than cooperative cancellation.
+
+### What should be done in the future
+
+Run `remarquee cloud account --log-level debug` interactively to observe the actual account behavior; record the last phase if it still stalls. Do not assume the original incident is resolved solely from build/test success.
+
+### Code review instructions
+
+No application source changes in this step. Review the commands above and the ticket's updated validation status. Keep generated assets and installed binaries out of commits.
+
+### Technical details
+
+Build tools: Node `v26.8.1`, npm `11.19.0`, pnpm `10.15.1`, Vite `7.3.2`, Go `go1.27.1 darwin/arm64`. Installed CLI: `/Users/manuel.odendahl/.local/bin/remarquee`. UI assets: `cmd/remarquee-ui/frontend/dist/`.

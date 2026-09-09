@@ -18,3 +18,7 @@ Design checkpoint: specify stderr phase/elapsed/HTTP progress with sync request 
 ## 2026-09-09
 
 Implemented first sync-progress increment (c9f621e): stderr heartbeat/HTTP activity, streaming-safe metadata logs before sync, explicit request contexts, and bounded SIGINT shutdown. CLI/library tests, focused race tests, vet and help smoke pass; full suite blocked by missing UI frontend/dist. Verified maintained upstream adds no progress/context hooks relative to pin; exact document counts and cooperative auth remain open.
+
+## 2026-09-09
+
+Built real frontend assets with pinned pnpm 10.15.1 via npm exec. Whole-repository go test, go build, and go vet now pass. Installed updated CLI at ~/.local/bin/remarquee (source e6d0fc9) and verified account help; live cloud behavior remains unverified. Generated assets remain ignored.
