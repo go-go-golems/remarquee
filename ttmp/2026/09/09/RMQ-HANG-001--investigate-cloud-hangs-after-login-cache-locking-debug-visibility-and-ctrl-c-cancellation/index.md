@@ -24,10 +24,13 @@ WhenToUse: ""
 
 Investigate widespread silent hangs, specifically after entering a one-time code in `remarquee cloud account`, and reported ineffective Ctrl-C. Determine whether cache initialization/resync, authentication, or network waits are responsible; add safe debug/progress visibility and end-to-end cancellation.
 
-Initial source inspection found eager tree synchronization for account lookup, logging installed only after initialization, missing command-context propagation, and an eager response-body logging wrapper. Cache corruption/locking and the reported SIGINT failure are not yet confirmed. Documentation only; no live account/cache changes or runtime fixes.
+Initial source inspection found eager tree synchronization for account lookup, late logging, missing command-context propagation, and eager response-body buffering. First increment implemented in `c9f621e`: normal stderr sync heartbeat and HTTP activity, early metadata-only sync logging, context-bound sync requests, and SIGINT cancellation with bounded forced exit. CLI/library tests, focused race tests, vet, and help smoke test pass. Whole-repository tests require the missing UI frontend build assets.
+
+The original incident's cause remains unconfirmed; no live account/cache changes. Exact document counts/cache-validation callbacks need an rmapi API change, not available in the checked upstream master. Authentication-only account lookup and fully cooperative auth initialization remain open.
 
 ## Key Links
 
+- [Tree synchronization design and upstream findings](design-doc/01-tree-synchronization-progress-and-cancellation.md)
 - [Investigation and remediation plan](analysis/01-cloud-hang-investigation-and-remediation-plan.md)
 - [Diary](reference/01-diary.md)
 - **Related Files**: See investigation frontmatter

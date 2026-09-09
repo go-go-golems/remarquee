@@ -2,17 +2,36 @@
 Title: Diary
 Ticket: RMQ-HANG-001
 Status: active
-Topics: [remarquee, cloud, rmcloud, cli]
+Topics:
+    - remarquee
+    - cloud
+    - rmcloud
+    - cli
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://README.md
+      Note: User-visible behavior and limits
+    - Path: repo://cmd/remarquee/interrupt.go
+      Note: Cooperative SIGINT with forced-exit fallback
+    - Path: repo://cmd/remarquee/interrupt_test.go
+      Note: Actual-SIGINT subprocess tests
+    - Path: repo://pkg/rmcloud/auth.go
+      Note: Context migration and bootstrap boundary, commit c9f621e
+    - Path: repo://pkg/rmcloud/logtransport.go
+      Note: Streaming ownership and request cancellation
+    - Path: repo://pkg/rmcloud/progress.go
+      Note: TTY and non-TTY progress reporter
+    - Path: repo://pkg/rmcloud/sync_test.go
+      Note: Isolated real-rmapi cache integration tests
 ExternalSources: []
 Summary: Chronological record of hang investigation.
 LastUpdated: 2026-09-09T14:00:00-04:00
 WhatFor: Preserve evidence and safe next steps.
 WhenToUse: Before continuing this ticket.
 ---
+
 
 # Diary
 
@@ -139,3 +158,135 @@ Review the new design's staged-delivery and boundary sections alongside the orig
 ### Technical details
 
 Planned signatures: `CreateApiCtx(ctx context.Context, auth AuthSettings)` and `WithAuthRetry(ctx context.Context, ...)`; progress writer is opt-in at the library boundary and enabled on stderr by CLI callers.
+
+## Step 3: Implement streaming-safe sync visibility and request cancellation
+
+Implemented a per-initialization progress reporter and moved transport instrumentation before tree synchronization. Migrated cloud/upload/render-download entry points to pass their command context and opt into stderr feedback. Added a CLI SIGINT cancellation path with a two-second or second-interrupt forced-exit fallback for dependency work that cannot cooperate.
+
+The first compile/test pass exposed one missing import, recorded below and corrected. Focused/race validation subsequently passed in Step 4; no live account or cache contents were accessed.
+
+**Commit (code):** `c9f621e` — "feat: show cloud tree sync activity and cancel requests on Ctrl-C"
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 2)
+
+**Assistant interpretation:** Implement the designed first progress increment and validate it before the code checkpoint.
+
+**Inferred user intent:** Make synchronization visibly active and safely interruptible without compromising streaming or exposing private data.
+
+### What I did
+
+- Design committed as `590ca45` (`docs: design cloud sync progress and cancellation (RMQ-HANG-001)`).
+- Added `pkg/rmcloud/progress.go` with cache-existence notice, elapsed-time heartbeat, atomic HTTP activity, and joined reporter shutdown.
+- Replaced response-body buffering with delegated body Read/Close and context cleanup at EOF/error/Close.
+- Added `initializeTree` as a credential-free test boundary around actual rmapi initialization.
+- Migrated `CreateApiCtx`/`WithAuthRetry` and CLI callers to explicit contexts; canceled initialization does not retry.
+- Added root interrupt handling and stderr opt-in for cloud/upload/cloud-render inputs.
+
+### Why
+
+Initialization must be instrumented before it blocks. A counter that only updates on network completion cannot show liveness during a stalled request, so a periodic reporter runs independently of network completion.
+
+### What worked
+
+The initial focused test run passed rmcloud, upload, and rmdoc package tests. Context/API migration compiled for those packages.
+
+### What didn't work
+
+- Design checkpoint `git diff --cached --check` reported a docmgr-generated extra EOF blank line in `changelog.md`; the shell continued to commit because the commands were not chained. Trim this generated whitespace in the validation checkpoint and use chained checks before later commits.
+- `go test ./pkg/rmcloud ./cmd/remarquee/cmds/cloud ./cmd/remarquee/cmds/upload ./cmd/remarquee/cmds/rmdoc ./cmd/remarquee -count=1` failed with `cmd/remarquee/cmds/cloud/get.go:95:19: undefined: os`. Added the missing import; the next run compiled all affected command packages and passed actual-SIGINT subprocess tests.
+- The next focused run failed the new cache fixture: `failed to mirror cannot parse rootIndex, unsupported schema {"hash":"root-hash","generation":1}`. The fake transport used `Header.Get` for an rmapi header inserted with a raw lowercase map key, before HTTP wire canonicalization. Changed the fixture to route by the synthetic blob URL path instead; production code was not implicated.
+
+### What I learned
+
+A request's context must stay bound while rmapi decodes or streams its body, not merely until RoundTrip returns. rmapi also sometimes destroys error identity with `%v`, so the initialization boundary restores the command's cancellation error explicitly.
+
+### What was tricky to build
+
+Concurrent requests update atomic counters while a single reporter owns output. EOF/error/Close can overlap, so a once-only cleanup decrements active requests and detaches the cancellation callback exactly once. A forced exit remains necessary for context-free authentication and local CPU/file work.
+
+### What warrants a second pair of eyes
+
+Review request-body lifetime, original request cancellation preservation, reporter shutdown, and the two-stage SIGINT handler. Progress labels deliberately say HTTP responses, not documents.
+
+### What should be done in the future
+
+Add deterministic reporter tests, real stalled-HTTP tests, isolated-cache integration tests, and actual-SIGINT subprocess tests; run focused/race/repository validation and commit the code checkpoint.
+
+### Code review instructions
+
+Start at `initializeTree`, `loggingRoundTripper.RoundTrip`, `activityBody`, and `runInterruptible`. Follow their call sites to verify all cloud operations pass a command context and progress goes to stderr only.
+
+### Technical details
+
+No new module version or machine-local dependency replacement. Normal output intervals are one second for TTY and five seconds for non-TTY. Token bootstrap still uses rmapi's context-free API; exact document totals, account-only auth, and full cache-validation events remain follow-ups.
+
+## Step 4: Check upstream and validate the first increment
+
+The user asked whether upstream dependencies already contain fixes or should be modified when needed. Queried the actual fork branches and the maintained parent's commit comparison rather than relying on the module cache. No newer progress/cancellation hook exists in the checked upstream master; exact document counts still belong in a future rmapi API change.
+
+Focused tests and race tests now pass. The repository-wide test command reaches an unrelated missing embedded frontend asset; the CLI and library packages still pass. Added README documentation of the shipped behavior and explicit boundaries, including token-bootstrap limitations and the fact that request counts are not document counts.
+
+### Prompt Context
+
+**User prompt (verbatim):** "maybe upstream dependencies got fixed/ modified for that?
+
+in case there is an actual need, ofc"
+
+**Assistant interpretation:** Check current upstream before maintaining local workarounds; dependency changes are appropriate when genuinely necessary.
+
+**Inferred user intent:** Fix the correct layer and reuse available dependency improvements rather than duplicate logic.
+
+### What I did
+
+- Queried `gh api repos/FNStudios-NI/rmapi/branches`, `repos/ddvk/rmapi/commits`, `repos/juruen/rmapi`, and the upstream comparison against `f295d5466978954edabaae4c730d50d03740cfac`.
+- Reviewed open upstream PRs and the cold-start filename issue/PR #62/#65; searched upstream progress/cancellation issues.
+- Added upstream findings and exact commit links to the design.
+- Added deterministic heartbeat/format/privacy tests, concurrent transport counters, stalled-header/body cancellation through a local HTTP server, isolated cold/warm/corrupt-cache initialization using real rmapi, and actual-SIGINT subprocess tests.
+- Added README behavior/API documentation and promoted the already-pinned `golang.org/x/term` to a direct dependency (no version bump).
+
+### Why
+
+A dependency upgrade should have a concrete relevant change. The latest maintained upstream only changes login URL display relative to our pin, so upgrading alone would not add progress or cancellation.
+
+### What worked
+
+- `go test ./pkg/rmcloud ./cmd/remarquee/cmds/cloud ./cmd/remarquee/cmds/upload ./cmd/remarquee/cmds/rmdoc ./cmd/remarquee -count=1` passed after the fixture correction; cloud has no test files.
+- `go test -race ./pkg/rmcloud ./cmd/remarquee -count=1` passed on a fresh complete run and again after final review.
+- `go test ./cmd/remarquee/... ./pkg/... -count=1` passed for the complete CLI/library scope.
+- `go vet ./pkg/rmcloud ./cmd/remarquee/...` passed.
+- `go run ./cmd/remarquee --help` passed without authentication, demonstrating normal signal-handler shutdown and CLI startup.
+- `git diff --cached --check` passed before code commit `c9f621e`.
+- Actual SIGINT tests cover cooperative exit, the two-second watchdog, and a second interrupt, all with exit status 130.
+- Fake-cloud cold/warm/corrupt cache tests use temporary HOME/cache directories and synthetic tokens only.
+
+### What didn't work
+
+- The first combined focused/race run was interrupted by the user after rmcloud's race tests passed, before CLI results. It is not counted as a complete race pass; a subsequent run passed both packages.
+- `go test ./... -count=1` failed at setup with `cmd/remarquee-ui/embed.go:8:12: pattern frontend/dist: no matching files found`. All other reported packages passed. Do not create fake embedded assets or alter the web build to hide this unrelated prerequisite.
+- `command -v golangci-lint` found no executable. Full lint has not been run.
+
+### What I learned
+
+The original `juruen/rmapi` is archived. Maintained `ddvk/rmapi` master includes our pinned root-index fix, but the only source delta is the custom-host login URL. The existing module already includes the May cold-start filename fixes.
+
+### What was tricky to build
+
+The test transport sees raw lowercase rmapi header keys before real HTTP canonicalization; routing fake responses by synthetic URL path avoids assuming canonicalized headers. Instrumentation must preserve HTTP cleanup as well as body reads, so the transport delegates `CloseIdleConnections` too.
+
+### What warrants a second pair of eyes
+
+The new logs are metadata-only, but rmapi's own error/trace logging is outside this wrapper's control. The README warns against dependency trace logging. Exact document progress, cache-validation callbacks, and cooperative auth input still require dependency work and remain open.
+
+### What should be done in the future
+
+Implement a tested rmapi callback/context API in its own repository and consume a published commit for document counts. Reproduce the original installed-binary hang separately. Build the UI assets before requiring a green whole-repository test run.
+
+### Code review instructions
+
+Review the design's upstream comparison, README limitations, and new tests. Run focused and race commands above; use `go test ./cmd/remarquee/... ./pkg/... -count=1` for the CLI/library scope without the unbuilt UI embed target.
+
+### Technical details
+
+Upstream master checked: `aa60dac8a8dbb1b4eb6a25f2caf2f3daea573373`. Fork pin remains `f295d5466978954edabaae4c730d50d03740cfac`. No upstream code was pushed or dependency version changed.

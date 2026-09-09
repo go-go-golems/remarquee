@@ -31,6 +31,8 @@ WhenToUse: When reproducing cloud hangs or implementing diagnostics and cancella
 
 # Cloud hang investigation and remediation plan
 
+> Initial investigation snapshot. The first implementation increment is now in `c9f621e`; see the [design and upstream verification](../design-doc/01-tree-synchronization-progress-and-cancellation.md) and [diary](../reference/01-diary.md). Findings below describe the pre-change code; incident attribution and full dependency-level progress/cancellation remain open.
+
 ## Report and scope
 
 User reports that pretty much every operation hangs. Specifically, `remarquee cloud account` prompted for a one-time code, accepted input, then stopped making visible progress. Ctrl-C also appeared ineffective. Cache involvement is a hypothesis, not an established cause.

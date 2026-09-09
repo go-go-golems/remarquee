@@ -64,7 +64,7 @@ Install instrumentation on `httpCtx.Client.Transport` BEFORE `api.CreateApiCtx`.
 
 Bind each request to both its original request context and the command context. Release the command cancellation callback on request failure, body EOF/error, or Close, not on receipt of headers. Check command cancellation before entering the base transport. Leave the request's existing deadline intact.
 
-Keep that context-bound transport for later API work too, but freeze/detach sync activity counters when initialization ends. No process-global transport or log mutation.
+Keep that context-bound transport for later API work too, but stop presenting sync activity counters when initialization ends. No process-global transport or log mutation.
 
 ### Cancellation and retries
 
@@ -73,6 +73,17 @@ Change `CreateApiCtx` and `WithAuthRetry` to accept context explicitly; update a
 At the CLI root, deliver SIGINT to a cancellable command context. Restore termination semantics with an explicit second-interrupt / two-second forced-exit fallback, because dependency authentication prompting and some local work remain uncancellable. Stop signal handling and timers after ordinary completion. A cancellation exits nonzero (130 for SIGINT) without printing a usage screen.
 
 **Boundary:** this does not make rmapi's token bootstrap or CPU/local-file work context-aware, add a total-operation deadline, or diagnose why the user's installed binary ignored Ctrl-C. Existing five-minute per-request timeout remains. Account-only authentication separation and full dependency context propagation remain ticket follow-ups.
+
+## Upstream verification (2026-09-09)
+
+Checked GitHub rather than assuming the cached dependency is current:
+
+- `juruen/rmapi` is archived. The maintained parent of our fork is `ddvk/rmapi`.
+- Our replacement pins `FNStudios-NI/rmapi` branch `fix/root-index-sort` at `f295d5466978954edabaae4c730d50d03740cfac`. That branch has not advanced.
+- `ddvk/rmapi` master is `aa60dac8a8dbb1b4eb6a25f2caf2f3daea573373`, and includes our pinned fix via PR #77. [Comparison against our pin](https://github.com/ddvk/rmapi/compare/f295d5466978954edabaae4c730d50d03740cfac...aa60dac8a8dbb1b4eb6a25f2caf2f3daea573373) changes only the one-time-code URL/configuration for custom hosts; there are no sync progress/context API changes.
+- May cold-start/document-index filename fixes (`6f0119dcc80c`, `f6c61763f7b6`) are already ancestors of our pin. [Open PR #65](https://github.com/ddvk/rmapi/pull/65) proposes another filename-extension safeguard, not progress/cancellation hooks; it was not adopted speculatively.
+
+No dependency bump is justified for this progress increment. A dependency modification is genuinely needed for document-level counters and cache-validation phase callbacks, and should be implemented/tested in rmapi itself, then consumed via a published commit—not by duplicating its sync engine here. This is not a claim that every historical branch/third-party fork was audited.
 
 ## Validation
 
