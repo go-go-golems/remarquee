@@ -1,89 +1,102 @@
 package rmcloud
 
 import (
-	"bytes"
+	"context"
+	"errors"
 	"io"
 	"net/http"
-	"strings"
+	"sync"
+	"time"
 
-	"github.com/juruen/rmapi/api/sync15"
 	"github.com/rs/zerolog/log"
 )
 
-// maxLoggedBody is the maximum number of bytes we'll read from a response body for logging.
-const maxLoggedBody = 4096
-
-// loggingRoundTripper wraps an http.RoundTripper and logs every request/response at debug level.
+// loggingRoundTripper binds rmapi's context-free requests to the command and
+// records metadata without buffering bodies or logging cloud/account contents.
+// Install it before tree initialization, not after CreateApiCtx returns.
 type loggingRoundTripper struct {
-	base http.RoundTripper
+	base     http.RoundTripper
+	ctx      context.Context
+	activity *syncActivity
 }
 
 func (l *loggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Log request basics
-	logger := log.Debug().
-		Str("method", req.Method).
-		Str("url", req.URL.String())
-
-	for k, v := range req.Header {
-		// Skip auth header values for security
-		if strings.EqualFold(k, "Authorization") {
-			logger = logger.Strs("header_"+k, []string{"<redacted>"})
-		} else {
-			logger = logger.Strs("header_"+k, v)
-		}
+	if err := l.ctx.Err(); err != nil {
+		return nil, err
 	}
-	logger.Msg("rmapi HTTP request")
-
-	resp, err := l.base.RoundTrip(req)
+	ctx, cancel := context.WithCancel(req.Context())
+	stop := context.AfterFunc(l.ctx, cancel)
+	// AfterFunc runs asynchronously; close the preflight cancellation race.
+	if l.ctx.Err() != nil {
+		cancel()
+	}
+	started := time.Now()
+	l.activity.active.Add(1)
+	finish := sync.OnceFunc(func() {
+		l.activity.active.Add(-1)
+		stop()
+		cancel()
+	})
+	log.Debug().Str("method", req.Method).Msg("rmapi HTTP request started")
+	base := l.base
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	resp, err := base.RoundTrip(req.Clone(ctx))
 	if err != nil {
-		log.Debug().Str("url", req.URL.String()).Err(err).Msg("rmapi HTTP request failed")
+		finish()
+		log.Debug().Str("method", req.Method).Str("outcome", errorKind(err)).Dur("elapsed", time.Since(started)).Msg("rmapi HTTP request failed")
 		return resp, err
 	}
-
-	// Read full body so downstream rmapi code sees the complete response,
-	// then log only the first maxLoggedBody bytes as a preview.
-	var bodyStr string
-	if resp.Body != nil {
-		bodyBytes, readErr := io.ReadAll(resp.Body)
-		if readErr == nil {
-			if len(bodyBytes) > maxLoggedBody {
-				bodyStr = string(bodyBytes[:maxLoggedBody]) + "…"
-			} else {
-				bodyStr = string(bodyBytes)
-			}
-		}
-		// Reconstruct the body from the FULL read so the caller isn't truncated.
-		resp.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	l.activity.responses.Add(1)
+	log.Debug().Str("method", req.Method).Int("status", resp.StatusCode).Dur("elapsed", time.Since(started)).Msg("rmapi HTTP response headers received")
+	if resp.Body == nil {
+		finish()
+	} else {
+		resp.Body = &activityBody{ReadCloser: resp.Body, finish: finish}
 	}
-
-	log.Debug().
-		Str("url", req.URL.String()).
-		Int("status", resp.StatusCode).
-		Str("status_text", resp.Status).
-		Str("response_body", bodyStr).
-		Msg("rmapi HTTP response")
-
 	return resp, nil
 }
 
-// WrapTransportWithLogging wraps the underlying http.Client.Transport of an rmapi
-// sync15.ApiCtx so that every HTTP request/response is logged at debug level.
-func WrapTransportWithLogging(apiCtx interface{}) {
-	syncCtx, ok := apiCtx.(*sync15.ApiCtx)
-	if !ok {
-		log.Warn().Msg("WrapTransportWithLogging: apiCtx is not *sync15.ApiCtx, skipping")
-		return
+// CloseIdleConnections preserves http.Client cleanup through this wrapper.
+func (l *loggingRoundTripper) CloseIdleConnections() {
+	base := l.base
+	if base == nil {
+		base = http.DefaultTransport
 	}
-	if syncCtx.Http == nil || syncCtx.Http.Client == nil {
-		log.Warn().Msg("WrapTransportWithLogging: no HTTP client available, skipping")
-		return
+	if closer, ok := base.(interface{ CloseIdleConnections() }); ok {
+		closer.CloseIdleConnections()
 	}
-	client := syncCtx.Http.Client
-	if client.Transport == nil {
-		client.Transport = http.DefaultTransport
+}
+
+// Preserve the original body's Close and read errors. Context cancellation must
+// remain attached after headers arrive, until the caller has consumed the body.
+type activityBody struct {
+	io.ReadCloser
+	finish func()
+}
+
+func (b *activityBody) Read(p []byte) (int, error) {
+	n, err := b.ReadCloser.Read(p)
+	if err != nil {
+		b.finish()
 	}
-	if _, ok := client.Transport.(*loggingRoundTripper); ok {
-		return
+	return n, err
+}
+
+func (b *activityBody) Close() error {
+	defer b.finish()
+	return b.ReadCloser.Close()
+}
+
+// Transport errors can embed credential-bearing URLs. Log a category instead.
+func errorKind(err error) string {
+	switch {
+	case errors.Is(err, context.Canceled):
+		return "canceled"
+	case errors.Is(err, context.DeadlineExceeded):
+		return "deadline"
+	default:
+		return "error"
 	}
-	client.Transport = &loggingRoundTripper{base: client.Transport}
 }

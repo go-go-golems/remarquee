@@ -1,6 +1,7 @@
 package rmcloud
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -36,7 +37,7 @@ func TestIsAuthError(t *testing.T) {
 // TestWithAuthRetry_NoError verifies that fn is called exactly once when it succeeds.
 func TestWithAuthRetry_NoError(t *testing.T) {
 	calls := 0
-	_, err := WithAuthRetry(AuthSettings{}, nil, func(ctx api.ApiCtx) (api.ApiCtx, error) {
+	_, err := WithAuthRetry(context.Background(), AuthSettings{}, nil, func(ctx api.ApiCtx) (api.ApiCtx, error) {
 		calls++
 		return ctx, nil
 	})
@@ -51,7 +52,7 @@ func TestWithAuthRetry_NoError(t *testing.T) {
 // TestWithAuthRetry_NonAuthError verifies that fn is NOT retried on non-auth errors.
 func TestWithAuthRetry_NonAuthError(t *testing.T) {
 	calls := 0
-	_, err := WithAuthRetry(AuthSettings{}, nil, func(ctx api.ApiCtx) (api.ApiCtx, error) {
+	_, err := WithAuthRetry(context.Background(), AuthSettings{}, nil, func(ctx api.ApiCtx) (api.ApiCtx, error) {
 		calls++
 		return ctx, errors.New("connection refused")
 	})
@@ -68,7 +69,7 @@ func TestWithAuthRetry_NonAuthError(t *testing.T) {
 // and verify the call count increases when the first call returns an auth error.
 func TestWithAuthRetry_AuthErrorThenSuccess(t *testing.T) {
 	calls := 0
-	_, err := WithAuthRetry(AuthSettings{NonInteractive: true}, nil, func(ctx api.ApiCtx) (api.ApiCtx, error) {
+	_, err := WithAuthRetry(context.Background(), AuthSettings{NonInteractive: true}, nil, func(ctx api.ApiCtx) (api.ApiCtx, error) {
 		calls++
 		if calls == 1 {
 			return ctx, errors.New("HTTP 401 Unauthorized")

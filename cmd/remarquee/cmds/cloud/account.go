@@ -74,7 +74,7 @@ func (c *AccountCommand) Run(ctx context.Context, parsedValues *values.Values) e
 		return err
 	}
 
-	userInfo, _, err := createApiCtx(s.AuthSettings)
+	userInfo, _, err := createApiCtx(ctx, s.AuthSettings)
 	if err != nil {
 		return err
 	}

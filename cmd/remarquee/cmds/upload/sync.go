@@ -137,9 +137,10 @@ func runUploadSync(ctx context.Context, cmd *cobra.Command, s *uploadSyncSetting
 	}
 	pandocOpts.ResolveImages = s.ResolveImages
 
-	_, apiCtx, err := rmcloud.CreateApiCtx(rmcloud.AuthSettings{
+	_, apiCtx, err := rmcloud.CreateApiCtx(ctx, rmcloud.AuthSettings{
 		NonInteractive: s.NonInteractive,
 		Reauth:         s.Reauth,
+		Progress:       cmd.ErrOrStderr(),
 	})
 	if err != nil {
 		return err

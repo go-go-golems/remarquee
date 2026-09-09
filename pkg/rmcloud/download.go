@@ -34,7 +34,7 @@ func DownloadDocumentByPath(ctx context.Context, auth AuthSettings, remotePath s
 		return nil, errors.Wrap(err, "ensure output dir")
 	}
 
-	_, apiCtx, err := CreateApiCtx(auth)
+	_, apiCtx, err := CreateApiCtx(ctx, auth)
 	if err != nil {
 		return nil, err
 	}

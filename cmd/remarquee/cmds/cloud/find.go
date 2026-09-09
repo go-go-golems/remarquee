@@ -122,7 +122,7 @@ func (c *FindCommand) Run(ctx context.Context, parsedValues *values.Values) erro
 		return err
 	}
 
-	_, apiCtx, err := createApiCtx(s.AuthSettings)
+	_, apiCtx, err := createApiCtx(ctx, s.AuthSettings)
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func (c *FindCommand) RunIntoGlazeProcessor(ctx context.Context, parsedValues *v
 		return err
 	}
 
-	_, apiCtx, err := createApiCtx(s.AuthSettings)
+	_, apiCtx, err := createApiCtx(ctx, s.AuthSettings)
 	if err != nil {
 		return err
 	}

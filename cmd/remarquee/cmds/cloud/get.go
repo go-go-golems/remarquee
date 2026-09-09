@@ -3,6 +3,7 @@ package cloud
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
@@ -92,6 +93,7 @@ func (c *GetCommand) Run(ctx context.Context, parsedValues *values.Values) error
 	downloaded, err := rmcloud.DownloadDocumentByPath(ctx, rmcloud.AuthSettings{
 		NonInteractive: s.NonInteractive,
 		Reauth:         s.Reauth,
+		Progress:       os.Stderr,
 	}, s.Remote, s.OutDir)
 	if err != nil {
 		return err

@@ -102,7 +102,7 @@ func (c *RmCommand) Run(ctx context.Context, parsedValues *values.Values) error 
 		return err
 	}
 
-	_, apiCtx, err := createApiCtx(s.AuthSettings)
+	_, apiCtx, err := createApiCtx(ctx, s.AuthSettings)
 	if err != nil {
 		return err
 	}

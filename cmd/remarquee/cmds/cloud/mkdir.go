@@ -83,7 +83,7 @@ func (c *MkdirCommand) Run(ctx context.Context, parsedValues *values.Values) err
 		return err
 	}
 
-	_, apiCtx, err := createApiCtx(s.AuthSettings)
+	_, apiCtx, err := createApiCtx(ctx, s.AuthSettings)
 	if err != nil {
 		return err
 	}

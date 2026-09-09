@@ -89,7 +89,7 @@ func (c *RefreshCommand) Run(ctx context.Context, parsedValues *values.Values) e
 		return err
 	}
 
-	userInfo, apiCtx, err := createApiCtx(settings_.AuthSettings)
+	userInfo, apiCtx, err := createApiCtx(ctx, settings_.AuthSettings)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (c *RefreshCommand) RunIntoGlazeProcessor(
 		return err
 	}
 
-	userInfo, apiCtx, err := createApiCtx(settings_.AuthSettings)
+	userInfo, apiCtx, err := createApiCtx(ctx, settings_.AuthSettings)
 	if err != nil {
 		return err
 	}

@@ -66,6 +66,24 @@ remarquee cloud search "meeting notes"
 remarquee cloud get "/Notebooks/Project Plan" --output ./project-plan.rmdoc
 ```
 
+### Cloud synchronization progress and cancellation
+
+Cloud operations initialize a local document tree before doing their work (currently including `cloud account`). A missing cache can make this first synchronization take longer. Normal progress appears on **stderr**, independently of `--log-level debug`:
+
+```text
+No cached tree found; initial sync may take a while.
+Synchronizing cloud tree… 5s | 42 HTTP responses, 3 active requests
+Cloud tree synchronized. 8s | 64 HTTP responses
+```
+
+Interactive terminals update one line each second; redirected stderr receives newline updates every five seconds, plus start/end messages. Counts describe **HTTP activity, not documents or a percentage**. Active requests include response-body reads, so a stalled body remains visible. An existing cache may still require a full resync; deleting it is not a general fix for slow startup.
+
+Press **Ctrl-C** to cancel. A second Ctrl-C, or two seconds without cooperative shutdown, forces exit with status 130. Tree-sync HTTP requests receive cancellation; rmapi's authentication prompt and some local work still rely on the forced-exit fallback. There is no new total-operation timeout; rmapi's existing five-minute request timeout remains.
+
+Use `--log-level debug` for initialization timings and sync HTTP method/status events. The new transport logging does not read response bodies or log URLs, headers, or document contents. Avoid `RMAPI_TRACE=1`: dependency trace logging can expose credentials. This progress increment starts after authentication, not during one-time-code entry/token exchange.
+
+Library callers opt into feedback with `rmcloud.AuthSettings{Progress: writer}`; nil stays silent. `rmcloud.CreateApiCtx` and `rmcloud.WithAuthRetry` now require a command context as their first argument.
+
 ### Upload Markdown to your tablet
 
 ```bash
