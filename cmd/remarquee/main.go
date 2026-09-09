@@ -39,6 +39,10 @@ func main() {
 	rootCmd.AddCommand(rmdoc_cmd.NewRmdocCommand())
 	rootCmd.AddCommand(upload.NewUploadCommand())
 
+	// ExecuteContext propagates SIGINT cancellation to the verbs. The wrapper
+	// also forces exit on a second interrupt or after two seconds: rmapi's
+	// AuthHttpCtx does not accept context.Context, so authentication can remain
+	// blocked even after the command context is canceled (see runInterruptible).
 	if err := executeInterruptible(rootCmd.ExecuteContext); err != nil {
 		if errors.Is(err, context.Canceled) {
 			os.Exit(130)

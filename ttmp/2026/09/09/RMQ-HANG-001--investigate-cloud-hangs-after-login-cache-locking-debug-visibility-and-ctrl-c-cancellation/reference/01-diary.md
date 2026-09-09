@@ -414,3 +414,62 @@ Start with the PR's Changes, Library API changes, Validation, and Limits section
 ### Technical details
 
 PR: https://github.com/go-go-golems/remarquee/pull/27. Head: `fix/cloud-sync-progress-cancellation`. Base: `main`. No production code changed during PR preparation.
+
+## Step 7: Explain the interrupt watchdog at its call sites and definition
+
+Added comments distinguishing top-level context propagation from the forced-exit watchdog. The explanation now lives at the CLI entry point, the direct `runInterruptible` call, and its definition, so maintainers do not need the chat to understand why a signal context alone is insufficient today.
+
+This is a comment-only change; cancellation behavior is unchanged.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, add a comment to where runInterruptible is called and where it is defined, so that we have more context"
+
+**Follow-up prompt (verbatim):** "and push"
+
+**Assistant interpretation:** Document the dependency limitation inline, validate, and push to the existing PR branch.
+
+**Inferred user intent:** Preserve the rationale for the extra shutdown mechanism for future review and simplification.
+
+### What I did
+
+- Explained that rmapi owns `api.AuthHttpCtx` and that its name does not refer to Go context cancellation.
+- Documented first-interrupt cancellation, second-interrupt/grace-period exit, and when to revisit the fallback.
+- Explained the helper's injected dependencies as test seams.
+- Ran gofmt, the CLI package tests, and whitespace/diff review before committing for PR #27.
+
+### Why
+
+A bare `signal.NotifyContext` cannot unblock rmapi's context-free stdin/token exchange. The comments distinguish that limitation from verbs that already cooperate with their command context.
+
+### What worked
+
+`go test ./cmd/remarquee -count=1` passed, including actual-SIGINT subprocess tests. `git diff --check` passed.
+
+### What didn't work
+
+N/A.
+
+### What I learned
+
+The dependency's `HttpClientCtx` naming is easy to confuse with `context.Context`; documenting this explicitly makes the fallback rationale clearer.
+
+### What was tricky to build
+
+No behavior changed. Comments must not imply that the watchdog replaces cooperative cancellation or that context-free authentication has already been fixed.
+
+### What warrants a second pair of eyes
+
+Check that future rmapi cancellation improvements trigger a review of this fallback rather than leaving it in place indefinitely without justification.
+
+### What should be done in the future
+
+Revisit the watchdog after authentication and remaining long-running operations support cooperative cancellation.
+
+### Code review instructions
+
+Review the comments in `cmd/remarquee/main.go` and `cmd/remarquee/interrupt.go`; confirm the diff contains no executable changes.
+
+### Technical details
+
+Existing PR: https://github.com/go-go-golems/remarquee/pull/27. Push target: `origin/fix/cloud-sync-progress-cancellation`.
