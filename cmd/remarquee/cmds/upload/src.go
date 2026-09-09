@@ -258,8 +258,9 @@ func runUploadSource(ctx context.Context, cmd *cobra.Command, s *uploadSourceSet
 	authSettings := rmcloud.AuthSettings{
 		NonInteractive: s.NonInteractive,
 		Reauth:         s.Reauth,
+		Progress:       cmd.ErrOrStderr(),
 	}
-	_, apiCtx, err := rmcloud.CreateApiCtx(authSettings)
+	_, apiCtx, err := rmcloud.CreateApiCtx(ctx, authSettings)
 	if err != nil {
 		return err
 	}

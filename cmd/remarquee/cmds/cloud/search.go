@@ -163,7 +163,7 @@ func (c *SearchCommand) Run(ctx context.Context, parsedValues *values.Values) er
 		return errors.New("type must be one of: dir, file, template")
 	}
 
-	_, apiCtx, err := createApiCtx(s.AuthSettings)
+	_, apiCtx, err := createApiCtx(ctx, s.AuthSettings)
 	if err != nil {
 		return err
 	}

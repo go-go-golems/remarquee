@@ -1,6 +1,9 @@
 package cloud
 
 import (
+	"context"
+	"os"
+
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
 	"github.com/juruen/rmapi/api"
 )
@@ -10,16 +13,10 @@ type AuthSettings struct {
 	Reauth         bool `glazed:"reauth"`
 }
 
-func createApiCtx(auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
-	userInfo, apiCtx, err := rmcloud.CreateApiCtx(rmcloud.AuthSettings{
+func createApiCtx(ctx context.Context, auth AuthSettings) (*api.UserInfo, api.ApiCtx, error) {
+	return rmcloud.CreateApiCtx(ctx, rmcloud.AuthSettings{
 		NonInteractive: auth.NonInteractive,
 		Reauth:         auth.Reauth,
+		Progress:       os.Stderr,
 	})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	rmcloud.WrapTransportWithLogging(apiCtx)
-
-	return userInfo, apiCtx, nil
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/logging"
@@ -15,8 +17,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "remarquee",
-	Short: "remarquee is a unified toolkit for reMarkable workflows",
+	Use:          "remarquee",
+	Short:        "remarquee is a unified toolkit for reMarkable workflows",
+	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Initialize logger after Cobra has parsed flags.
 		return logging.InitLoggerFromCobra(cmd)
@@ -36,7 +39,14 @@ func main() {
 	rootCmd.AddCommand(rmdoc_cmd.NewRmdocCommand())
 	rootCmd.AddCommand(upload.NewUploadCommand())
 
-	if err := rootCmd.Execute(); err != nil {
+	// ExecuteContext propagates SIGINT cancellation to the verbs. The wrapper
+	// also forces exit on a second interrupt or after two seconds: rmapi's
+	// AuthHttpCtx does not accept context.Context, so authentication can remain
+	// blocked even after the command context is canceled (see runInterruptible).
+	if err := executeInterruptible(rootCmd.ExecuteContext); err != nil {
+		if errors.Is(err, context.Canceled) {
+			os.Exit(130)
+		}
 		os.Exit(1)
 	}
 }

@@ -155,7 +155,7 @@ func (c *LsCommand) Run(ctx context.Context, parsedValues *values.Values) error 
 		return err
 	}
 
-	_, apiCtx, err := createApiCtx(s.AuthSettings)
+	_, apiCtx, err := createApiCtx(ctx, s.AuthSettings)
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (c *LsCommand) RunIntoGlazeProcessor(ctx context.Context, parsedValues *val
 		return err
 	}
 
-	_, apiCtx, err := createApiCtx(s.AuthSettings)
+	_, apiCtx, err := createApiCtx(ctx, s.AuthSettings)
 	if err != nil {
 		return err
 	}

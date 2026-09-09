@@ -1,0 +1,70 @@
+title: Show cloud sync progress and make Ctrl-C cancel requests
+body: |
+  ## Summary
+
+  - Address silent tree initialization and disconnected cancellation reported
+    in RMQ-HANG-001, including startup after `cloud account` authentication.
+  - Add observable, interruptible synchronization without clearing credentials
+    or the live cache. The original account hang is not yet reproduced.
+
+  ## Changes
+
+  - Show cache-existence notices, elapsed time, HTTP responses, and active
+    requests on stderr, independently of debug logging.
+  - Update a TTY line every second; emit non-TTY milestones every five seconds.
+    Keep heartbeats running during stalled headers or response bodies.
+  - Install metadata-only HTTP logging before tree initialization. Remove eager
+    body buffering; preserve streaming, read errors, and body ownership.
+  - Bind sync and subsequent API requests to the command context. Preserve
+    cancellation identity and avoid retrying canceled initialization.
+  - Cancel on Ctrl-C; force exit with status 130 on a second interrupt or after
+    a two-second grace period for uncooperative dependency work.
+  - Document the design, implementation diary, upstream findings, and remaining
+    work in RMQ-HANG-001. No rmapi dependency upgrade or copied sync engine.
+
+  ## Library API changes
+
+  - `CreateApiCtx` and `WithAuthRetry` now take `context.Context` first.
+  - `AuthSettings.Progress` optionally enables feedback; nil remains silent.
+  - Remove `WrapTransportWithLogging`; initialization now owns instrumentation.
+
+  ## Validation
+
+  - [x] Build real UI assets with pinned pnpm 10.15.1 and the frozen lockfile.
+  - [x] `go test ./... -count=1`
+  - [x] `go build ./...`
+  - [x] `go vet ./...`
+  - [x] `go test -race ./pkg/rmcloud ./cmd/remarquee -count=1`
+  - [x] Installed CLI help smoke test and ticket metadata validation.
+  - Cover cold/warm/corrupt caches with isolated fake-cloud fixtures, stalled
+    headers/bodies, concurrent counters, log privacy, and actual SIGINT exits.
+  - Generated UI assets and installed binaries are not committed.
+
+  ## Limits and follow-ups
+
+  - Counts represent HTTP activity, not documents, percentages, or an ETA.
+    Exact document counts require an rmapi callback API; checked upstream has
+    no newer progress/cancellation API relative to our pin.
+  - Progress starts after authentication. Token bootstrap and some local work
+    still depend on the forced-exit fallback, not cooperative cancellation.
+  - `cloud account` still initializes the tree. No total-operation timeout is
+    added; the existing five-minute per-request timeout remains.
+  - Dependency trace logging can still expose credentials. Live-account hang
+    diagnosis and full dependency-level progress/cancellation remain open.
+changelog: |
+  Add sync activity reporting and cancellation; preserve HTTP body streaming.
+release_notes:
+  title: See cloud sync activity and cancel long-running commands
+  body: |
+    Cloud tree initialization now reports elapsed time and HTTP activity on
+    stderr, including a notice when there is no cached tree. Progress remains
+    visible while waiting for the network, without enabling debug logging.
+
+    Ctrl-C cancels requests. A second Ctrl-C, or two seconds without shutdown,
+    forces the command to exit. Debug logging no longer buffers whole cloud
+    response bodies or includes their contents in the transport logs.
+
+    Counts show HTTP activity rather than document completion. Progress starts
+    after authentication, and the original reported account hang still needs
+    live verification. Library users must pass a context to CreateApiCtx and
+    WithAuthRetry; the old WrapTransportWithLogging helper has been removed.

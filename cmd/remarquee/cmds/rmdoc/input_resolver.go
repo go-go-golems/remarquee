@@ -85,6 +85,7 @@ func ResolveRMDocInput(ctx context.Context, file string, s CloudInputSettings) (
 	downloaded, err := downloadDocumentByPath(ctx, rmcloud.AuthSettings{
 		NonInteractive: s.NonInteractive,
 		Reauth:         s.Reauth,
+		Progress:       os.Stderr,
 	}, file, tmpDir)
 	if err != nil {
 		_ = os.RemoveAll(tmpDir)

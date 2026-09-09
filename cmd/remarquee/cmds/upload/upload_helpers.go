@@ -12,7 +12,7 @@ import (
 )
 
 func uploadPDFToRemoteWithAuthRetry(cmd *cobra.Command, authSettings rmcloud.AuthSettings, apiCtx api.ApiCtx, dst string, outPDF string, label string, force bool) (api.ApiCtx, error) {
-	return rmcloud.WithAuthRetry(authSettings, apiCtx, func(currentCtx api.ApiCtx) (api.ApiCtx, error) {
+	return rmcloud.WithAuthRetry(cmd.Context(), authSettings, apiCtx, func(currentCtx api.ApiCtx) (api.ApiCtx, error) {
 		dstNode, err := rmcloud.MkdirAll(currentCtx, dst)
 		if err != nil {
 			return currentCtx, err
