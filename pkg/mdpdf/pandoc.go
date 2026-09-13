@@ -47,7 +47,15 @@ type PandocOptions struct {
 // Markdown thematic breaks (---) are not interpreted as metadata delimiters
 // (the converter strips docmgr-style frontmatter itself before invoking
 // pandoc).
-const DefaultFromFormat = "markdown-yaml_metadata_block"
+//
+// tex_math_single_backslash is enabled so ChatGPT-style \(...\) and \[...\]
+// math delimiters parse as math. Without it the reader consumes the delimiter
+// tokens and hands the inner TeX commands to LaTeX in text mode, where they
+// are fatal errors ("Command \mathcal allowed only in math mode", "Missing $
+// inserted") — the dominant failure class of the 2026-09-13 sync. surf-cli
+// now normalizes delimiters to dollar math at extraction and backfill time;
+// this keeps remarquee safe for any legacy file that bypassed that pipeline.
+const DefaultFromFormat = "markdown-yaml_metadata_block+tex_math_single_backslash"
 
 func DefaultPandocOptions() PandocOptions {
 	return PandocOptions{
@@ -62,12 +70,27 @@ func DefaultPandocOptions() PandocOptions {
 }
 
 const defaultLatexHeader = `\usepackage{stmaryrd}
+\usepackage{centernot}
+\usepackage{mathtools}
+\usepackage{amscd}
+\newcommand{\require}[1]{}
 \usepackage{enumitem}
 \setlist[itemize]{leftmargin=*,topsep=0.5em,itemsep=0.3em,parsep=0.2em}
 \setlist[enumerate]{leftmargin=*,topsep=0.5em,itemsep=0.3em,parsep=0.2em}
 \usepackage{geometry}
 \geometry{margin=1in}
 `
+
+// The header comments for the math packages, in order:
+//   - stmaryrd: \llbracket/\rrbracket, \rightsquigarrow (ChatGPT category theory)
+//   - centernot: \centernot\Longrightarrow (negated arrows)
+//   - mathtools: \xRightarrow and friends (extensible arrows)
+//   - amscd: the CD commutative-diagram environment, the real-LaTeX
+//     equivalent of MathJax's AMScd extension
+//   - \require: MathJax's extension loader (\require{AMScd}) appears inside
+//     ChatGPT math spans; it has no LaTeX meaning, so a no-op definition
+//     lets the surrounding math compile instead of dying with
+//     "Undefined control sequence".
 
 func buildPandocArgs(inputPath string, outputPath string, opts PandocOptions, headerPaths []string) []string {
 	fromFormat := opts.FromFormat

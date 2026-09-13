@@ -2,6 +2,7 @@ package mdpdf
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -14,17 +15,20 @@ func TestBuildPandocArgsDisablesYAMLMetadataBlocks(t *testing.T) {
 
 	args := buildPandocArgs("input.md", "/tmp/output.pdf", opts, []string{"header.tex"})
 
-	if len(args) == 0 || args[0] != "--from=markdown-yaml_metadata_block" {
-		t.Fatalf("expected YAML metadata extension to be disabled first, got %#v", args)
+	if len(args) == 0 || !strings.HasPrefix(args[0], "--from=markdown") {
+		t.Fatalf("expected --from first, got %#v", args)
+	}
+	if !strings.Contains(args[0], "-yaml_metadata_block") {
+		t.Fatalf("expected YAML metadata extension to be disabled, got %q", args[0])
 	}
 	count := 0
 	for _, arg := range args {
-		if arg == "--from=markdown-yaml_metadata_block" {
+		if strings.HasPrefix(arg, "--from=") {
 			count++
 		}
 	}
 	if count != 1 {
-		t.Fatalf("expected YAML metadata extension flag exactly once, got %d in %#v", count, args)
+		t.Fatalf("expected --from flag exactly once, got %d in %#v", count, args)
 	}
 
 	for _, want := range []string{
@@ -47,16 +51,19 @@ func TestBuildPandocArgsDisablesYAMLMetadataBlocks(t *testing.T) {
 
 func TestBuildPandocArgsCustomFromFormat(t *testing.T) {
 	opts := DefaultPandocOptions()
-	opts.FromFormat = "markdown-yaml_metadata_block+tex_math_single_backslash"
+	// Deliberately different from DefaultFromFormat: this test proves a
+	// custom format fully replaces the default, not that any specific
+	// default exists.
+	opts.FromFormat = "commonmark-yaml_metadata_block"
 
 	args := buildPandocArgs("input.md", "/tmp/output.pdf", opts, nil)
 
-	if len(args) == 0 || args[0] != "--from=markdown-yaml_metadata_block+tex_math_single_backslash" {
+	if len(args) == 0 || args[0] != "--from=commonmark-yaml_metadata_block" {
 		t.Fatalf("expected custom --from first, got %#v", args)
 	}
 	count := 0
 	for _, arg := range args {
-		if arg == "--from=markdown-yaml_metadata_block+tex_math_single_backslash" {
+		if arg == "--from=commonmark-yaml_metadata_block" {
 			count++
 		}
 		if arg == "--from="+DefaultFromFormat {

@@ -14,6 +14,18 @@ func TestDefaultHeaderLoadsMathSymbols(t *testing.T) {
 	if !strings.Contains(defaultLatexHeader, `\usepackage{stmaryrd}`) {
 		t.Fatal("default header must provide llbracket/rrbracket")
 	}
+	if !strings.Contains(defaultLatexHeader, `\usepackage{centernot}`) {
+		t.Fatal("default header must provide centernot")
+	}
+	if !strings.Contains(defaultLatexHeader, `\usepackage{mathtools}`) {
+		t.Fatal("default header must provide mathtools (xRightarrow)")
+	}
+	if !strings.Contains(defaultLatexHeader, `\usepackage{amscd}`) {
+		t.Fatal("default header must provide the CD commutative diagram environment")
+	}
+	if !strings.Contains(defaultLatexHeader, `\newcommand{\require}[1]{}`) {
+		t.Fatal("default header must no-op the MathJax \\require loader")
+	}
 }
 
 func TestMathPDFDirectAndBundle(t *testing.T) {
@@ -30,7 +42,24 @@ func TestMathPDFDirectAndBundle(t *testing.T) {
 	}
 
 	const math = "$$\n\\operatorname{SendResult} = \\operatorname{Sent}\n+ \\operatorname{Full}\n$$\n"
-	const source = "# Math regression\n\n" + math + "\nSemantic brackets: $\\llbracket p \\rrbracket$.\n\n```text\nnot a list\n        - preserve this indentation\n```\n\nOrdinary list\n- item\n"
+	// Production regression forms from the 2026-09-13 sync failures:
+	// \require{AMScd} + CD diagrams (MathJax dialect), \centernot, and
+	// ChatGPT-style \(...\) delimiters that must parse as math via the
+	// tex_math_single_backslash reader extension.
+	const regressions = `Negated arrow: $f \centernot\Longrightarrow g$ and extensible $h \xRightarrow{k} l$.
+
+\[
+\require{AMScd}
+\begin{CD}
+A @>f>> B\\\\
+@VVFVV @AAgA\\\\
+C @= D
+\end{CD}
+\]
+
+Legacy delimiter: \(\Theta \times X\) still parses as math.
+`
+	const source = "# Math regression\n\n" + math + "\nSemantic brackets: $\\llbracket p \\rrbracket$.\n\n" + regressions + "\n```text\nnot a list\n        - preserve this indentation\n```\n\nOrdinary list\n- item\n"
 	for _, bundled := range []bool{false, true} {
 		name := "direct"
 		if bundled {
