@@ -474,3 +474,70 @@ ones. **Commit (code):** see below (Phase 3 commit).
 - `<img src="a.svg" width="100">` -> `![svg image](./a.svg){width=100px}`.
 - `alt` is preserved; `height` is used when `width` is absent; `DefaultWidth` is
   the final fallback.
+
+## Step 8: Phase 4 — pipeline and bundle wiring
+
+This step connected the new SVG passes into both conversion paths. The critical
+decision was ordering relative to `ResolveImagePaths`: HTML `<img>` rewriting must
+happen *before* image path resolution (so the produced Markdown reference is copied
+from the source directory), while inline `<svg>` extraction must happen *after*
+(because it writes finished assets directly into the temp dir and
+`ResolveImagePaths` resolves relative paths against the source dir, not the temp
+dir). Getting this backwards would silently break referenced images or double-copy.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 4. **Assistant interpretation:** implement
+guide Phase 4. **Inferred user intent:** the feature actually runs for real uploads.
+**Commit (code):** see below (Phase 4 commit).
+
+### What I did
+- `pkg/mdpdf/pandoc.go`: call `ResolveHTMLImages` before `ResolveImagePaths` and
+  `ResolveInlineSVGBlocks` after it, inside `ConvertMarkdownFileToPDF`.
+- `pkg/mdpdf/pandoc.go`: `DefaultPandocOptions` now injects a default
+  `SVGRendererConfig`, so the feature is on by default for library callers.
+- `pkg/mdpdf/bundle.go`: `BuildBundleMarkdown` gained an `svgCfg` parameter and
+  applies both passes with the per-input `bundle-00N-` prefix.
+- Updated callers: `cmd/.../upload/bundle.go` passes `pandocOpts.SVG`; four test
+  call sites pass `nil`.
+- Added `pkg/mdpdf/svg_pdf_test.go` with a real-converter test and a full
+  pandoc/XeLaTeX pipeline test.
+
+### Why
+- Ordering preserves the existing image-copy semantics and avoids regressions.
+- Enabling SVG in `DefaultPandocOptions` makes the feature live without requiring
+  every caller to opt in; the CLI can still override via flags in Phase 5.
+
+### What worked
+- `TestResolveInlineSVGBlocks_RealConverter` produced a real `%PDF-` file.
+- `TestSVGPipelinePDF` rendered a doc with referenced + inline + HTML SVG plus a
+  fenced code block through the full pipeline without error.
+- `go test ./pkg/mdpdf/... ./cmd/remarquee/cmds/upload/...` passes.
+
+### What didn't work
+- No failures observed in this phase.
+
+### What I learned
+- The committed design guide's ordering ("inline before images") was wrong for
+  this codebase; the implementation uses post-image ordering and this entry
+  supersedes it. The guide should be corrected in a docs pass.
+
+### What was tricky to build
+- Updating `BuildBundleMarkdown`'s signature rippled to 6 call sites (5 tests, 1
+  command). Handled with targeted edits to avoid accidental changes.
+
+### What warrants a second pair of eyes
+- Whether enabling SVG by default in `DefaultPandocOptions` could surprise callers
+  that do not expect subprocess conversion. It is a no-op when no inline SVG or
+  HTML `<img svg>` is present.
+
+### What should be done in the future
+- Phase 5: expose `--svg*` flags and construct the config from them (currently the
+  CLI inherits the default config).
+
+### Code review instructions
+- Read the preprocessing block in `ConvertMarkdownFileToPDF` for ordering.
+- Run `go test ./pkg/mdpdf/ -run 'SVGPipelinePDF|RealConverter' -v`.
+
+### Technical details
+- Order: StripYAMLFrontmatter -> ResolveHTMLImages -> ResolveImagePaths ->
+  ResolveInlineSVGBlocks -> RenderMermaidBlocks -> list normalization.

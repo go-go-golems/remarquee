@@ -24,7 +24,7 @@ func TestBuildBundleMarkdown_StripsFrontmatterAndAddsHeadings(t *testing.T) {
 	out, err := BuildBundleMarkdown(context.Background(), []BundleInput{
 		{Path: a, Title: "Doc A"},
 		{Path: b, Title: "Doc B"},
-	}, t.TempDir(), nil, true)
+	}, t.TempDir(), nil, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestBuildBundleMarkdown_ResolvesImages(t *testing.T) {
 	tmpDir := t.TempDir()
 	out, err := BuildBundleMarkdown(context.Background(), []BundleInput{
 		{Path: md, Title: "Doc"},
-	}, tmpDir, nil, true)
+	}, tmpDir, nil, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -106,7 +106,7 @@ exit 1
 	out, err := BuildBundleMarkdown(context.Background(), []BundleInput{
 		{Path: firstMD, Title: "First"},
 		{Path: secondMD, Title: "Second"},
-	}, tmpDir, cfg, true)
+	}, tmpDir, cfg, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestBuildBundleMarkdown_AvoidsImageBasenameCollisionsAcrossInputs(t *testin
 	out, err := BuildBundleMarkdown(context.Background(), []BundleInput{
 		{Path: firstMD, Title: "First"},
 		{Path: secondMD, Title: "Second"},
-	}, tmpDir, nil, true)
+	}, tmpDir, nil, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

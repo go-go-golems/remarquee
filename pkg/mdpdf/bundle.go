@@ -17,13 +17,14 @@ type BundleInput struct {
 
 // BuildBundleMarkdown concatenates multiple Markdown inputs into a single
 // document with stable section headings and page breaks. Each input is
-// preprocessed individually: YAML frontmatter is stripped, local image
-// paths are resolved (copied into tmpDir/images/), and Mermaid blocks
-// are rendered to images (if mermaidCfg is provided).
+// preprocessed individually: YAML frontmatter is stripped, HTML SVG <img> tags
+// are rewritten, local image paths are resolved (copied into tmpDir/images/),
+// inline <svg> blocks are converted, and Mermaid blocks are rendered to images
+// (if the corresponding configs are provided).
 //
 // The resulting body can be passed to ConvertMarkdownFileToPDF, which
 // will find the pre-resolved images via its own image resolution step.
-func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir string, mermaidCfg *MermaidRendererConfig, resolveImages bool) (string, error) {
+func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir string, mermaidCfg *MermaidRendererConfig, svgCfg *SVGRendererConfig, resolveImages bool) (string, error) {
 	var b strings.Builder
 
 	for i, in := range inputs {
@@ -42,6 +43,14 @@ func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir strin
 		body := StripYAMLFrontmatter(string(mdBytes))
 
 		assetPrefix := fmt.Sprintf("bundle-%03d-", i+1)
+
+		// Rewrite SVG <img> tags before image path resolution so the resulting
+		// Markdown references are copied from this input's source directory.
+		body, err = ResolveHTMLImages(body, svgConfigWithImagePrefix(svgCfg, assetPrefix))
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to resolve HTML SVG images for %s", in.Path)
+		}
+
 		if resolveImages {
 			// Resolve local image paths relative to this input's source directory.
 			// Prefix filenames by bundle input so same-basename images from
@@ -51,6 +60,14 @@ func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir strin
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to resolve image paths for %s", in.Path)
 			}
+		}
+
+		// Extract and convert inline <svg> blocks. Writes finished assets directly
+		// into tmpDir/images, so it runs after image path resolution. Uses the
+		// per-input prefix to avoid svg-001 collisions across files.
+		body, err = ResolveInlineSVGBlocks(ctx, body, tmpDir, svgConfigWithImagePrefix(svgCfg, assetPrefix))
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to resolve inline SVG blocks for %s", in.Path)
 		}
 
 		// Render Mermaid blocks for this input. Use the same per-input

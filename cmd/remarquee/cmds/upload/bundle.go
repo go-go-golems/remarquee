@@ -246,7 +246,7 @@ func writeBundlePDF(ctx context.Context, files []bundleMarkdownFile, outPDF stri
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	body, err := mdpdf.BuildBundleMarkdown(ctx, inputs, tmpDir, pandocOpts.Mermaid, pandocOpts.ResolveImages)
+	body, err := mdpdf.BuildBundleMarkdown(ctx, inputs, tmpDir, pandocOpts.Mermaid, pandocOpts.SVG, pandocOpts.ResolveImages)
 	if err != nil {
 		return err
 	}
