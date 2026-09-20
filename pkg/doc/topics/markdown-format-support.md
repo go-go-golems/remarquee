@@ -9,11 +9,23 @@ Topics:
 - mermaid
 - images
 - math
+Commands:
+- upload md
+- upload bundle
+- upload src
+Flags:
+- resolve-images
+- svg
+- svg-converter
+- svg-default-width
+- mermaid
+- mermaid-scale
+- mermaid-pdf-width
 IsTemplate: false
 IsTopLevel: false
+ShowPerDefault: true
+SectionType: GeneralTopic
 ---
-
-# Markdown format support
 
 This page documents what actually survives the trip from a `.md` file to a PDF on
 a reMarkable device: what renders, what is transformed, what is silently dropped,
@@ -219,11 +231,15 @@ highlighting via `--theme` (pandoc highlight style) and `--listings`.
 
 ## Troubleshooting
 
-- **`Package svg Error: File ... is missing`** — a referenced SVG could not be
-  converted; install `rsvg-convert` (or pass `--svg-converter`).
-- **A diagram is missing with no error** — it was likely raw HTML (dropped) or a
-  disabled feature; check `--svg` / `--mermaid` and the converter's presence.
-- **`Missing character` warnings in a local test render** — usually an artifact of
-  rendering without remarquee's DejaVu font variables. The real pipeline uses
-  DejaVu Sans / DejaVu Sans Mono.
-- **`Unknown alias` from pandoc** — usually malformed code-block fences.
+| Problem | Cause | Solution |
+|---|---|---|
+| `Package svg Error: File ... is missing` | A referenced SVG could not be converted | Install `rsvg-convert` (or pass `--svg-converter`) |
+| A diagram is missing with no error | Raw HTML (dropped) or the feature is disabled | Check `--svg` / `--mermaid` and whether the converter is installed |
+| `Missing character` warnings in a local test render | Rendering without remarquee's DejaVu font variables | Use the real pipeline, or pass `-V mainfont="DejaVu Sans" -V monofont="DejaVu Sans Mono"` |
+| `Unknown alias` from pandoc | Malformed code-block fences | Fix the fence (use explicit language tags) |
+
+## See Also
+
+- `remarquee help remarquee-upload-reference` — upload command flags and behavior
+- `remarquee help remarquee-upload-bundle` — bundling multiple documents
+- `remarquee help remarquee-upload-getting-started` — first upload walkthrough

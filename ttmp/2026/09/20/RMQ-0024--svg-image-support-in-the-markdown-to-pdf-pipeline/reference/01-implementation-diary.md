@@ -745,3 +745,66 @@ format/support document and update command references.
 - New slug: `markdown-format-support`.
 - Code fix: `pkg/mdpdf/pandoc.go` and `pkg/mdpdf/bundle.go` gate `ResolveHTMLImages`
   on image resolution.
+
+## Step 12: Glazed help frontmatter conformance
+
+The user asked whether the new help page used the Glazed help entry format. It did
+not fully: I had mirrored the repo's topic frontmatter but omitted `ShowPerDefault`
+and `SectionType`. Glazed defaults a missing `SectionType` to `SectionGeneralTopic`,
+so the page loaded and was queryable, but it was not conformant and lacked the
+`Commands`/`Flags` facet tags the format supports. I also had a top-level `#`
+heading, which the authoring guidance says not to add because Glazed renders the
+title from frontmatter.
+
+### Prompt Context
+**User prompt (verbatim):** "did you use the glazed help entry format?"
+**Assistant interpretation:** audit frontmatter against the canonical Glazed spec.
+**Inferred user intent:** conformant, complete help metadata.
+**Commit (docs):** see below (Step 12 commit).
+
+### What I did
+- Checked the authoritative spec via `glaze help writing-help-entries` and the
+  Glazed source (`pkg/help/help.go`, `LoadSectionFromMarkdown`), which confirms
+  `SectionType` defaults to `SectionGeneralTopic` and reads `Topics`, `Commands`,
+  `Flags`, `IsTopLevel`, `IsTemplate`, `ShowPerDefault`, `Order`.
+- Added `ShowPerDefault: true` and `SectionType: GeneralTopic` to
+  `pkg/doc/topics/markdown-format-support.md`.
+- Added `Commands:` and `Flags:` facet lists.
+- Removed the top-level `#` heading; the title now comes from frontmatter.
+- Replaced the bullet troubleshooting list with a Problem/Cause/Solution table and
+  added a `See Also` section, per the authoring guidance.
+
+### Why
+- Without `SectionType`, ranking/grouping behavior relies on an implicit default;
+  explicit metadata is required for a well-formed entry and future filtering.
+
+### What worked
+- `go build ./...` clean; `go run ./cmd/remarquee help markdown-format-support`
+  renders with the frontmatter title and no duplicate H1.
+
+### What didn't work
+- No failures observed. Note that several pre-existing `pkg/doc/upload/*.md` pages
+  are non-conformant (they use `DocType`/`Slug` only, no `SectionType`); out of
+  scope for this ticket.
+
+### What I learned
+- The canonical field set is `Title, Slug, Short, Topics, Commands, Flags,
+  IsTopLevel, IsTemplate, ShowPerDefault, SectionType` (plus optional `Order`).
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- Whether to also normalize the older `pkg/doc/upload/*` pages in a follow-up.
+
+### What should be done in the future
+- Optional follow-up: add a load-time validation test asserting every `pkg/doc`
+  markdown declares a `SectionType` and unique slug.
+
+### Code review instructions
+- Inspect the frontmatter of `pkg/doc/topics/markdown-format-support.md`.
+- Run `go run ./cmd/remarquee help markdown-format-support`.
+
+### Technical details
+- Reference: `glaze help writing-help-entries`;
+  `glazed@v0.7.3/pkg/help/help.go` `LoadSectionFromMarkdown`.
