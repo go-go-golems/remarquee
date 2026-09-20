@@ -606,3 +606,71 @@ guide Phase 5. **Inferred user intent:** users can control the feature from the 
 ### Technical details
 - Config precedence: CLI flags -> `configureMarkdownPandocOptions` -> `opts.SVG`;
   `--svg=false` yields a nil config (no-op).
+
+## Step 10: Phase 6 — end-to-end validation and closeout
+
+This step proved the feature on real PDFs rather than only in unit tests. The key
+question was whether inline raw `<svg>` now actually appears as an image; exit
+codes alone cannot prove this because the pre-fix behavior silently dropped the
+block while still producing a valid PDF. I rendered fixtures and counted pixels,
+and I exercised the missing-converter and disable paths.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 4. **Assistant interpretation:** implement
+guide Phase 6 (validation, ticket closeout, requested reMarkable delivery).
+**Inferred user intent:** an evidence-backed, delivered feature.
+**Commit (code):** see below (Phase 6 docs commit).
+
+### What I did
+- Built the CLI from source (`go build -o remarquee-test ./cmd/remarquee`) and
+  rendered a fixture containing referenced SVG, inline raw SVG, HTML `<img>`, and
+  a fenced `<svg>` code block via `upload md --pdf-only`.
+- Pixel-probed the rendered PDF.
+- Ran the missing-converter path with a minimal `PATH` (pandoc + xelatex only).
+- Ran bundle mode with two inline-SVG inputs, `--svg=false`, and
+  `--svg-default-width 50%`.
+- Ran `go test ./...`; all packages pass.
+
+### What worked
+- Direct render (`out/doc.pdf`, 1 page):
+  - blue `#336699` pixels = **9838** (referenced + HTML `<img>` both rendered).
+  - red `#cc3333` pixels = **3044** (inline raw `<svg>` now rendered; was 0 before).
+  - `pdftotext` shows `Figure 2: svg image 1` and `Figure 3: svg image`, and the
+    fenced `<svg ...>` appears as literal text → code fences preserved.
+- Missing converter: printed
+  `WARNING: SVG: no SVG converter found; inline <svg> blocks left as-is` and still
+  produced `OK: generated out-noConv/inline-only.pdf` (exit 0) — graceful.
+- Bundle: produced `SVG Bundle Test.pdf`; red pixels present on both pages
+  (3741 and 3828) → per-input prefixing works.
+- `--svg=false`: red pixels = 0 → disabled correctly.
+- `--svg-default-width 50%`: produced a PDF without error.
+- `go test ./...` all green.
+
+### What didn't work
+- No failures observed in this phase.
+
+### What I learned
+- Pixel probing is essential for this feature: the broken behavior still produced
+  a valid PDF, so only image-content checks distinguish fixed from broken.
+
+### What was tricky to build
+- Constructing a `PATH` that keeps pandoc/xelatex working while hiding
+  rsvg-convert; solved by symlinking only `pandoc` and `xelatex` into a temp dir.
+
+### What warrants a second pair of eyes
+- The `--svg=false` disable path silently drops inline SVG (by design), which may
+  surprise; documented in the flag help.
+
+### What should be done in the future
+- Optional: HTML `<img>` support for PNG/JPG (currently left untouched).
+- Optional: pre-convert referenced SVGs when no converter is present.
+
+### Code review instructions
+- Re-run the fixture render and pixel probe (commands in the design guide
+  Appendix A and this entry).
+- `go test ./...`.
+
+### Technical details
+- Fixture and outputs under `/tmp/svgtest/rmq2` (throwaway).
+- Commits for this ticket: docs 5d9f0b9, P1 a06e76d, P2 2c3ac2b, P3 4b6483b,
+  P4 7d9bda7, P5 ebaf952.
