@@ -411,3 +411,66 @@ done), so that it is easier to track / put things back together in the future."
 ### Technical details
 - File: `~/.pi/agent/skills/brutalist-work-slip/SKILL.md` (outside this repo, so
   not part of the repository commit).
+
+## Step 7: Phase 3 — HTML `<img>` SVG conversion
+
+This step recovered the other silently-dropped SVG form: HTML `<img>` tags. Pandoc's
+LaTeX writer discards raw HTML, so `<img src="arch.svg">` vanished. The fix
+rewrites SVG `<img>` tags into standard Markdown image syntax, which then flows
+through the existing `ResolveImagePaths` copy step. Because the rewrite must
+happen before path resolution, `ResolveHTMLImages` is designed to run early in the
+pipeline (Phase 4 wires that ordering).
+
+### Prompt Context
+**User prompt (verbatim):** see Step 4. **Assistant interpretation:** implement
+guide Phase 3. **Inferred user intent:** HTML-embedded SVGs render like Markdown
+ones. **Commit (code):** see below (Phase 3 commit).
+
+### What I did
+- Added to `pkg/mdpdf/svg.go`: `ResolveHTMLImages`, `rewriteHTMLImgTags`,
+  `indexImgTag`, `htmlImgToMarkdown`, `parseTagAttrs`, `isHTMLSpace`,
+  `normalizeHTMLDimension`, `isSVGSource`, `containsHTMLSVGImg`.
+- Added 9 tests covering attributes, unit normalization, quoted `>`, fenced-code
+  safety, non-SVG passthrough, no-converter warning, and default width.
+
+### Why
+- Only SVG sources are rewritten to bound the change; PNG/JPG `<img>` remain a
+  known follow-up.
+- Bare numeric dimensions become `px`, preserving `%`/`cm` units.
+- The converter-availability guard prevents rewriting into Markdown that would
+  hard-fail at pandoc when no converter exists.
+
+### What worked
+- All HTML-related tests pass; full `go test ./pkg/mdpdf/` passes.
+
+### What didn't work
+- One test assertion was wrong: I asserted the output must not contain `"> y"`,
+  but that substring is legitimate alt text (`![x > y](a.svg)`). Fixed the
+  assertion to check for absence of the raw `<img` tag instead.
+
+### What I learned
+- The API signature was reduced versus the guide: `ResolveHTMLImages(body, cfg)`
+  needs neither `ctx`, `sourceDir`, nor `tmpDir`, because conversion is delegated
+  to pandoc after the rewrite. This is a deliberate refinement of §7 of the guide.
+
+### What was tricky to build
+- Reusing `tagEnd` (from the `<svg>` tokenizer) for `<img>` so that quoted `>` in
+  an attribute does not terminate the tag; then `parseTagAttrs` parses the tag
+  body quote-aware.
+
+### What warrants a second pair of eyes
+- Attribute parsing is intentionally minimal (no entity decoding, no boolean
+  attributes). Confirm it handles the HTML shapes authors actually use.
+
+### What should be done in the future
+- Phase 4: wire both passes into `ConvertMarkdownFileToPDF` and
+  `BuildBundleMarkdown` in the correct order.
+
+### Code review instructions
+- Read `ResolveHTMLImages` and `htmlImgToMarkdown`.
+- Run `go test ./pkg/mdpdf/ -run 'HTML|IsSVG|NormalizeHTML|ParseTag' -v`.
+
+### Technical details
+- `<img src="a.svg" width="100">` -> `![svg image](./a.svg){width=100px}`.
+- `alt` is preserved; `height` is used when `width` is absent; `DefaultWidth` is
+  the final fallback.

@@ -380,3 +380,156 @@ func TestResolveInlineSVGBlocks_DefaultWidthAndPrefix(t *testing.T) {
 		t.Fatalf("expected %q, got: %q", want, out)
 	}
 }
+
+func TestIsSVGSource(t *testing.T) {
+	tests := []struct {
+		src  string
+		want bool
+	}{
+		{"a.svg", true},
+		{"A.SVG", true},
+		{"a.svg?x=1", true},
+		{"a.svg#frag", true},
+		{"a.png", false},
+		{"a.svg.png", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := isSVGSource(tt.src); got != tt.want {
+			t.Errorf("isSVGSource(%q) = %v, want %v", tt.src, got, tt.want)
+		}
+	}
+}
+
+func TestNormalizeHTMLDimension(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"100", "100px"},
+		{"50%", "50%"},
+		{"10cm", "10cm"},
+		{"", ""},
+		{"  42 ", "42px"},
+	}
+	for _, tt := range tests {
+		if got := normalizeHTMLDimension(tt.in); got != tt.want {
+			t.Errorf("normalizeHTMLDimension(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestParseTagAttrs(t *testing.T) {
+	got := parseTagAttrs(`<img src="a.svg" width='100' alt="hi there"/>`, "img")
+	if got["src"] != "a.svg" || got["width"] != "100" || got["alt"] != "hi there" {
+		t.Fatalf("unexpected attrs: %#v", got)
+	}
+}
+
+func TestResolveHTMLImages_Basic(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	body := "before\n<img src=\"./a.svg\" width=\"100\">\nafter\n"
+
+	out, err := ResolveHTMLImages(body, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := "![svg image](./a.svg){width=100px}"
+	if !strings.Contains(out, want) {
+		t.Fatalf("expected %q, got: %q", want, out)
+	}
+}
+
+func TestResolveHTMLImages_AltWidthHeightPrecedence(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+
+	out, err := ResolveHTMLImages(`<img src="a.svg" alt="arch" width="50%">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "![arch](a.svg){width=50%}") {
+		t.Fatalf("width/alt: got %q", out)
+	}
+
+	out, err = ResolveHTMLImages(`<img src="a.svg" height="30">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "![svg image](a.svg){width=30px}") {
+		t.Fatalf("height: got %q", out)
+	}
+}
+
+func TestResolveHTMLImages_NonSVGUntouched(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	body := `<img src="a.png" width="10">`
+
+	out, err := ResolveHTMLImages(body, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != body {
+		t.Fatalf("non-svg img must be untouched, got %q", out)
+	}
+}
+
+func TestResolveHTMLImages_QuotedGtInAttr(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	out, err := ResolveHTMLImages(`<img src="a.svg" alt="x > y">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "a.svg") {
+		t.Fatalf("expected conversion, got %q", out)
+	}
+	if strings.Contains(out, "<img") {
+		t.Fatalf("raw tag leaked, got %q", out)
+	}
+}
+
+func TestResolveHTMLImages_SkipsFencedCode(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	body := "```html\n<img src=\"a.svg\">\n```\n"
+	out, err := ResolveHTMLImages(body, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != body {
+		t.Fatalf("fenced img must be untouched, got %q", out)
+	}
+}
+
+func TestResolveHTMLImages_NoConverter(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	var buf testWriter
+	cfg := DefaultSVGRendererConfig()
+	cfg.WarnWriter = &buf
+	body := `<img src="a.svg">`
+	out, err := ResolveHTMLImages(body, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != body {
+		t.Fatalf("expected unchanged without converter, got %q", out)
+	}
+	if !strings.Contains(buf.String(), "no SVG converter") {
+		t.Fatalf("expected warning, got %q", buf.String())
+	}
+}
+
+func TestResolveHTMLImages_SelfClosingAndDefaultWidth(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	cfg.DefaultWidth = "80%"
+	out, err := ResolveHTMLImages(`<img src="a.svg"/>`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "![svg image](a.svg){width=80%}") {
+		t.Fatalf("default width, got %q", out)
+	}
+}
