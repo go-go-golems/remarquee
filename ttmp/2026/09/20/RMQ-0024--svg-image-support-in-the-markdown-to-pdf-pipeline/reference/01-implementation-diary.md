@@ -279,3 +279,135 @@ phase boundaries and maintaining a detailed diary.
   DefaultWidth, MaxWidth, ImagePrefix, WarnWriter), `DefaultSVGRendererConfig`,
   `ResolveSVGConverter`, `svgConfigWithImagePrefix`, `(*SVGRendererConfig).warnf`.
 - `PandocOptions.SVG` added.
+
+## Step 5: Phase 2 — inline `<svg>` extraction and conversion
+
+This step implemented the core feature: detecting raw `<svg>…</svg>` blocks that
+pandoc silently drops, converting them to vector PDFs, and substituting standard
+Markdown image syntax. The hardest part is not conversion but *finding* the block
+correctly: a naive `<svg.*?</svg>` regex would corrupt fenced code that documents
+SVG, break on nested `<svg>`, and fail when an attribute value contains `>` or
+`</svg>`. I used a line scan with a quote-aware tag-depth tokenizer and reused the
+existing `literalLines` guard, matching the repository's style.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 4 (implement the plan, commit at intervals,
+keep a detailed diary). Mid-phase the user also asked to update the work-slip skill,
+see Step 6. **Assistant interpretation:** implement guide Phase 2.
+**Inferred user intent:** Working inline-SVG support with tests and evidence.
+**Commit (code):** see below (Phase 2 commit).
+
+### What I did
+- Extended `pkg/mdpdf/svg.go` with `looksLikeSVGOpen`, `hasPrefixFold`,
+  `isTagBoundary`, `countTagDelta`, `tagEnd`, `collectSVGBlock`,
+  `convertSVGToPDF`, `ResolveInlineSVGBlocks`, `containsInlineSVG`.
+- Added 11 tests (tokenizer, extraction, fenced-code safety, unclosed, no
+  converter, failure, width/prefix).
+
+### Why
+- `collectSVGBlock` + `countTagDelta` handle nested tags and quoted attributes,
+  which a regex cannot do safely.
+- `convertSVGToPDF` supports rsvg-convert and Inkscape argv styles and produces a
+  vector PDF next to the extracted SVG, so pandoc includes it via
+  `\includegraphics` with no shell escape.
+- Every failure path warns and leaves the source unchanged, matching the design.
+
+### What worked
+- All 20 SVG-related tests pass; full `go test ./pkg/mdpdf/...` passes.
+- `gofmt` clean, `go build ./...` clean.
+
+### What didn't work
+- First test compile failed: two tests passed a value `cfg` where a pointer was
+  expected (`cannot use cfg ... as *SVGRendererConfig`). Recovered by making
+  `newInlineTestConfig` return a value so all call sites use `&cfg` uniformly.
+
+### What I learned
+- Ordering matters subtly: `ResolveInlineSVGBlocks` must run **after**
+  `ResolveImagePaths` (like Mermaid), because it writes finished files directly
+  into `<tmp>/images/` and `ResolveImagePaths` resolves relative paths against the
+  *source* directory, not the temp dir. Writing generated assets directly to the
+  temp dir sidesteps that. The committed design guide's ordering note is
+  superseded here; the implementation (and Phase 4 wiring) uses post-image order.
+
+### What was tricky to build
+- The quote-aware tokenizer. ``<svg data-x="<\/svg>">`` must count as depth +1,
+  and `<svg/>` must be depth-neutral. `tagEnd` skips quoted values and detects a
+  trailing `/`; `countTagDelta` skips quoted spans before interpreting `<`.
+
+### What warrants a second pair of eyes
+- Whether generated `.pdf` assets should be substituted directly versus emitting
+  `.svg` and letting pandoc convert. We chose direct conversion for determinism and
+  to make the no-converter degradation meaningful; referenced SVGs still rely on
+  pandoc. Reviewers should confirm this asymmetry is acceptable.
+- `looksLikeSVGOpen` only matches a line-leading `<svg>`; inline mid-paragraph
+  `<svg>` is out of scope per the guide's non-goals.
+
+### What should be done in the future
+- Phase 3: `ResolveHTMLImages` for `<img src="...svg">`.
+
+### Code review instructions
+- Read `pkg/mdpdf/svg.go` functions `countTagDelta`, `collectSVGBlock`,
+  `ResolveInlineSVGBlocks`.
+- Run `go test ./pkg/mdpdf/ -run 'SVG|InlineSVG|CountTag|LooksLike' -v`.
+
+### Technical details
+- Generated assets: `<tmp>/images/<prefix>svg-NNN.svg` (source) and `.pdf`
+  (converted). Substitution: `![svg image N](./images/<prefix>svg-NNN.pdf)` plus
+  `{width=DefaultWidth}` when set.
+- rsvg-convert args: `-f pdf -a --dpi-x 96 --dpi-y 96 -o OUT IN`.
+- Inkscape args: `IN --export-type=pdf --export-filename=OUT`.
+
+## Step 6: Work-slip skill — require goal and intent summaries
+
+During Phase 2 the user asked to update the `brutalist-work-slip` skill so that
+plan slips always explain the ticket's overall goal (what the effort is about),
+and step/status slips always carry a short statement of the step's *intent* rather
+than only its mechanical actions. The motivation is future reconstruction: a slip
+is often read cold, so it must be self-explanatory.
+
+### Prompt Context
+**User prompt (verbatim):** "update the brutalist work slip skill to say to write
+up what the ticket's goal is / what it is about, like you did, on the plan ticket,
+and then a smaller version of the intent of each step (not ust what is going to be
+done), so that it is easier to track / put things back together in the future."
+**Assistant interpretation:** Edit the skill guidance; no script change required.
+**Inferred user intent:** Make printed slips durable, self-contained work records.
+
+### What I did
+- Edited `~/.pi/agent/skills/brutalist-work-slip/SKILL.md`:
+  - Mode 1 (`status`): mandate `--summary` state the step's INTENT, with a
+    good/weak example.
+  - Mode 2 (`plan`): mandate `--summary` state the ticket's GOAL/problem context,
+    prefixed `GOAL:` when useful.
+  - Content rules: summary is required in practice and must not just re-list
+    bullets; assume the slip is read cold.
+  - Updated both example invocations to model goal/intent summaries.
+
+### Why
+- Slips are the long-lived artifact of a work session; without intent they only
+  record activity and cannot be reconstructed later.
+
+### What worked
+- Guidance and examples updated in place; no script behavior changed.
+
+### What didn't work
+- No failures observed.
+
+### What was tricky to build
+- Distinguishing "what was done" (`--did` bullets) from "why it mattered"
+  (`--summary`) and enforcing it as guidance rather than a hard schema.
+
+### What warrants a second pair of eyes
+- Whether to enforce a non-empty `--summary` in the script (currently guidance
+  only, to avoid breaking existing usage).
+
+### What should be done in the future
+- Consider a script-side warning when `--summary` is omitted.
+
+### Code review instructions
+- Read `~/.pi/agent/skills/brutalist-work-slip/SKILL.md` Mode 1, Mode 2, and
+  Content rules sections.
+
+### Technical details
+- File: `~/.pi/agent/skills/brutalist-work-slip/SKILL.md` (outside this repo, so
+  not part of the repository commit).
