@@ -808,3 +808,57 @@ title from frontmatter.
 ### Technical details
 - Reference: `glaze help writing-help-entries`;
   `glazed@v0.7.3/pkg/help/help.go` `LoadSectionFromMarkdown`.
+
+## Step 13: Tablet validation document
+
+The user installed the updated CLI and asked for a document with the different SVG
+integration forms to validate on the tablet. I generated a self-explanatory
+checklist document and its SVG assets, verified it locally (4 pages, figures A–I
+present, J preserved as code), and uploaded it to the ticket-aware destination.
+
+### Prompt Context
+**User prompt (verbatim):** "I installed the updated remarquee, can you send a test
+document with the different kinds of svg integrations so I can validate things on
+the tablet?"
+**Assistant interpretation:** render and upload an SVG-feature validation doc.
+**Inferred user intent:** confirm real device rendering of every supported form.
+**Commit (docs):** see below (Step 13 commit).
+
+### What I did
+- Created `/tmp/svg-validate` with `doc.md` and six labeled SVG assets.
+- Covered: referenced (A), sized 40% (B), inline raw (C), nested inline (D), HTML
+  `<img>` (E), data URI (F), viewBox-only (G), pattern+text (H), quoted `>` attr
+  (I), and a fenced `<svg>` code block (J, expected as code).
+- Local render: 4 pages; `pdftotext` shows figures 1–9 and inline images 1–3;
+  pixel probe confirmed C/D/E/I rendered (green 5670, teal 6228, yellow 4080,
+  purple 1061).
+- Uploaded via `remarquee upload md --name "RMQ-0024 SVG Integration Test"
+  --remote-dir /ai/2026/09/20/RMQ-0024`, getting
+  `OK: uploaded RMQ-0024_SVG_Integration_Test.pdf -> /ai/2026/09/20/RMQ-0024`.
+- Copied the doc and assets into the ticket `scripts/svg-validation/` for
+  reproducibility.
+
+### What worked
+- All forms rendered in the local PDF; upload succeeded on the first attempt.
+
+### What didn't work
+- No failures observed.
+
+### What was tricky to build
+- Avoided an XML-invalid attribute (unescaped `<`) in the quoted-attribute test;
+  used `data-note="a > b"`, which still exercises the tokenizer's `>` handling
+  without breaking rsvg's XML parser.
+
+### What warrants a second pair of eyes
+- The tablet is grayscale, so distinct colors become gray levels; the in-diagram
+  letter labels make identification unambiguous.
+
+### What should be done in the future
+- Optionally fold these fixtures into an automated golden test.
+
+### Code review instructions
+- See `ttmp/2026/09/20/RMQ-0024--svg-image-support-in-the-markdown-to-pdf-pipeline/scripts/svg-validation/`.
+
+### Technical details
+- Document name on device: `RMQ-0024 SVG Integration Test.pdf`.
+- Destination: `/ai/2026/09/20/RMQ-0024`.

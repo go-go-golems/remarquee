@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="120">
+  <rect x="2" y="2" width="426" height="116" fill="#eef3f8" stroke="#336699" stroke-width="2"/>
+  <circle cx="58" cy="60" r="34" fill="#336699"/>
+  <text x="108" y="55" font-family="DejaVu Sans" font-size="18" fill="#000000">A — REFERENCED SVG</text>
+  <text x="108" y="80" font-family="DejaVu Sans" font-size="13" fill="#444444">pandoc converts via rsvg-convert</text>
+</svg>

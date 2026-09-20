@@ -27,3 +27,7 @@ Implemented SVG support end-to-end: SVGRendererConfig + converter discovery (P1)
 - /home/manuel/code/wesen/go-go-golems/remarquee/pkg/mdpdf/bundle.go — Bundle wiring with per-input prefixing
 - /home/manuel/code/wesen/go-go-golems/remarquee/pkg/mdpdf/pandoc.go — Pipeline wiring and default SVGRendererConfig
 - /home/manuel/code/wesen/go-go-golems/remarquee/pkg/mdpdf/svg.go — SVG config, converter discovery, inline extraction, HTML img rewriting
+
+## 2026-09-20
+
+Added and uploaded a tablet validation document covering all SVG integration forms (referenced, sized, inline raw, nested inline, HTML img, data URI, viewBox-only, pattern/text, quoted-attribute) plus a fenced code negative case. Local render verified A-I as figures and J as code; uploaded as 'RMQ-0024 SVG Integration Test.pdf'. Fixtures stored under scripts/svg-validation/.
