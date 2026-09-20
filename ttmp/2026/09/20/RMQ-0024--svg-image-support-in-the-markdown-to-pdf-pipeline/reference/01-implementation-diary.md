@@ -674,3 +674,74 @@ guide Phase 6 (validation, ticket closeout, requested reMarkable delivery).
 - Fixture and outputs under `/tmp/svgtest/rmq2` (throwaway).
 - Commits for this ticket: docs 5d9f0b9, P1 a06e76d, P2 2c3ac2b, P3 4b6483b,
   P4 7d9bda7, P5 ebaf952.
+
+## Step 11: Documentation gap — Markdown format guide
+
+After Phase 6 the user asked whether the remarquee documentation was updated and
+whether a document exists describing the supported Markdown format. The answer was
+partly no: only `README.md` had received SVG examples, and the in-CLI Glazed help
+docs under `pkg/doc/` were stale and had no format/support overview. This step
+closes that gap and fixes a related correctness issue discovered while documenting.
+
+### Prompt Context
+**User prompt (verbatim):** "ldid you update the remarquee documentation? is there
+a document about the markdown format and what is possible and what isn't in there?"
+**Assistant interpretation:** verify docs coverage, then add the missing
+format/support document and update command references.
+**Inferred user intent:** durable user-facing documentation of what renders.
+**Commit (code):** see below (Step 11 commit).
+
+### What I did
+- Created `pkg/doc/topics/markdown-format-support.md` (embedded by the existing
+  `//go:embed topics/*.md` wildcard): support matrix, frontmatter, math, images,
+  SVG (all three forms + flags + degradation + limitations), Mermaid, code blocks,
+  unsupported features, layout/bundles, troubleshooting.
+- Updated `pkg/doc/upload/02-remarquee-upload-reference.md`: conversion behavior,
+  image/SVG/Mermaid flags, and a pointer to `remarquee help markdown-format-support`.
+- Fixed gating: `ResolveHTMLImages` is now called only when `ResolveImages` is true,
+  in both direct and bundle paths, because a rewritten HTML image becomes a
+  relative Markdown reference that must be staged by `ResolveImagePaths`. Previously
+  `--resolve-images=false` combined with HTML `<img src=*.svg>` could produce a
+  broken reference.
+
+### Why
+- The support matrix is the single most useful onboarding document for authors and
+  was entirely missing; command references alone do not explain what renders.
+
+### What worked
+- `gofmt`/`go build ./...` clean.
+- `go test ./pkg/mdpdf/... ./cmd/remarquee/... ./cmd/remarquee/cmds/upload/...` pass.
+- `go run ./cmd/remarquee help markdown-format-support` prints the new guide.
+
+### What didn't work
+- The top-level `remarquee help` listing groups by section and does not print topic
+  slugs, so the new doc is found by slug (`help markdown-format-support`), not by
+  scanning the default listing. Acceptable for Glazed help.
+
+### What I learned
+- The in-repo help docs live in `pkg/doc/**` and are embedded via
+  `pkg/doc/doc.go`; adding a file under `topics/` or `upload/` is enough to publish
+  it to the CLI help system.
+
+### What was tricky to build
+- Documenting SVG accurately required reflecting the implementation asymmetry:
+  referenced SVG is converted by pandoc, while inline/HTML SVG is converted by
+  remarquee. The doc states both and the degradation paths.
+
+### What warrants a second pair of eyes
+- The support matrix's "unsupported" claims should be sanity-checked against real
+  pandoc behavior; they are based on the LaTeX writer's HTML handling and the
+  list-depth flattening in `preprocess.go`.
+
+### What should be done in the future
+- Consider adding a golden test that asserts the help system loads the new slug, so
+  the doc cannot silently become unregistered.
+
+### Code review instructions
+- Read `pkg/doc/topics/markdown-format-support.md`.
+- Run `go run ./cmd/remarquee help markdown-format-support`.
+
+### Technical details
+- New slug: `markdown-format-support`.
+- Code fix: `pkg/mdpdf/pandoc.go` and `pkg/mdpdf/bundle.go` gate `ResolveHTMLImages`
+  on image resolution.

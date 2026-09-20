@@ -174,14 +174,16 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	// Rewrite SVG <img> tags to Markdown image syntax before image path
-	// resolution, so the resulting references are copied from the source dir.
-	body, err = ResolveHTMLImages(body, opts.SVG)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve HTML SVG images")
-	}
-
 	if opts.ResolveImages {
+		// Rewrite SVG <img> tags to Markdown image syntax before image path
+		// resolution, so the resulting references are copied from the source dir.
+		// Gated on ResolveImages because the rewrite produces a relative Markdown
+		// reference that must be staged by ResolveImagePaths.
+		body, err = ResolveHTMLImages(body, opts.SVG)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve HTML SVG images")
+		}
+
 		// Resolve local image paths before other preprocessing so that pandoc
 		// can find referenced files from the temp directory.
 		sourceDir := filepath.Dir(mdPath)

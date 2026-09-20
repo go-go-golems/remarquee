@@ -44,14 +44,15 @@ func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir strin
 
 		assetPrefix := fmt.Sprintf("bundle-%03d-", i+1)
 
-		// Rewrite SVG <img> tags before image path resolution so the resulting
-		// Markdown references are copied from this input's source directory.
-		body, err = ResolveHTMLImages(body, svgConfigWithImagePrefix(svgCfg, assetPrefix))
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to resolve HTML SVG images for %s", in.Path)
-		}
-
 		if resolveImages {
+			// Rewrite SVG <img> tags before image path resolution so the resulting
+			// Markdown references are copied from this input's source directory.
+			// Gated on resolveImages for the same reason as the direct path.
+			body, err = ResolveHTMLImages(body, svgConfigWithImagePrefix(svgCfg, assetPrefix))
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to resolve HTML SVG images for %s", in.Path)
+			}
+
 			// Resolve local image paths relative to this input's source directory.
 			// Prefix filenames by bundle input so same-basename images from
 			// different files cannot overwrite each other in tmpDir/images.
