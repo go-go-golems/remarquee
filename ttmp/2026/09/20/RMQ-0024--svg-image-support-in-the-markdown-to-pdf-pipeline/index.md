@@ -45,6 +45,8 @@ and working bundle prefixing. `go test ./...` passes.
 
 - [Design & implementation guide](design-doc/01-svg-image-support-design-and-implementation-guide-for-a-new-intern.md)
 - [Implementation diary](reference/01-implementation-diary.md)
+- [PR #28](https://github.com/go-go-golems/remarquee/pull/28)
+- [Tablet validation fixtures](scripts/svg-validation/)
 - **Related Files**: See frontmatter RelatedFiles field
 - **External Sources**: See frontmatter ExternalSources field
 

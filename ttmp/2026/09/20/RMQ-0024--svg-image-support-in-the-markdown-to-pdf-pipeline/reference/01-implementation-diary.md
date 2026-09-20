@@ -862,3 +862,60 @@ the tablet?"
 ### Technical details
 - Document name on device: `RMQ-0024 SVG Integration Test.pdf`.
 - Destination: `/ai/2026/09/20/RMQ-0024`.
+
+## Step 14: Pull request
+
+The user confirmed the tablet validation looked good and asked for a pull request.
+I pushed `task/add-svg-support` to `origin` and opened the PR against `main`,
+matching the structure of the prior PR (#26): Summary, Implementation, Validation,
+Scope and limitations, and a ticket reference.
+
+### Prompt Context
+**User prompt (verbatim):** "it's fine, i have color dislay. it looks good. Create a
+pull request"
+**Assistant interpretation:** open a PR for the RMQ-0024 work.
+**Inferred user intent:** get the feature reviewed/merged.
+**Commit (docs):** see below (PR-link docs commit).
+
+### What I did
+- Confirmed branch `task/add-svg-support` was 10 commits ahead of `origin/main`,
+  0 behind, with a clean working tree.
+- `git push -u origin task/add-svg-support` (ADMIN on the repo, direct push).
+- `gh pr create --base main --head task/add-svg-support` with a structured body.
+- Recorded the PR link in the ticket index.
+
+### What worked
+- PR #28 opened: https://github.com/go-go-golems/remarquee/pull/28
+  (30 files, +4095/-11 at creation).
+- Uploaded tablet validation document was confirmed readable on the device.
+
+### What didn't work
+- `gh pr checks` reports "no checks reported on the branch" and `mergeable` was
+  UNKNOWN immediately after creation (GitHub still computing). Neither blocks
+  review.
+
+### What I learned
+- The repository has no PR template in `.github/`; prior PRs (#26) use a
+  Summary/Validation/Scope structure, which this PR follows.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- The support matrix and `Scope and limitations` section in the PR body make
+  explicit claims about unsupported HTML; reviewers should confirm they match the
+  intended product boundary.
+
+### What should be done in the future
+- Address review comments; merge when CI/checks are available.
+- Optional follow-ups: HTML `<img>` for non-SVG images; pre-convert referenced SVG
+  when no converter is present; normalize older `pkg/doc/upload/*` help pages.
+
+### Code review instructions
+- Start from the PR description; then `pkg/mdpdf/svg.go` and `pkg/mdpdf/pandoc.go`
+  ordering; then `cmd/remarquee/cmds/upload/svg_section.go`.
+- Run `go test ./...`.
+
+### Technical details
+- PR: #28, https://github.com/go-go-golems/remarquee/pull/28
+- Branch: `task/add-svg-support` -> `main`
