@@ -37,6 +37,10 @@ type PandocOptions struct {
 	// are left as plain-text code listings.
 	Mermaid *MermaidRendererConfig
 
+	// SVG configures inline <svg> block and HTML <img src=...svg> handling.
+	// If nil, inline SVG content is left to pandoc (which drops it for LaTeX).
+	SVG *SVGRendererConfig
+
 	// ResolveImages controls whether local Markdown image paths are copied into
 	// the pandoc temp directory and rewritten. DefaultPandocOptions enables it.
 	ResolveImages bool

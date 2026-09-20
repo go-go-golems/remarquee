@@ -215,3 +215,67 @@ result and destination are the evidence.
 ### Technical details
 - Inputs: design-doc/01-...-guide-...md and reference/01-implementation-diary.md.
 - Document name: `RMQ-0024 SVG Image Support Guide.pdf`.
+
+## Step 4: Phase 1 — SVG config and converter discovery
+
+This step laid the foundation for all later SVG work: a configuration type, a
+non-fatal converter-discovery function, and wiring into `PandocOptions`. I chose
+to return `("", nil)` when no converter exists rather than an error, because the
+design (guide §6.4) requires graceful degradation — the document must still
+render even when `rsvg-convert`/Inkscape are absent. The explicit-`ConverterPath`
+case is the one genuine configuration error, so it alone returns an error.
+
+### Prompt Context
+**User prompt (verbatim):** "Implement, commit docs, commit at appropriate
+intervals and keep a detailed diary as you work (using the diary format from the
+skill)" plus the work-slip instructions. See Step 1 for the originating request.
+**Assistant interpretation:** Implement the guide's phased plan, committing at
+phase boundaries and maintaining a detailed diary.
+**Inferred user intent:** A reviewable, incremental implementation with evidence.
+**Commit (code):** see below (Phase 1 commit).
+
+### What I did
+- Added `pkg/mdpdf/svg.go`: `SVGRendererConfig`, `DefaultSVGRendererConfig`,
+  `ResolveSVGConverter`, `svgConfigWithImagePrefix`, and `warnf`.
+- Added `SVG *SVGRendererConfig` to `PandocOptions` in `pkg/mdpdf/pandoc.go`.
+- Added `pkg/mdpdf/svg_test.go` with 10 tests covering nil/disabled/explicit/
+  PATH-order/fallback/no-converter/prefix/warning cases.
+
+### Why
+- A single config type mirrors `MermaidRendererConfig` and keeps CLI wiring simple.
+- `("", nil)` on absence keeps the "warn and continue" contract from the guide.
+- `svgConfigWithImagePrefix` mirrors `mermaidConfigWithImagePrefix` for bundle mode.
+
+### What worked
+- `go build ./...` succeeded.
+- `go test ./pkg/mdpdf/ -run SVG` passed all 10 tests.
+- Full `go test ./pkg/mdpdf/...` passed (`ok ... 13.759s`).
+
+### What didn't work
+- No failures observed in this phase.
+
+### What I learned
+- `exec.LookPath` is trivially testable by overriding `PATH` with `t.Setenv`, so
+  no real converters are needed for unit tests.
+
+### What was tricky to build
+- Nothing complex yet. The deliberate design choice was error semantics: absence
+  must not be an error, but an explicitly configured missing path must be.
+
+### What warrants a second pair of eyes
+- Whether `DefaultSVGRendererConfig` should be enabled by default and injected in
+  `DefaultPandocOptions`, or only constructed by the CLI (currently the latter).
+
+### What should be done in the future
+- Phase 2: implement the quote-aware `<svg>` block scanner and
+  `ResolveInlineSVGBlocks`.
+
+### Code review instructions
+- Read `pkg/mdpdf/svg.go` top to bottom; it is small.
+- Run `go test ./pkg/mdpdf/ -run SVG -v`.
+
+### Technical details
+- New symbols: `SVGRendererConfig` (Enabled, ConverterPath, ConverterOrder,
+  DefaultWidth, MaxWidth, ImagePrefix, WarnWriter), `DefaultSVGRendererConfig`,
+  `ResolveSVGConverter`, `svgConfigWithImagePrefix`, `(*SVGRendererConfig).warnf`.
+- `PandocOptions.SVG` added.
