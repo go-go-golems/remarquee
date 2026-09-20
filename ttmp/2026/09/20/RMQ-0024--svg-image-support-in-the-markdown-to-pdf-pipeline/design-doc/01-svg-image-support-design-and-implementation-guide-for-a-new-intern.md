@@ -68,6 +68,23 @@ to build.
 
 Everything downstream of this box assumes that corrected scope.
 
+> **Implementation revision (2026-09-20, post-Phase-4).** The feature is now
+> implemented; a few details below were refined during implementation and are
+> recorded here so the guide stays accurate:
+> 1. **Ordering (supersedes §6.2/§6.5):** `ResolveInlineSVGBlocks` runs **after**
+>    `ResolveImagePaths`, not before. It writes finished `.pdf` assets directly
+>    into `<tmp>/images/`, and `ResolveImagePaths` resolves relative paths against
+>    the *source* directory, so pre-image ordering would break things.
+>    `ResolveHTMLImages` still runs **before** `ResolveImagePaths`.
+> 2. **Inline conversion is direct:** extracted inline `<svg>` is converted to a
+>    vector `.pdf` by our own converter (not left as `.svg` for pandoc). This makes
+>    the no-converter degradation meaningful.
+> 3. **API:** `ResolveHTMLImages(body, cfg)` (no `ctx`/`sourceDir`/`tmpDir`), since
+>    conversion is delegated to pandoc after the rewrite.
+> 4. **No `MaxWidth`:** the field was dropped as unused; only `DefaultWidth` ships.
+> 5. **CLI flags:** `--svg`, `--svg-converter`, `--svg-default-width` in an
+>    "SVG flags" Glazed section.
+
 ---
 
 ## 1. Document scope and audience
@@ -585,7 +602,7 @@ configurable max width) and document it.
     │                                                               │
     │  SVGRendererConfig                                            │
     │    Enabled, ConverterPath, TargetFormat(always vector PDF),   │
-    │    DefaultWidth, MaxWidth, ImagePrefix, NoSandboxN/A          │
+    │    DefaultWidth, ImagePrefix                              │
     │                                                               │
     │  ResolveInlineSVGBlocks(ctx, body, tmpDir, cfg) (string,err)  │
     │    - scan lines, honor literalLines()                         │
@@ -593,7 +610,7 @@ configurable max width) and document it.
     │    - write images/svg-XXXX.svg                                │
     │    - replace block with ![svg N](./images/svg-XXXX.svg){...}  │
     │                                                               │
-    │  ResolveHTMLImages(ctx, body, sourceDir, tmpDir, cfg)         │
+    │  ResolveHTMLImages(body, cfg)                                 │
     │    - scan for <img src="...svg"> ...                           │
     │    - extract src + width/height attrs                          │
     │    - emit Markdown image, then normal ResolveImagePaths runs  │
@@ -633,8 +650,9 @@ input.md  +  images/*.svg
 
 Ordering matters: `ResolveHTMLImages` must run **before** `ResolveImagePaths`,
 because it turns HTML into Markdown image syntax that `ResolveImagePaths` can then
-stage. `ResolveInlineSVGBlocks` must run before as well, so its generated `.svg`
-files are either already in `images/` (preferred) or picked up by the copy step.
+stage. `ResolveInlineSVGBlocks` runs **after** `ResolveImagePaths`, because it
+writes finished assets directly into `<tmp>/images/` and `ResolveImagePaths`
+resolves relative paths against the *source* directory, not the temp dir.
 
 ### 6.3 New configuration type
 
@@ -659,9 +677,6 @@ type SVGRendererConfig struct {
     // size, when we synthesize Markdown. Examples: "70%", "12cm", "".
     // Empty means "let pandoc/LaTeX use natural size".
     DefaultWidth string
-
-    // MaxWidth caps synthesized widths, in the same syntax. Optional.
-    MaxWidth string
 
     // ImagePrefix prevents filename collisions in bundle mode.
     ImagePrefix string
@@ -861,7 +876,8 @@ Recommended default policy:
 
 1. If `DefaultWidth` is set, always emit `{width=<DefaultWidth>}`.
 2. Else emit no width and let pandoc use natural size.
-3. Never emit a width larger than `MaxWidth` if `MaxWidth` is set.
+3. If `MaxWidth` is set, never exceed it. (Note: `MaxWidth` was dropped during
+   implementation; only `DefaultWidth` ships. This item is retained for history.)
 4. Document the behavior in `--help` and the ticket.
 
 Rationale: adding a width changes layout for everyone; defaulting to natural size
@@ -898,7 +914,7 @@ In `BuildBundleMarkdown`, after `StripYAMLFrontmatter` and before
 `ResolveImagePathsWithPrefix`, insert:
 
 ```go
-body, err = ResolveHTMLImages(ctx, body, sourceDir, tmpDir, svgConfigWithImagePrefix(svgCfg, assetPrefix))
+body, err = ResolveHTMLImages(body, svgConfigWithImagePrefix(svgCfg, assetPrefix))
 body, err = ResolveInlineSVGBlocks(ctx, body, tmpDir, svgConfigWithImagePrefix(svgCfg, assetPrefix))
 ```
 
@@ -948,7 +964,7 @@ func ResolveInlineSVGBlocks(ctx context.Context, body, tmpDir string, cfg *SVGRe
 
 // ResolveHTMLImages rewrites <img src="*.svg" ...> tags into Markdown image
 // references. Non-SVG <img> tags are left unchanged.
-func ResolveHTMLImages(ctx context.Context, body, sourceDir, tmpDir string, cfg *SVGRendererConfig) (string, error)
+func ResolveHTMLImages(body string, cfg *SVGRendererConfig) (string, error)
 
 // ResolveSVGConverter exposes converter discovery for tests and diagnostics.
 func ResolveSVGConverter(cfg *SVGRendererConfig) (string, error)
@@ -966,8 +982,9 @@ type PandocOptions struct {
     SVG *SVGRendererConfig // NEW
 }
 
-// ConvertMarkdownFileToPDF: insert ResolveHTMLImages + ResolveInlineSVGBlocks
-// after StripYAMLFrontmatter and before ResolveImagePaths.
+// ConvertMarkdownFileToPDF: ResolveHTMLImages runs after StripYAMLFrontmatter
+// and before ResolveImagePaths; ResolveInlineSVGBlocks runs after
+// ResolveImagePaths and before RenderMermaidBlocks.
 
 // pkg/mdpdf/bundle.go
 func BuildBundleMarkdown(ctx, inputs, tmpDir string,
@@ -982,7 +999,6 @@ CLI (`cmd/remarquee/cmds/upload/mermaid_section.go` or a new `svg_section.go`):
 --svg                     bool    default true   Enable inline SVG handling
 --svg-converter           string  default ""     Path to rsvg-convert/inkscape
 --svg-default-width       string  default ""     Width for extracted inline SVG (e.g. 70%, 12cm)
---svg-max-width           string  default ""     Cap for synthesized widths
 ```
 
 ---
@@ -1086,7 +1102,6 @@ SVG flags:
                               (default: auto-detect)
       --svg-default-width W   Width for extracted inline SVGs, e.g. 70%, 12cm
                               (default: natural size)
-      --svg-max-width W       Upper bound for synthesized widths
 ```
 
 ---

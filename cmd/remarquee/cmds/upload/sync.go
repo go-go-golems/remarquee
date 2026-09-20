@@ -91,6 +91,11 @@ Use --dry-run to inspect the delta without converting, uploading, or deleting. W
 		panic(err) // should never happen with static definitions
 	}
 
+	// SVG flags (match upload md/bundle).
+	if err := addSVGFlagsToCommand(cmd); err != nil {
+		panic(err) // should never happen with static definitions
+	}
+
 	// Image flags.
 	addResolveImagesFlag(cmd, &s.ResolveImages)
 
@@ -119,6 +124,10 @@ func runUploadSync(ctx context.Context, cmd *cobra.Command, s *uploadSyncSetting
 	if err != nil {
 		return err
 	}
+	svgCfg, err := svgConfigFromCommand(cmd)
+	if err != nil {
+		return err
+	}
 
 	pandocOpts, err := configureMarkdownPandocOptions(
 		cmd.Flags(),
@@ -131,6 +140,7 @@ func runUploadSync(ctx context.Context, cmd *cobra.Command, s *uploadSyncSetting
 		s.LatexHeaderFile,
 		s.PandocFrom,
 		mermaidCfg,
+		svgCfg,
 	)
 	if err != nil {
 		return err

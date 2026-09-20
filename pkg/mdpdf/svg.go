@@ -38,9 +38,6 @@ type SVGRendererConfig struct {
 	// image's natural size.
 	DefaultWidth string
 
-	// MaxWidth caps synthesized widths (same syntax as DefaultWidth). Optional.
-	MaxWidth string
-
 	// ImagePrefix is prepended to generated SVG filenames. Bundle generation
 	// sets this per input file so repeated svg-001 names do not collide.
 	ImagePrefix string

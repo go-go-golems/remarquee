@@ -541,3 +541,68 @@ guide Phase 4. **Inferred user intent:** the feature actually runs for real uplo
 ### Technical details
 - Order: StripYAMLFrontmatter -> ResolveHTMLImages -> ResolveImagePaths ->
   ResolveInlineSVGBlocks -> RenderMermaidBlocks -> list normalization.
+
+## Step 9: Phase 5 — CLI flags and documentation
+
+This step exposed SVG handling to users through the upload commands and corrected
+the design guide's now-stale ordering and API notes. The feature was already
+enabled by default via `DefaultPandocOptions`; the flags exist so users can disable
+it, point at a specific converter, or set a default width for extracted inline
+SVGs. Mirroring the Mermaid Glazed section keeps help output consistent and
+discoverable.
+
+### Prompt Context
+**User prompt (verbatim):** see Step 4. **Assistant interpretation:** implement
+guide Phase 5. **Inferred user intent:** users can control the feature from the CLI.
+**Commit (code):** see below (Phase 5 commit).
+
+### What I did
+- Added `cmd/remarquee/cmds/upload/svg_section.go` with a Glazed "SVG flags"
+  section: `--svg` (default true), `--svg-converter`, `--svg-default-width`, plus
+  `svgConfigFromCommand` and `addSVGFlagsToCommand`.
+- Wired the section into `upload md`, `upload bundle`, and `upload sync`; each now
+  parses an `svgCfg` and passes it to `configureMarkdownPandocOptions`.
+- Extended `configureMarkdownPandocOptions` with an `svgCfg` parameter and set
+  `opts.SVG`.
+- Removed the unused `MaxWidth` field from `SVGRendererConfig`.
+- Added `svg_section_test.go` (help grouping, defaults, overrides, disabled).
+- Updated `README.md` with SVG examples and the design guide with an
+  "Implementation revision" box plus corrected ordering/API/flag sections.
+
+### Why
+- Disabling and converter selection are operationally necessary (CI without
+  rsvg-convert; explicit tool paths).
+- The guide is the onboarding artifact; leaving wrong ordering advice would mislead
+  the next implementer.
+
+### What worked
+- `go run ./cmd/remarquee upload md --help` shows a grouped "SVG flags" section
+  with all three flags.
+- Upload package tests and `pkg/mdpdf` tests pass.
+
+### What didn't work
+- No failures observed.
+
+### What I learned
+- The Glazed section pattern (`schema.NewSection` + `AddSectionToCobraCommand`)
+  works identically for a second section; no parser plumbing was needed beyond
+  `cmd.Flags().GetBool/GetString`.
+
+### What was tricky to build
+- Updating `configureMarkdownPandocOptions` and its three callers without missing
+  one; a compile error would have caught omissions, and `go build ./...` was clean.
+
+### What warrants a second pair of eyes
+- Flag naming (`--svg` bool could be confused with a path). Consider
+  `--inline-svg` if review prefers.
+
+### What should be done in the future
+- Phase 6: end-to-end validation, pixel verification, guide/ticket closeout.
+
+### Code review instructions
+- Read `svg_section.go`; run `go test ./cmd/remarquee/cmds/upload/ -run SVG -v`.
+- Check the guide's revision box at the top.
+
+### Technical details
+- Config precedence: CLI flags -> `configureMarkdownPandocOptions` -> `opts.SVG`;
+  `--svg=false` yields a nil config (no-op).

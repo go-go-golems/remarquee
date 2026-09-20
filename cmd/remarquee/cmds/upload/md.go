@@ -104,6 +104,11 @@ Safety:
 		panic(err) // should never happen with static definitions
 	}
 
+	// SVG flags (Glazed section — shows in "SVG flags" help group).
+	if err := addSVGFlagsToCommand(cmd); err != nil {
+		panic(err) // should never happen with static definitions
+	}
+
 	// Image flags.
 	addResolveImagesFlag(cmd, &s.ResolveImages)
 
@@ -158,6 +163,10 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 	if err != nil {
 		return err
 	}
+	svgCfg, err := svgConfigFromCommand(cmd)
+	if err != nil {
+		return err
+	}
 
 	pandocOpts, err := configureMarkdownPandocOptions(
 		cmd.Flags(),
@@ -170,6 +179,7 @@ func runUploadMarkdown(ctx context.Context, cmd *cobra.Command, s *uploadMarkdow
 		s.LatexHeaderFile,
 		s.PandocFrom,
 		mermaidCfg,
+		svgCfg,
 	)
 	if err != nil {
 		return err

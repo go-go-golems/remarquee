@@ -105,6 +105,12 @@ remarquee upload md ./design-doc.md
 # Customize Mermaid rendering
 remarquee upload md --mermaid-scale 3 --mermaid-width 1200 --mermaid-theme dark ./design.md
 
+# Inline SVG diagrams and HTML <img src="*.svg"> are rendered as vector
+# images by default; customize the converter or default width, or disable it
+remarquee upload md --svg-default-width 80% ./diagrams.md
+remarquee upload md --svg-converter /usr/bin/rsvg-convert ./diagrams.md
+remarquee upload md --svg=false ./diagrams.md
+
 # Disable Mermaid or image resolution
 remarquee upload md --mermaid=false --resolve-images=false ./notes.md
 ```
