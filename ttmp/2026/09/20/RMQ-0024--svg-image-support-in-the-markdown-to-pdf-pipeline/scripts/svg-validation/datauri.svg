@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="120">
+  <rect x="2" y="2" width="426" height="116" fill="#fdecec" stroke="#b23b3b" stroke-width="2"/>
+  <circle cx="40" cy="40" r="16" fill="#b23b3b"/><circle cx="80" cy="80" r="16" fill="#b23b3b"/>
+  <text x="116" y="55" font-family="DejaVu Sans" font-size="18" fill="#000000">F — DATA URI SVG</text>
+  <text x="116" y="80" font-family="DejaVu Sans" font-size="13" fill="#444444">base64 data:image/svg+xml</text>
+</svg>

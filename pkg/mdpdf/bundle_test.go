@@ -24,7 +24,7 @@ func TestBuildBundleMarkdown_StripsFrontmatterAndAddsHeadings(t *testing.T) {
 	out, err := BuildBundleMarkdown(context.Background(), []BundleInput{
 		{Path: a, Title: "Doc A"},
 		{Path: b, Title: "Doc B"},
-	}, t.TempDir(), nil, true)
+	}, t.TempDir(), nil, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestBuildBundleMarkdown_ResolvesImages(t *testing.T) {
 	tmpDir := t.TempDir()
 	out, err := BuildBundleMarkdown(context.Background(), []BundleInput{
 		{Path: md, Title: "Doc"},
-	}, tmpDir, nil, true)
+	}, tmpDir, nil, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -106,16 +106,22 @@ exit 1
 	out, err := BuildBundleMarkdown(context.Background(), []BundleInput{
 		{Path: firstMD, Title: "First"},
 		{Path: secondMD, Title: "Second"},
-	}, tmpDir, cfg, true)
+	}, tmpDir, cfg, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !strings.Contains(out, "./images/bundle-001-mermaid-001.png") {
+	if !strings.Contains(out, filepath.Join(tmpDir, "images", "bundle-001-mermaid-001.png")) {
 		t.Fatalf("expected first prefixed mermaid image path, got:\n%s", out)
 	}
-	if !strings.Contains(out, "./images/bundle-002-mermaid-001.png") {
+	if !strings.Contains(out, filepath.Join(tmpDir, "images", "bundle-002-mermaid-001.png")) {
 		t.Fatalf("expected second prefixed mermaid image path, got:\n%s", out)
+	}
+	// Generated bundle assets must be referenced with absolute paths so they
+	// stay visible to the pandoc run that converts the combined markdown even
+	// when that run does not re-stage images (--resolve-images=false).
+	if strings.Contains(out, "(./images/bundle-") {
+		t.Fatalf("expected absolute generated asset paths, got:\n%s", out)
 	}
 	if _, err := os.Stat(filepath.Join(tmpDir, "images", "bundle-001-mermaid-001.png")); err != nil {
 		t.Fatalf("expected first mermaid image: %v", err)
@@ -156,7 +162,7 @@ func TestBuildBundleMarkdown_AvoidsImageBasenameCollisionsAcrossInputs(t *testin
 	out, err := BuildBundleMarkdown(context.Background(), []BundleInput{
 		{Path: firstMD, Title: "First"},
 		{Path: secondMD, Title: "Second"},
-	}, tmpDir, nil, true)
+	}, tmpDir, nil, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -178,5 +184,39 @@ func TestBuildBundleMarkdown_AvoidsImageBasenameCollisionsAcrossInputs(t *testin
 	}
 	if string(firstBytes) != "first" || string(secondBytes) != "second" {
 		t.Fatalf("expected distinct copied image contents, got first=%q second=%q", string(firstBytes), string(secondBytes))
+	}
+}
+
+func TestBuildBundleMarkdown_InlineSVGRefsAbsolute(t *testing.T) {
+	convDir := t.TempDir()
+	conv := writeFakeConverter(t, convDir, "rsvg-convert")
+
+	srcDir := t.TempDir()
+	input := filepath.Join(srcDir, "doc.md")
+	svg := "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>don't</text></svg>\n"
+	if err := os.WriteFile(input, []byte("# Doc\n\n"+svg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tmpDir := t.TempDir()
+	cfg := DefaultSVGRendererConfig()
+	cfg.ConverterPath = conv
+	out, err := BuildBundleMarkdown(context.Background(), []BundleInput{
+		{Path: input, Title: "Doc"},
+	}, tmpDir, nil, &cfg, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Generated inline SVG assets must be referenced with absolute paths into
+	// the bundle temp directory so they remain visible to the pandoc run that
+	// converts the combined markdown, even when that run does not re-stage
+	// images (--resolve-images=false).
+	want := filepath.Join(tmpDir, "images", "bundle-001-svg-001.pdf")
+	if !strings.Contains(out, "("+want+")") {
+		t.Fatalf("expected absolute generated asset ref %q, got:\n%s", want, out)
+	}
+	if _, err := os.Stat(want); err != nil {
+		t.Fatalf("expected converted pdf at %q: %v", want, err)
 	}
 }

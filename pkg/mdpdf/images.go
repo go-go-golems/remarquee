@@ -11,7 +11,10 @@ import (
 
 // inlineImageRegex matches Markdown inline image syntax: ![alt](destination [title]).
 // It captures the alt text (group 1) and the full parenthesized target (group 2).
-var inlineImageRegex = regexp.MustCompile(`!\[([^\]]*)\]\(([^)\n]+)\)`)
+// The alt group accepts backslash-escaped brackets so alt text containing ']' or
+// '[' round-trips; the target group accepts angle-bracket destinations (<...>),
+// which are the only way to carry spaces or parentheses verbatim.
+var inlineImageRegex = regexp.MustCompile(`!\[((?:\\.|[^\]])*)\]\((<[^>\n]*>|[^)\n]+)\)`)
 
 // referenceImageRegex matches full/collapsed reference-style image uses:
 // ![alt][id] and ![alt][]. It captures alt text (group 1) and label (group 2).
@@ -70,8 +73,10 @@ func ResolveImagePathsWithPrefix(body string, sourceDir string, tmpDir string, f
 		}
 
 		// Rewrite the Markdown path to be relative to the preprocessed file,
-		// preserving any optional inline title.
-		return fmt.Sprintf("![%s](%s%s)", alt, rewrittenPath, suffix)
+		// preserving any optional inline title. Destinations containing spaces
+		// or parentheses are re-emitted in angle-bracket form so pandoc reads
+		// them back verbatim.
+		return fmt.Sprintf("![%s](%s%s)", alt, formatImageTarget(rewrittenPath), suffix)
 	})
 
 	imageReferenceLabels := collectImageReferenceLabels(result)
@@ -99,7 +104,7 @@ func ResolveImagePathsWithPrefix(body string, sourceDir string, tmpDir string, f
 			return match
 		}
 
-		return fmt.Sprintf("%s[%s]: %s%s", indent, label, rewrittenPath, suffix)
+		return fmt.Sprintf("%s[%s]: %s%s", indent, label, formatImageTarget(rewrittenPath), suffix)
 	})
 
 	return result, nil
@@ -128,6 +133,40 @@ func splitInlineImageTarget(target string) (string, string, bool) {
 		}
 	}
 	return trimmed, "", true
+}
+
+// formatImageTarget renders an image destination as a Markdown link target,
+// wrapping it in angle brackets when it contains characters a plain
+// parenthesized destination cannot carry (whitespace, parentheses). Verified
+// against pandoc: angle-bracket destinations with spaces fetch correctly.
+func formatImageTarget(dest string) string {
+	if strings.ContainsAny(dest, " \t()") {
+		return "<" + dest + ">"
+	}
+	return dest
+}
+
+// escapeMarkdownAltText makes alt text safe for the ![...] part of a Markdown
+// image under remarquee's pandoc input format. Backslash escaping is not an
+// option: the tex_math_single_backslash extension parses \[ as display math,
+// which corrupts the LaTeX figure caption. HTML character references are
+// decoded by the pandoc reader to the original characters.
+func escapeMarkdownAltText(alt string) string {
+	var b strings.Builder
+	b.Grow(len(alt))
+	for i := 0; i < len(alt); i++ {
+		switch alt[i] {
+		case '\\':
+			b.WriteString("&#92;")
+		case '[':
+			b.WriteString("&#91;")
+		case ']':
+			b.WriteString("&#93;")
+		default:
+			b.WriteByte(alt[i])
+		}
+	}
+	return b.String()
 }
 
 func collectImageReferenceLabels(body string) map[string]bool {

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="120">
+  <rect x="2" y="2" width="426" height="116" fill="#f3eefc" stroke="#6a3fb5" stroke-width="2"/>
+  <rect x="24" y="24" width="72" height="72" rx="12" fill="#6a3fb5"/>
+  <text x="112" y="55" font-family="DejaVu Sans" font-size="18" fill="#000000">E — HTML img TAG</text>
+  <text x="112" y="80" font-family="DejaVu Sans" font-size="13" fill="#444444">rewritten to Markdown first</text>
+</svg>

@@ -58,7 +58,7 @@ func TestConvertMarkdownFileToPDFHandlesBundleThematicBreakAndFencedYAML(t *test
 	body, err := BuildBundleMarkdown(context.Background(), []BundleInput{
 		{Path: firstPath, Title: "First"},
 		{Path: secondPath, Title: "Second"},
-	}, bundleDir, nil, false)
+	}, bundleDir, nil, nil, false)
 	if err != nil {
 		t.Fatalf("failed to build bundle Markdown: %v", err)
 	}

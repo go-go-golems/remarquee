@@ -72,7 +72,7 @@ Legacy delimiter: \(\Theta \times X\) still parses as math.
 				t.Fatal(err)
 			}
 			if bundled {
-				body, err := BuildBundleMarkdown(ctx, []BundleInput{{Path: input, Title: "Math"}}, dir, nil, false)
+				body, err := BuildBundleMarkdown(ctx, []BundleInput{{Path: input, Title: "Math"}}, dir, nil, nil, false)
 				if err != nil {
 					t.Fatal(err)
 				}

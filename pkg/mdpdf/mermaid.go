@@ -48,6 +48,15 @@ type MermaidRendererConfig struct {
 	// ImagePrefix is prepended to generated PNG filenames. Bundle generation
 	// sets this per input file so repeated mermaid-001.png names do not collide.
 	ImagePrefix string
+
+	// AbsolutePaths emits generated image references as absolute paths into
+	// tmpDir instead of relative ./images/... paths. Bundle generation sets
+	// this: the combined bundle markdown is later converted by a pandoc run
+	// with a different working directory, so relative references would only
+	// resolve when that run re-stages images, which --resolve-images=false
+	// disables. Direct conversion leaves it off because pandoc runs with
+	// tmpDir as its working directory.
+	AbsolutePaths bool
 }
 
 // DefaultMermaidRendererConfig returns sensible defaults.
@@ -119,11 +128,18 @@ func RenderMermaidBlocks(ctx context.Context, body string, tmpDir string, config
 			return match
 		}
 
-		if config.PDFWidth != "" {
-			return fmt.Sprintf("![mermaid diagram %d](./images/%s){width=%s}", counter, imgFilename, config.PDFWidth)
+		ref := "./images/" + imgFilename
+		if config.AbsolutePaths {
+			if abs, aerr := filepath.Abs(imgPath); aerr == nil {
+				ref = abs
+			}
 		}
 
-		return fmt.Sprintf("![mermaid diagram %d](./images/%s)", counter, imgFilename)
+		if config.PDFWidth != "" {
+			return fmt.Sprintf("![mermaid diagram %d](%s){width=%s}", counter, ref, config.PDFWidth)
+		}
+
+		return fmt.Sprintf("![mermaid diagram %d](%s)", counter, ref)
 	})
 
 	return result, nil

@@ -17,13 +17,17 @@ type BundleInput struct {
 
 // BuildBundleMarkdown concatenates multiple Markdown inputs into a single
 // document with stable section headings and page breaks. Each input is
-// preprocessed individually: YAML frontmatter is stripped, local image
-// paths are resolved (copied into tmpDir/images/), and Mermaid blocks
-// are rendered to images (if mermaidCfg is provided).
+// preprocessed individually: YAML frontmatter is stripped, HTML SVG <img> tags
+// are rewritten, local image paths are resolved (copied into tmpDir/images/),
+// inline <svg> blocks are converted, and Mermaid blocks are rendered to images
+// (if the corresponding configs are provided).
 //
-// The resulting body can be passed to ConvertMarkdownFileToPDF, which
-// will find the pre-resolved images via its own image resolution step.
-func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir string, mermaidCfg *MermaidRendererConfig, resolveImages bool) (string, error) {
+// Generated assets (inline SVG PDFs, Mermaid PNGs) are referenced with
+// absolute paths into tmpDir, because the combined markdown is later
+// converted by a pandoc run with a different working directory: relative
+// references would only resolve when that run re-stages images, which
+// --resolve-images=false disables.
+func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir string, mermaidCfg *MermaidRendererConfig, svgCfg *SVGRendererConfig, resolveImages bool) (string, error) {
 	var b strings.Builder
 
 	for i, in := range inputs {
@@ -42,7 +46,28 @@ func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir strin
 		body := StripYAMLFrontmatter(string(mdBytes))
 
 		assetPrefix := fmt.Sprintf("bundle-%03d-", i+1)
+
+		// Generated bundle assets are referenced with absolute paths into
+		// tmpDir so they remain visible to the pandoc run that converts the
+		// combined markdown even when image re-staging is disabled there.
+		bundleSVGCfg := svgConfigWithImagePrefix(svgCfg, assetPrefix)
+		if bundleSVGCfg != nil {
+			bundleSVGCfg.AbsolutePaths = true
+		}
+		bundleMermaidCfg := mermaidConfigWithImagePrefix(mermaidCfg, assetPrefix)
+		if bundleMermaidCfg != nil {
+			bundleMermaidCfg.AbsolutePaths = true
+		}
+
 		if resolveImages {
+			// Rewrite SVG <img> tags before image path resolution so the resulting
+			// Markdown references are copied from this input's source directory.
+			// Gated on resolveImages for the same reason as the direct path.
+			body, err = ResolveHTMLImages(body, bundleSVGCfg)
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to resolve HTML SVG images for %s", in.Path)
+			}
+
 			// Resolve local image paths relative to this input's source directory.
 			// Prefix filenames by bundle input so same-basename images from
 			// different files cannot overwrite each other in tmpDir/images.
@@ -53,9 +78,17 @@ func BuildBundleMarkdown(ctx context.Context, inputs []BundleInput, tmpDir strin
 			}
 		}
 
+		// Extract and convert inline <svg> blocks. Writes finished assets directly
+		// into tmpDir/images, so it runs after image path resolution. Uses the
+		// per-input prefix to avoid svg-001 collisions across files.
+		body, err = ResolveInlineSVGBlocks(ctx, body, tmpDir, bundleSVGCfg)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to resolve inline SVG blocks for %s", in.Path)
+		}
+
 		// Render Mermaid blocks for this input. Use the same per-input
 		// filename prefix to avoid mermaid-001.png collisions across files.
-		body, err = RenderMermaidBlocks(ctx, body, tmpDir, mermaidConfigWithImagePrefix(mermaidCfg, assetPrefix))
+		body, err = RenderMermaidBlocks(ctx, body, tmpDir, bundleMermaidCfg)
 		if err != nil {
 			// Non-fatal: mermaid rendering errors are logged per-block.
 			_ = err

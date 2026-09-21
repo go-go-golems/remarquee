@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 120">
+  <rect x="2" y="2" width="426" height="116" fill="#eaf7ea" stroke="#2f7d32" stroke-width="2"/>
+  <polygon points="24,90 60,30 96,90" fill="#2f7d32"/>
+  <text x="108" y="55" font-family="DejaVu Sans" font-size="18" fill="#000000">G — VIEWBOX ONLY</text>
+  <text x="108" y="80" font-family="DejaVu Sans" font-size="13" fill="#444444">no width/height attributes</text>
+</svg>

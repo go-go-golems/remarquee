@@ -115,6 +115,11 @@ Safety:
 		panic(err)
 	}
 
+	// SVG flags (Glazed section — shows in "SVG flags" help group).
+	if err := addSVGFlagsToCommand(cmd); err != nil {
+		panic(err)
+	}
+
 	// Image flags.
 	addResolveImagesFlag(cmd, &s.ResolveImages)
 
@@ -145,6 +150,10 @@ func runUploadBundle(ctx context.Context, cmd *cobra.Command, s *uploadBundleSet
 	if err != nil {
 		return err
 	}
+	svgCfg, err := svgConfigFromCommand(cmd)
+	if err != nil {
+		return err
+	}
 
 	pandocOpts, err := configureMarkdownPandocOptions(
 		cmd.Flags(),
@@ -157,6 +166,7 @@ func runUploadBundle(ctx context.Context, cmd *cobra.Command, s *uploadBundleSet
 		s.LatexHeaderFile,
 		s.PandocFrom,
 		mermaidCfg,
+		svgCfg,
 	)
 	if err != nil {
 		return err
@@ -246,7 +256,7 @@ func writeBundlePDF(ctx context.Context, files []bundleMarkdownFile, outPDF stri
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	body, err := mdpdf.BuildBundleMarkdown(ctx, inputs, tmpDir, pandocOpts.Mermaid, pandocOpts.ResolveImages)
+	body, err := mdpdf.BuildBundleMarkdown(ctx, inputs, tmpDir, pandocOpts.Mermaid, pandocOpts.SVG, pandocOpts.ResolveImages)
 	if err != nil {
 		return err
 	}

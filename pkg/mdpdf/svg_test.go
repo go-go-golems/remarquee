@@ -1,0 +1,625 @@
+package mdpdf
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func writeExecutable(t *testing.T, dir, name string) string {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("failed to write fake executable %q: %v", path, err)
+	}
+	return path
+}
+
+func TestResolveSVGConverter_NilConfig(t *testing.T) {
+	got, err := ResolveSVGConverter(nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "" {
+		t.Fatalf("expected empty converter for nil config, got %q", got)
+	}
+}
+
+func TestResolveSVGConverter_Disabled(t *testing.T) {
+	cfg := DefaultSVGRendererConfig()
+	cfg.Enabled = false
+	got, err := ResolveSVGConverter(&cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "" {
+		t.Fatalf("expected empty converter when disabled, got %q", got)
+	}
+}
+
+func TestResolveSVGConverter_ExplicitPathExists(t *testing.T) {
+	dir := t.TempDir()
+	bin := writeExecutable(t, dir, "my-svg-converter")
+
+	cfg := DefaultSVGRendererConfig()
+	cfg.ConverterPath = bin
+	got, err := ResolveSVGConverter(&cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != bin {
+		t.Fatalf("expected %q, got %q", bin, got)
+	}
+}
+
+func TestResolveSVGConverter_ExplicitPathMissing(t *testing.T) {
+	cfg := DefaultSVGRendererConfig()
+	cfg.ConverterPath = filepath.Join(t.TempDir(), "does-not-exist")
+	if _, err := ResolveSVGConverter(&cfg); err == nil {
+		t.Fatal("expected error for missing explicit converter path")
+	}
+}
+
+func TestResolveSVGConverter_PathOrder(t *testing.T) {
+	dir := t.TempDir()
+	writeExecutable(t, dir, "rsvg-convert")
+	t.Setenv("PATH", dir)
+
+	cfg := DefaultSVGRendererConfig()
+	got, err := ResolveSVGConverter(&cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := filepath.Join(dir, "rsvg-convert")
+	if got != want {
+		t.Fatalf("expected %q, got %q", want, got)
+	}
+}
+
+func TestResolveSVGConverter_PrefersFirstInOrder(t *testing.T) {
+	dir := t.TempDir()
+	writeExecutable(t, dir, "rsvg-convert")
+	writeExecutable(t, dir, "inkscape")
+	t.Setenv("PATH", dir)
+
+	cfg := DefaultSVGRendererConfig()
+	got, err := ResolveSVGConverter(&cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if filepath.Base(got) != "rsvg-convert" {
+		t.Fatalf("expected rsvg-convert to win, got %q", got)
+	}
+}
+
+func TestResolveSVGConverter_FallsBackToInkscape(t *testing.T) {
+	dir := t.TempDir()
+	writeExecutable(t, dir, "inkscape")
+	t.Setenv("PATH", dir)
+
+	cfg := DefaultSVGRendererConfig()
+	got, err := ResolveSVGConverter(&cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if filepath.Base(got) != "inkscape" {
+		t.Fatalf("expected inkscape fallback, got %q", got)
+	}
+}
+
+func TestResolveSVGConverter_NoneFoundIsNotError(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+
+	cfg := DefaultSVGRendererConfig()
+	got, err := ResolveSVGConverter(&cfg)
+	if err != nil {
+		t.Fatalf("expected no error when no converter found, got %v", err)
+	}
+	if got != "" {
+		t.Fatalf("expected empty converter, got %q", got)
+	}
+}
+
+func TestSVGConfigWithImagePrefix(t *testing.T) {
+	if got := svgConfigWithImagePrefix(nil, "bundle-001-"); got != nil {
+		t.Fatalf("expected nil for nil config, got %#v", got)
+	}
+
+	cfg := DefaultSVGRendererConfig()
+	cfg.ImagePrefix = "extra-"
+	got := svgConfigWithImagePrefix(&cfg, "bundle-001-")
+	if got == nil {
+		t.Fatal("expected non-nil cloned config")
+	}
+	if got.ImagePrefix != "bundle-001-extra-" {
+		t.Fatalf("unexpected prefix: %q", got.ImagePrefix)
+	}
+	// Original must be untouched.
+	if cfg.ImagePrefix != "extra-" {
+		t.Fatalf("original config was mutated: %q", cfg.ImagePrefix)
+	}
+}
+
+func TestSVGRendererConfigWarnf(t *testing.T) {
+	var buf testWriter
+	cfg := DefaultSVGRendererConfig()
+	cfg.WarnWriter = &buf
+	cfg.warnf("could not convert %d blocks", 2)
+	if got := buf.String(); got != "WARNING: SVG: could not convert 2 blocks\n" {
+		t.Fatalf("unexpected warning: %q", got)
+	}
+}
+
+type testWriter struct{ b []byte }
+
+func (w *testWriter) Write(p []byte) (int, error) { w.b = append(w.b, p...); return len(p), nil }
+func (w *testWriter) String() string              { return string(w.b) }
+
+// writeFakeConverter writes a shell converter that reads a `-o OUT` argument and
+// writes a dummy PDF there. It supports the rsvg-convert/inkscape argv shapes.
+func writeFakeConverter(t *testing.T, dir, name string) string {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	script := `#!/bin/sh
+out=""
+while [ $# -gt 0 ]; do
+  if [ "$1" = "-o" ]; then out="$2"; shift 2; continue; fi
+  in="$1"; shift
+done
+[ -n "$out" ] && printf 'PDF' > "$out"
+exit 0
+`
+	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
+		t.Fatalf("failed to write fake converter: %v", err)
+	}
+	return path
+}
+
+func writeFailingConverter(t *testing.T, dir, name string) string {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, []byte("#!/bin/sh\necho boom >&2\nexit 1\n"), 0o755); err != nil {
+		t.Fatalf("failed to write failing converter: %v", err)
+	}
+	return path
+}
+
+func TestLooksLikeSVGOpen(t *testing.T) {
+	tests := []struct {
+		line string
+		want bool
+	}{
+		{"<svg xmlns=\"...\">", true},
+		{"  <svg>", true},
+		{"<SVG viewBox=\"0 0 10 10\">", true},
+		{"<svg/>", true},
+		{"<svgfoo>", false},
+		{"text <svg>", false},
+		{"no svg here", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := looksLikeSVGOpen(tt.line); got != tt.want {
+			t.Errorf("looksLikeSVGOpen(%q) = %v, want %v", tt.line, got, tt.want)
+		}
+	}
+}
+
+func TestCountTagDelta(t *testing.T) {
+	tests := []struct {
+		line string
+		want int
+	}{
+		{"<svg>", 1},
+		{"</svg>", -1},
+		{"<svg/>", 0},
+		{"<svg x=\"1\"/>", 0},
+		{"<svg data-x=\">\">", 1},
+		{"<svg data-x=\"</svg>\">", 1},
+		{"<svg></svg>", 0},
+		{"nope", 0},
+		{"<svgfoo>", 0},
+		// Quotes in text content are ordinary characters: an unmatched
+		// apostrophe must not swallow the closing </svg> on the same line.
+		{"<svg><text>don't</text></svg>", 0},
+		{"<text>it's</text></svg>", -1},
+		// Tag-like text inside another tag's quoted attribute value is ignored.
+		{"<g data-x=\"</svg>\"></g>", 0},
+		// Plain text comparisons are not tags.
+		{"3 < 5 > 2", 0},
+	}
+	for _, tt := range tests {
+		if got := countTagDelta(tt.line, "svg"); got != tt.want {
+			t.Errorf("countTagDelta(%q) = %d, want %d", tt.line, got, tt.want)
+		}
+	}
+}
+
+func newInlineTestConfig(t *testing.T, tmpDir string) (SVGRendererConfig, string) {
+	t.Helper()
+	dir := t.TempDir()
+	conv := writeFakeConverter(t, dir, "rsvg-convert")
+	cfg := DefaultSVGRendererConfig()
+	cfg.ConverterPath = conv
+	cfg.WarnWriter = &testWriter{}
+	return cfg, tmpDir
+}
+
+func TestResolveInlineSVGBlocks_Basic(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	body := "# Title\n\n<svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>\n\nafter\n"
+
+	out, err := ResolveInlineSVGBlocks(context.Background(), body, tmpDir, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.Contains(out, "<svg") {
+		t.Fatalf("expected <svg> to be replaced, got: %q", out)
+	}
+	if !strings.Contains(out, "![svg image 1](./images/svg-001.pdf)") {
+		t.Fatalf("expected markdown image substitution, got: %q", out)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "images", "svg-001.pdf")); err != nil {
+		t.Fatalf("expected converted pdf: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "images", "svg-001.svg")); err != nil {
+		t.Fatalf("expected extracted svg: %v", err)
+	}
+}
+
+func TestResolveInlineSVGBlocks_Multiline(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	body := "<svg xmlns=\"http://www.w3.org/2000/svg\">\n  <circle r=\"5\"/>\n  <rect/>\n</svg>\n"
+
+	out, err := ResolveInlineSVGBlocks(context.Background(), body, tmpDir, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "![svg image 1](./images/svg-001.pdf)") {
+		t.Fatalf("expected substitution, got: %q", out)
+	}
+}
+
+func TestResolveInlineSVGBlocks_NestedAndCount(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	body := "<svg>\n<svg>\n</svg>\n</svg>\n\n<svg/>\n"
+
+	out, err := ResolveInlineSVGBlocks(context.Background(), body, tmpDir, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "svg-001.pdf") || !strings.Contains(out, "svg-002.pdf") {
+		t.Fatalf("expected two substitutions, got: %q", out)
+	}
+}
+
+func TestResolveInlineSVGBlocks_SkipsFencedCode(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	body := "```xml\n<svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>\n```\n"
+
+	out, err := ResolveInlineSVGBlocks(context.Background(), body, tmpDir, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != body {
+		t.Fatalf("fenced svg must be untouched, got: %q", out)
+	}
+}
+
+func TestResolveInlineSVGBlocks_UnclosedLeavesAsIs(t *testing.T) {
+	tmpDir := t.TempDir()
+	var buf testWriter
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	cfg.WarnWriter = &buf
+	body := "<svg>\n<rect/>\n"
+
+	out, err := ResolveInlineSVGBlocks(context.Background(), body, tmpDir, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != body {
+		t.Fatalf("unclosed svg must be untouched, got: %q", out)
+	}
+	if !strings.Contains(buf.String(), "unclosed") {
+		t.Fatalf("expected unclosed warning, got: %q", buf.String())
+	}
+}
+
+func TestResolveInlineSVGBlocks_NoConverter(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	tmpDir := t.TempDir()
+	var buf testWriter
+	cfg := DefaultSVGRendererConfig()
+	cfg.WarnWriter = &buf
+	body := "<svg><rect/></svg>\n"
+
+	out, err := ResolveInlineSVGBlocks(context.Background(), body, tmpDir, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != body {
+		t.Fatalf("expected unchanged body without converter, got: %q", out)
+	}
+	if !strings.Contains(buf.String(), "no SVG converter") {
+		t.Fatalf("expected no-converter warning, got: %q", buf.String())
+	}
+}
+
+func TestResolveInlineSVGBlocks_ConversionFailureLeavesAsIs(t *testing.T) {
+	dir := t.TempDir()
+	cfg := DefaultSVGRendererConfig()
+	cfg.ConverterPath = writeFailingConverter(t, dir, "rsvg-convert")
+	var buf testWriter
+	cfg.WarnWriter = &buf
+	tmpDir := t.TempDir()
+	body := "<svg><rect/></svg>\n"
+
+	out, err := ResolveInlineSVGBlocks(context.Background(), body, tmpDir, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != body {
+		t.Fatalf("expected unchanged body on failure, got: %q", out)
+	}
+	if !strings.Contains(buf.String(), "failed to convert") {
+		t.Fatalf("expected conversion warning, got: %q", buf.String())
+	}
+}
+
+func TestResolveInlineSVGBlocks_DefaultWidthAndPrefix(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	cfg.DefaultWidth = "70%"
+	cfg.ImagePrefix = "bundle-002-"
+	body := "<svg><rect/></svg>\n"
+
+	out, err := ResolveInlineSVGBlocks(context.Background(), body, tmpDir, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := "![svg image 1](./images/bundle-002-svg-001.pdf){width=70%}"
+	if !strings.Contains(out, want) {
+		t.Fatalf("expected %q, got: %q", want, out)
+	}
+}
+
+func TestIsSVGSource(t *testing.T) {
+	tests := []struct {
+		src  string
+		want bool
+	}{
+		{"a.svg", true},
+		{"A.SVG", true},
+		{"a.svg?x=1", true},
+		{"a.svg#frag", true},
+		{"a.png", false},
+		{"a.svg.png", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := isSVGSource(tt.src); got != tt.want {
+			t.Errorf("isSVGSource(%q) = %v, want %v", tt.src, got, tt.want)
+		}
+	}
+}
+
+func TestNormalizeHTMLDimension(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"100", "100px"},
+		{"50%", "50%"},
+		{"10cm", "10cm"},
+		{"", ""},
+		{"  42 ", "42px"},
+	}
+	for _, tt := range tests {
+		if got := normalizeHTMLDimension(tt.in); got != tt.want {
+			t.Errorf("normalizeHTMLDimension(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestParseTagAttrs(t *testing.T) {
+	got := parseTagAttrs(`<img src="a.svg" width='100' alt="hi there"/>`, "img")
+	if got["src"] != "a.svg" || got["width"] != "100" || got["alt"] != "hi there" {
+		t.Fatalf("unexpected attrs: %#v", got)
+	}
+}
+
+func TestResolveHTMLImages_Basic(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	body := "before\n<img src=\"./a.svg\" width=\"100\">\nafter\n"
+
+	out, err := ResolveHTMLImages(body, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := "![svg image](./a.svg){width=100px}"
+	if !strings.Contains(out, want) {
+		t.Fatalf("expected %q, got: %q", want, out)
+	}
+}
+
+func TestResolveHTMLImages_AltWidthHeightPrecedence(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+
+	out, err := ResolveHTMLImages(`<img src="a.svg" alt="arch" width="50%">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "![arch](a.svg){width=50%}") {
+		t.Fatalf("width/alt: got %q", out)
+	}
+
+	out, err = ResolveHTMLImages(`<img src="a.svg" height="30">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "![svg image](a.svg){width=30px}") {
+		t.Fatalf("height: got %q", out)
+	}
+}
+
+func TestResolveHTMLImages_NonSVGUntouched(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	body := `<img src="a.png" width="10">`
+
+	out, err := ResolveHTMLImages(body, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != body {
+		t.Fatalf("non-svg img must be untouched, got %q", out)
+	}
+}
+
+func TestResolveHTMLImages_QuotedGtInAttr(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	out, err := ResolveHTMLImages(`<img src="a.svg" alt="x > y">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "a.svg") {
+		t.Fatalf("expected conversion, got %q", out)
+	}
+	if strings.Contains(out, "<img") {
+		t.Fatalf("raw tag leaked, got %q", out)
+	}
+}
+
+func TestResolveHTMLImages_SkipsFencedCode(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	body := "```html\n<img src=\"a.svg\">\n```\n"
+	out, err := ResolveHTMLImages(body, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != body {
+		t.Fatalf("fenced img must be untouched, got %q", out)
+	}
+}
+
+func TestResolveHTMLImages_NoConverter(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	var buf testWriter
+	cfg := DefaultSVGRendererConfig()
+	cfg.WarnWriter = &buf
+	body := `<img src="a.svg">`
+	out, err := ResolveHTMLImages(body, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != body {
+		t.Fatalf("expected unchanged without converter, got %q", out)
+	}
+	if !strings.Contains(buf.String(), "no SVG converter") {
+		t.Fatalf("expected warning, got %q", buf.String())
+	}
+}
+
+func TestResolveHTMLImages_SelfClosingAndDefaultWidth(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	cfg.DefaultWidth = "80%"
+	out, err := ResolveHTMLImages(`<img src="a.svg"/>`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "![svg image](a.svg){width=80%}") {
+		t.Fatalf("default width, got %q", out)
+	}
+}
+
+func TestResolveInlineSVGBlocks_ApostropheInText(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	// An unmatched apostrophe inside SVG text content must not be treated as
+	// the start of a quoted attribute value, which would swallow the closing
+	// </svg> and leave the block "unclosed".
+	body := "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>don't</text></svg>\n"
+
+	out, err := ResolveInlineSVGBlocks(context.Background(), body, tmpDir, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "./images/svg-001.pdf") {
+		t.Fatalf("expected substitution despite apostrophe in text, got: %q", out)
+	}
+}
+
+func TestResolveHTMLImages_EscapesAltAndDelimitsDestinations(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+
+	// Spaces in the source path require an angle-bracket destination; square
+	// brackets in alt text require character references so they cannot
+	// terminate the ![...] part of the emitted Markdown (and so the
+	// tex_math_single_backslash input format cannot read \[ as math).
+	out, err := ResolveHTMLImages(`<img src="./a b.svg" alt="a]b [x]">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, `![a&#93;b &#91;x&#93;](<./a b.svg>)`) {
+		t.Fatalf("entity alt + angle dest: got %q", out)
+	}
+
+	// Parentheses in the source path also need the angle-bracket form.
+	out, err = ResolveHTMLImages(`<img src="./fig(1).svg" width="50%">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, `![svg image](<./fig(1).svg>){width=50%}`) {
+		t.Fatalf("parenthesized dest: got %q", out)
+	}
+
+	// '<' and '>' cannot be represented in an angle-bracket destination;
+	// leave such tags unchanged instead of emitting malformed Markdown.
+	tag := `<img src="./a<b.svg">`
+	out, err = ResolveHTMLImages(tag, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != tag {
+		t.Fatalf("angle-hostile source must stay unchanged, got %q", out)
+	}
+}
+
+func TestResolveHTMLImages_SpaceInSourceSurvivesStaging(t *testing.T) {
+	srcDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(srcDir, "a b.svg"), []byte("<svg/>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+
+	// End-to-end: the HTML rewrite emits an angle-bracket destination, and the
+	// image resolver stages the file and re-emits an angle-bracket reference,
+	// so a space in the source path survives both passes.
+	out, err := ResolveHTMLImages(`<img src="./a b.svg" alt="a]b">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err = ResolveImagePaths(out, srcDir, tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `![a&#93;b](<./images/a b.svg>)`
+	if !strings.Contains(out, want) {
+		t.Fatalf("expected staged angle-bracket ref %q, got %q", want, out)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "images", "a b.svg")); err != nil {
+		t.Fatalf("expected staged file: %v", err)
+	}
+}

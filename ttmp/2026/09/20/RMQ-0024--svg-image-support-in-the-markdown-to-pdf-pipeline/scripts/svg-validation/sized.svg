@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="120">
+  <rect x="2" y="2" width="426" height="116" fill="#fdf3e7" stroke="#cc7a33" stroke-width="2"/>
+  <rect x="24" y="26" width="68" height="68" fill="#cc7a33"/>
+  <text x="108" y="55" font-family="DejaVu Sans" font-size="18" fill="#000000">B — SIZED 40%</text>
+  <text x="108" y="80" font-family="DejaVu Sans" font-size="13" fill="#444444">should be narrower than A</text>
+</svg>

@@ -17,6 +17,7 @@ func configureMarkdownPandocOptions(
 	latexHeaderFile string,
 	pandocFrom string,
 	mermaidCfg *mdpdf.MermaidRendererConfig,
+	svgCfg *mdpdf.SVGRendererConfig,
 ) (mdpdf.PandocOptions, error) {
 	opts := mdpdf.DefaultPandocOptions()
 	opts.PandocPath = pandoc
@@ -24,6 +25,7 @@ func configureMarkdownPandocOptions(
 	opts.MainFont = mainFont
 	opts.MonoFont = monoFont
 	opts.Mermaid = mermaidCfg
+	opts.SVG = svgCfg
 
 	if err := mdpdf.ApplyMarkdownLayoutPreset(&opts, layout); err != nil {
 		return mdpdf.PandocOptions{}, err

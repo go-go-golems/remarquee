@@ -37,6 +37,10 @@ type PandocOptions struct {
 	// are left as plain-text code listings.
 	Mermaid *MermaidRendererConfig
 
+	// SVG configures inline <svg> block and HTML <img src=...svg> handling.
+	// If nil, inline SVG content is left to pandoc (which drops it for LaTeX).
+	SVG *SVGRendererConfig
+
 	// ResolveImages controls whether local Markdown image paths are copied into
 	// the pandoc temp directory and rewritten. DefaultPandocOptions enables it.
 	ResolveImages bool
@@ -58,6 +62,7 @@ type PandocOptions struct {
 const DefaultFromFormat = "markdown-yaml_metadata_block+tex_math_single_backslash"
 
 func DefaultPandocOptions() PandocOptions {
+	svg := DefaultSVGRendererConfig()
 	return PandocOptions{
 		PandocPath:    "pandoc",
 		PDFEngine:     "xelatex",
@@ -66,6 +71,7 @@ func DefaultPandocOptions() PandocOptions {
 		Geometry:      "margin=1in",
 		FromFormat:    DefaultFromFormat,
 		ResolveImages: true,
+		SVG:           &svg,
 	}
 }
 
@@ -169,6 +175,15 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	if opts.ResolveImages {
+		// Rewrite SVG <img> tags to Markdown image syntax before image path
+		// resolution, so the resulting references are copied from the source dir.
+		// Gated on ResolveImages because the rewrite produces a relative Markdown
+		// reference that must be staged by ResolveImagePaths.
+		body, err = ResolveHTMLImages(body, opts.SVG)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve HTML SVG images")
+		}
+
 		// Resolve local image paths before other preprocessing so that pandoc
 		// can find referenced files from the temp directory.
 		sourceDir := filepath.Dir(mdPath)
@@ -176,6 +191,14 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 		if err != nil {
 			return errors.Wrap(err, "failed to resolve image paths")
 		}
+	}
+
+	// Extract and convert inline <svg> blocks. This writes finished assets
+	// directly into <tmp>/images, so it runs after ResolveImagePaths (which
+	// resolves relative paths against the source directory, not the temp dir).
+	body, err = ResolveInlineSVGBlocks(ctx, body, tmpDir, opts.SVG)
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve inline SVG blocks")
 	}
 
 	// Render Mermaid code blocks to images (if mmdc is available).
