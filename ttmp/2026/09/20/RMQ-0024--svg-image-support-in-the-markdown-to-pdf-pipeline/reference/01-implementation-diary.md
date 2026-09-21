@@ -930,7 +930,7 @@ The fixes preserve the original contract rather than changing flag semantics. Bu
 **User prompt (verbatim):** "Address issues: https://github.com/go-go-golems/remarquee/pull/28"
 **Assistant interpretation:** resolve all Codex review findings on PR #28, validate them, and update the branch for review.
 **Inferred user intent:** remove flag-dependent SVG loss and malformed-Markdown cases before merging the SVG feature.
-**Commit (code):** pending — review-fix checkpoint, to be committed after validation.
+**Commit (code):** `6534fc2` — "fix(mdpdf): address SVG PR review findings".
 
 ### What I did
 - Read PR #28 review comments with `gh`; found three P2 comments at `pkg/mdpdf/bundle.go:69` and `pkg/mdpdf/svg.go:155,456`.
