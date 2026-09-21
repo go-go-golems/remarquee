@@ -93,3 +93,49 @@ func TestSVGPipelinePDF(t *testing.T) {
 		t.Fatal("conversion did not produce a PDF")
 	}
 }
+
+// TestSVGPipelineBundlePDF_NoResolveImages reproduces the bundle flow used by
+// "upload bundle": BuildBundleMarkdown stages generated assets in its own temp
+// directory and ConvertMarkdownFileToPDF then runs pandoc from a different
+// working directory. With image resolution disabled there, generated inline
+// SVG references must still resolve via their absolute paths.
+func TestSVGPipelineBundlePDF_NoResolveImages(t *testing.T) {
+	for _, tool := range []string{"pandoc", "xelatex", "rsvg-convert"} {
+		if _, err := exec.LookPath(tool); err != nil {
+			t.Skipf("optional PDF integration dependency absent: %s", tool)
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
+	srcDir := t.TempDir()
+	input := filepath.Join(srcDir, "doc.md")
+	if err := os.WriteFile(input, []byte("# Doc\n\n"+testSVG+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	bundleTmp := t.TempDir()
+	svg := DefaultSVGRendererConfig()
+	body, err := BuildBundleMarkdown(ctx, []BundleInput{{Path: input, Title: "Doc"}}, bundleTmp, nil, &svg, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundleMD := filepath.Join(bundleTmp, "bundle.md")
+	if err := os.WriteFile(bundleMD, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	opts := DefaultPandocOptions()
+	opts.ResolveImages = false
+	output := filepath.Join(bundleTmp, "out.pdf")
+	if err := ConvertMarkdownFileToPDF(ctx, bundleMD, output, opts); err != nil {
+		t.Fatalf("bundle conversion failed with image resolution disabled: %v", err)
+	}
+	pdf, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(pdf), "%PDF-") {
+		t.Fatal("conversion did not produce a PDF")
+	}
+}

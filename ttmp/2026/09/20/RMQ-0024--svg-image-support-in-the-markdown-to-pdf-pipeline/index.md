@@ -14,8 +14,8 @@ Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
-Summary: "Implemented SVG support in the Markdown-to-PDF pipeline: inline raw <svg> extraction/conversion, HTML <img src=*.svg> rewriting, graceful converter fallback, and CLI flags. Validated on real PDFs; all tests pass."
-LastUpdated: 2026-09-20T18:20:00-04:00
+Summary: "Implemented SVG support in the Markdown-to-PDF pipeline: inline raw <svg> extraction/conversion, HTML <img src=*.svg> rewriting, graceful converter fallback, and CLI flags. PR review fixes preserve generated bundle assets with --resolve-images=false, correctly scan apostrophes in SVG text, and safely emit spaced HTML SVG sources and bracketed alt text. Validated on real PDFs; all tests pass."
+LastUpdated: 2026-09-20T20:06:08-04:00
 WhatFor: "Onboarding a new engineer and recording the implemented SVG behavior in pkg/mdpdf."
 WhenToUse: "When tracing how Markdown becomes a reMarkable PDF, or reviewing the SVG implementation."
 ---

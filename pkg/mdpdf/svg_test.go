@@ -221,6 +221,14 @@ func TestCountTagDelta(t *testing.T) {
 		{"<svg></svg>", 0},
 		{"nope", 0},
 		{"<svgfoo>", 0},
+		// Quotes in text content are ordinary characters: an unmatched
+		// apostrophe must not swallow the closing </svg> on the same line.
+		{"<svg><text>don't</text></svg>", 0},
+		{"<text>it's</text></svg>", -1},
+		// Tag-like text inside another tag's quoted attribute value is ignored.
+		{"<g data-x=\"</svg>\"></g>", 0},
+		// Plain text comparisons are not tags.
+		{"3 < 5 > 2", 0},
 	}
 	for _, tt := range tests {
 		if got := countTagDelta(tt.line, "svg"); got != tt.want {
@@ -531,5 +539,87 @@ func TestResolveHTMLImages_SelfClosingAndDefaultWidth(t *testing.T) {
 	}
 	if !strings.Contains(out, "![svg image](a.svg){width=80%}") {
 		t.Fatalf("default width, got %q", out)
+	}
+}
+
+func TestResolveInlineSVGBlocks_ApostropheInText(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+	// An unmatched apostrophe inside SVG text content must not be treated as
+	// the start of a quoted attribute value, which would swallow the closing
+	// </svg> and leave the block "unclosed".
+	body := "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>don't</text></svg>\n"
+
+	out, err := ResolveInlineSVGBlocks(context.Background(), body, tmpDir, &cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "./images/svg-001.pdf") {
+		t.Fatalf("expected substitution despite apostrophe in text, got: %q", out)
+	}
+}
+
+func TestResolveHTMLImages_EscapesAltAndDelimitsDestinations(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+
+	// Spaces in the source path require an angle-bracket destination; square
+	// brackets in alt text require character references so they cannot
+	// terminate the ![...] part of the emitted Markdown (and so the
+	// tex_math_single_backslash input format cannot read \[ as math).
+	out, err := ResolveHTMLImages(`<img src="./a b.svg" alt="a]b [x]">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, `![a&#93;b &#91;x&#93;](<./a b.svg>)`) {
+		t.Fatalf("entity alt + angle dest: got %q", out)
+	}
+
+	// Parentheses in the source path also need the angle-bracket form.
+	out, err = ResolveHTMLImages(`<img src="./fig(1).svg" width="50%">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, `![svg image](<./fig(1).svg>){width=50%}`) {
+		t.Fatalf("parenthesized dest: got %q", out)
+	}
+
+	// '<' and '>' cannot be represented in an angle-bracket destination;
+	// leave such tags unchanged instead of emitting malformed Markdown.
+	tag := `<img src="./a<b.svg">`
+	out, err = ResolveHTMLImages(tag, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != tag {
+		t.Fatalf("angle-hostile source must stay unchanged, got %q", out)
+	}
+}
+
+func TestResolveHTMLImages_SpaceInSourceSurvivesStaging(t *testing.T) {
+	srcDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(srcDir, "a b.svg"), []byte("<svg/>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+	cfg, _ := newInlineTestConfig(t, tmpDir)
+
+	// End-to-end: the HTML rewrite emits an angle-bracket destination, and the
+	// image resolver stages the file and re-emits an angle-bracket reference,
+	// so a space in the source path survives both passes.
+	out, err := ResolveHTMLImages(`<img src="./a b.svg" alt="a]b">`, &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err = ResolveImagePaths(out, srcDir, tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `![a&#93;b](<./images/a b.svg>)`
+	if !strings.Contains(out, want) {
+		t.Fatalf("expected staged angle-bracket ref %q, got %q", want, out)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "images", "a b.svg")); err != nil {
+		t.Fatalf("expected staged file: %v", err)
 	}
 }

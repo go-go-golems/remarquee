@@ -308,3 +308,44 @@ func TestResolveImagePaths_NoImages(t *testing.T) {
 		t.Fatalf("body with no images should be unchanged, got: %q", result)
 	}
 }
+
+func TestResolveImagePaths_AngleBracketDestinationWithSpaces(t *testing.T) {
+	srcDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(srcDir, "a b.png"), []byte("fake-png-data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+
+	result, err := ResolveImagePaths("![a b](<./a b.png>)\n", srcDir, tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// The rewritten reference must keep the angle-bracket form so the space
+	// in the staged filename stays part of the destination.
+	if !strings.Contains(result, "![a b](<./images/a b.png>)") {
+		t.Fatalf("expected angle-bracket rewritten path, got: %q", result)
+	}
+	copiedPath := filepath.Join(tmpDir, "images", "a b.png")
+	if _, err := os.Stat(copiedPath); err != nil {
+		t.Fatalf("expected copied image at %q: %v", copiedPath, err)
+	}
+}
+
+func TestResolveImagePaths_EscapedAltRoundTrip(t *testing.T) {
+	srcDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(srcDir, "a.svg"), []byte("<svg/>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+
+	// Alt text with a backslash-escaped ']' must still be recognized, staged
+	// and re-emitted verbatim so the resolver does not truncate the image
+	// syntax at the escaped bracket.
+	result, err := ResolveImagePaths(`![a\]b](./a.svg)`, srcDir, tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, `![a\]b](./images/a.svg)`) {
+		t.Fatalf("expected escaped alt to round-trip, got: %q", result)
+	}
+}

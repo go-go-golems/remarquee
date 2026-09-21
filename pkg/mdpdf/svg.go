@@ -38,6 +38,15 @@ type SVGRendererConfig struct {
 	// image's natural size.
 	DefaultWidth string
 
+	// AbsolutePaths emits generated image references as absolute paths into
+	// tmpDir instead of relative ./images/... paths. Bundle generation sets
+	// this: the combined bundle markdown is later converted by a pandoc run
+	// with a different working directory, so relative references would only
+	// resolve when that run re-stages images, which --resolve-images=false
+	// disables. Direct conversion leaves it off because pandoc runs with
+	// tmpDir as its working directory.
+	AbsolutePaths bool
+
 	// ImagePrefix is prepended to generated SVG filenames. Bundle generation
 	// sets this per input file so repeated svg-001 names do not collide.
 	ImagePrefix string
@@ -139,27 +148,19 @@ func isTagBoundary(s string, idx int) bool {
 	}
 }
 
-// countTagDelta counts net <svg>/</svg> depth on a single line, ignoring tag-like
-// text inside quoted attribute values and treating self-closing <svg .../> as
-// depth-neutral.
+// countTagDelta counts net <svg>/</svg> depth on a single line, ignoring
+// tag-like text inside quoted attribute values and treating self-closing
+// <svg .../> as depth-neutral.
+//
+// Quote-aware scanning applies only inside tags: quotes in text content
+// (for example <text>don't</text>) are ordinary characters, so an unmatched
+// apostrophe in SVG text cannot swallow a closing </svg> on the same line.
 func countTagDelta(line, tag string) int {
 	delta := 0
 	i := 0
 	n := len(line)
 	for i < n {
 		c := line[i]
-		if c == '"' || c == '\'' {
-			// Skip a quoted attribute value so '>' inside it is ignored.
-			quote := c
-			i++
-			for i < n && line[i] != quote {
-				i++
-			}
-			if i < n {
-				i++
-			}
-			continue
-		}
 		if c != '<' {
 			i++
 			continue
@@ -190,9 +191,37 @@ func countTagDelta(line, tag string) int {
 			continue
 		}
 
+		// Any other tag-like "<name" or "</name": skip the whole tag using
+		// tagEnd, which is quote-aware, so tag-like text inside another tag's
+		// quoted attribute value (for example <g data-x="</svg>">) is not
+		// miscounted. Requires a name-start character so plain text such as
+		// "3 < 5" is left alone.
+		if isTagStartAt(line, i) {
+			end, _ := tagEnd(line, i)
+			i = end
+			if i < n {
+				i++
+			}
+			continue
+		}
+
 		i++
 	}
 	return delta
+}
+
+// isTagStartAt reports whether the '<' at line[i] begins a tag-like construct:
+// "<" followed by a letter, or "</" followed by a letter.
+func isTagStartAt(line string, i int) bool {
+	j := i + 1
+	if j < len(line) && line[j] == '/' {
+		j++
+	}
+	if j >= len(line) {
+		return false
+	}
+	c := line[j]
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
 // tagEnd returns the index of the closing '>' of the tag starting at start, or
@@ -327,10 +356,16 @@ func ResolveInlineSVGBlocks(ctx context.Context, body, tmpDir string, cfg *SVGRe
 			}
 
 			alt := fmt.Sprintf("svg image %d", counter)
+			ref := "./images/" + name + ".pdf"
+			if cfg.AbsolutePaths {
+				if abs, aerr := filepath.Abs(filepath.Join(imagesDir, name+".pdf")); aerr == nil {
+					ref = abs
+				}
+			}
 			if cfg.DefaultWidth != "" {
-				out = append(out, fmt.Sprintf("![%s](./images/%s.pdf){width=%s}", alt, name, cfg.DefaultWidth))
+				out = append(out, fmt.Sprintf("![%s](%s){width=%s}", alt, ref, cfg.DefaultWidth))
 			} else {
-				out = append(out, fmt.Sprintf("![%s](./images/%s.pdf)", alt, name))
+				out = append(out, fmt.Sprintf("![%s](%s)", alt, ref))
 			}
 			i = endIdx + 1
 			continue
@@ -439,10 +474,18 @@ func htmlImgToMarkdown(tag string, cfg *SVGRendererConfig) (string, bool) {
 	if src == "" || !isSVGSource(src) {
 		return "", false
 	}
+	// An angle-bracket destination cannot carry '<' or '>'. Such sources are
+	// vanishingly rare and usually invalid filenames; leaving the tag unchanged
+	// is safer than emitting malformed Markdown.
+	if strings.ContainsAny(src, "<>") {
+		return "", false
+	}
 	alt := attrs["alt"]
 	if alt == "" {
 		alt = "svg image"
 	}
+	alt = escapeMarkdownAltText(alt)
+	dest := formatImageTarget(src)
 	width := normalizeHTMLDimension(attrs["width"])
 	if width == "" {
 		width = normalizeHTMLDimension(attrs["height"])
@@ -451,9 +494,9 @@ func htmlImgToMarkdown(tag string, cfg *SVGRendererConfig) (string, bool) {
 		width = cfg.DefaultWidth
 	}
 	if width != "" {
-		return fmt.Sprintf("![%s](%s){width=%s}", alt, src, width), true
+		return fmt.Sprintf("![%s](%s){width=%s}", alt, dest, width), true
 	}
-	return fmt.Sprintf("![%s](%s)", alt, src), true
+	return fmt.Sprintf("![%s](%s)", alt, dest), true
 }
 
 // parseTagAttrs extracts lower-cased attribute name/value pairs from a start tag

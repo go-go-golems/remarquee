@@ -31,3 +31,14 @@ Implemented SVG support end-to-end: SVGRendererConfig + converter discovery (P1)
 ## 2026-09-20
 
 Added and uploaded a tablet validation document covering all SVG integration forms (referenced, sized, inline raw, nested inline, HTML img, data URI, viewBox-only, pattern/text, quoted-attribute) plus a fenced code negative case. Local render verified A-I as figures and J as code; uploaded as 'RMQ-0024 SVG Integration Test.pdf'. Fixtures stored under scripts/svg-validation/.
+
+## 2026-09-20
+
+Addressed all three PR #28 Codex P2 findings: bundle-generated SVG and Mermaid assets now survive final conversion with --resolve-images=false; quote-aware SVG scanning no longer mistakes text apostrophes for attributes; HTML SVG img rewriting safely handles spaced destinations and bracketed alt text. Added unit, integration, and real CLI pixel validation.
+
+### Related Files
+
+- /home/manuel/code/wesen/go-go-golems/remarquee/pkg/mdpdf/bundle.go — Absolute generated asset references across bundle and final pandoc temp directories
+- /home/manuel/code/wesen/go-go-golems/remarquee/pkg/mdpdf/images.go — Angle destinations and safe alt text encoding
+- /home/manuel/code/wesen/go-go-golems/remarquee/pkg/mdpdf/svg.go — SVG scanner and HTML SVG Markdown emission fixes
+- /home/manuel/code/wesen/go-go-golems/remarquee/pkg/mdpdf/svg_pdf_test.go — Real bundle regression with image staging disabled
