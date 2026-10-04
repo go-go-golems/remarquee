@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
 	"github.com/juruen/rmapi/api"
+	"github.com/juruen/rmapi/filetree"
 	"github.com/juruen/rmapi/model"
 	"github.com/pkg/errors"
 )
@@ -166,26 +167,90 @@ func (s *Service) resolveDirLocked(dir string) (*model.Node, error) {
 	return node, nil
 }
 
-// nodeByIDLocked resolves a document ID to a node. Callers must hold s.mu.
+// nodeByIDLocked resolves a document ID to a live, reachable node. Callers
+// must hold s.mu. The pinned FileTreeCtx.DeleteNode only detaches the parent
+// edge and leaves idToNode entries behind, and stale nodes also keep stale
+// parent pointers, so lookup must be validated against actual child edges
+// from the root; a bare idToNode hit is not proof of a live entry.
 func (s *Service) nodeByIDLocked(id string) (*model.Node, error) {
 	if s.apiCtx == nil {
 		return nil, ErrInvalid
 	}
 	node := s.apiCtx.Filetree().NodeById(id)
-	if node == nil || node.IsRoot() {
+	if node == nil || node.IsRoot() || node.Id() == filetree.TrashID {
+		return nil, ErrNotFound
+	}
+	if !s.reachableByEdgesLocked(node) {
 		return nil, ErrNotFound
 	}
 	return node, nil
 }
 
+// reachableByEdgesLocked reports whether node is attached to the current tree
+// by actual child edges reachable from the root. It deliberately ignores
+// idToNode membership and parent pointers, which the pinned filetree can
+// leave stale after deletions.
+func (s *Service) reachableByEdgesLocked(node *model.Node) bool {
+	ft := s.apiCtx.Filetree()
+	root := ft.Root()
+	if root == nil {
+		return false
+	}
+	target := node.Id()
+	next := make([]*model.Node, 0, len(root.Children))
+	for _, c := range root.Children {
+		if c.Id() == target {
+			return true
+		}
+		next = append(next, c)
+	}
+	for len(next) > 0 {
+		cur := next[len(next)-1]
+		next = next[:len(next)-1]
+		for _, c := range cur.Children {
+			if c.Id() == target {
+				return true
+			}
+			next = append(next, c)
+		}
+	}
+	return false
+}
+
+// reconcileLocked re-synchronizes the local tree and index with authoritative
+// cloud state by re-mirroring the hash tree and rebuilding the file tree. It
+// is used after failures that may have committed cloud side effects, so stale
+// local representations cannot outlive the cloud truth. Callers must hold
+// s.mu; failures are returned for explicit reporting, never swallowed.
+func (s *Service) reconcileLocked() error {
+	if _, _, err := s.apiCtx.Refresh(); err != nil {
+		return errors.Wrap(err, "reconcile local tree with cloud state")
+	}
+	s.reindexLocked()
+	return nil
+}
+
 // mutate runs fn under the service lock, syncs the cloud tree, and reindexes.
-func (s *Service) mutate(fn func(api.ApiCtx) error) error {
+// fn reports whether it may have mutated the local tree or cloud records
+// before returning an error; when it did, mutate re-synchronizes local state
+// with the authoritative cloud tree and reports a reconciliation failure
+// explicitly instead of implying rollback.
+func (s *Service) mutate(fn func(api.ApiCtx) (bool, error)) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.apiCtx == nil {
 		return ErrInvalid
 	}
-	if err := fn(s.apiCtx); err != nil {
+	mutated, err := fn(s.apiCtx)
+	if err != nil {
+		// The index must never disagree with the current tree edges, even
+		// after a partial failure.
+		s.reindexLocked()
+		if mutated {
+			if rerr := s.reconcileLocked(); rerr != nil {
+				return errors.Wrapf(err, "operation failed; remote reconciliation failed: %v", rerr)
+			}
+		}
 		return err
 	}
 	if err := s.apiCtx.SyncComplete(); err != nil {

@@ -1,5 +1,7 @@
 package rmfiles
 
+import "fmt"
+
 import "github.com/pkg/errors"
 
 // Sentinel errors returned by the service. The HTTP layer maps these to status
@@ -16,3 +18,30 @@ var (
 	// ErrUnsupported means an operation is not supported for this entry/file.
 	ErrUnsupported = errors.New("unsupported")
 )
+
+// PartialDeleteError reports a delete batch that removed some records before
+// failing. Removed is the number of individual cloud records actually gone
+// (verified against the reconciled cloud state when reconciliation ran);
+// RemainingIDs are planned record IDs still present after the failure;
+// FailedID is the planned record whose deletion failed. ReconcileErr is
+// non-nil when re-synchronizing the local tree/index with authoritative cloud
+// state itself failed, in which case the local representation may still
+// disagree with the cloud and no rollback is claimed.
+type PartialDeleteError struct {
+	Removed      int
+	RemainingIDs []string
+	FailedID     string
+	Err          error
+	ReconcileErr error
+}
+
+func (e *PartialDeleteError) Error() string {
+	msg := fmt.Sprintf("delete removed %d record(s) before failing at %q (%d remaining)",
+		e.Removed, e.FailedID, len(e.RemainingIDs))
+	if e.ReconcileErr != nil {
+		msg += fmt.Sprintf("; local reconciliation failed: %v", e.ReconcileErr)
+	}
+	return msg
+}
+
+func (e *PartialDeleteError) Unwrap() error { return e.Err }

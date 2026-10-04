@@ -204,9 +204,32 @@ func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	n, err := s.svc.Delete(req.IDs, recursive)
 	if err != nil {
+		var partial *rmfiles.PartialDeleteError
+		if errors.As(err, &partial) {
+			// Report the accurate per-batch outcome: records actually removed,
+			// planned records still present, and whether the local
+			// representation was successfully reconciled with cloud state.
+			body := map[string]any{
+				"deleted":      partial.Removed,
+				"remainingIds": partial.RemainingIDs,
+				"failedId":     partial.FailedID,
+				"reconciled":   partial.ReconcileErr == nil,
+				"error": errorDetail{
+					Code:    "partial_delete",
+					Message: partial.Error(),
+				},
+			}
+			if partial.ReconcileErr != nil {
+				body["reconcileError"] = partial.ReconcileErr.Error()
+			}
+			writeJSON(w, http.StatusMultiStatus, body)
+			return
+		}
 		writeErr(w, err)
 		return
 	}
+	// "deleted" counts individual cloud records removed; a selected folder
+	// expands to its full descendant record set.
 	writeJSON(w, http.StatusOK, map[string]int{"deleted": n})
 }
 

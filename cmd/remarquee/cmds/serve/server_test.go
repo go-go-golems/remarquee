@@ -3,6 +3,7 @@ package serve
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -21,15 +22,23 @@ import (
 )
 
 type fakeApiCtx struct {
-	ft     filetree.FileTreeCtx
-	mu     sync.Mutex
-	nextID int
-	bytes  int
+	ft        filetree.FileTreeCtx
+	mu        sync.Mutex
+	nextID    int
+	syncCount int
+	bytes     int
+	// failDelete makes DeleteEntry fail for the given document ID before any
+	// side effect, to exercise partial-outcome reporting.
+	failDelete map[string]error
+	// deletedIDs records the IDs whose DeleteEntry returned success.
+	deletedIDs []string
 }
 
 var _ api.ApiCtx = (*fakeApiCtx)(nil)
 
-func newFake() *fakeApiCtx { return &fakeApiCtx{ft: filetree.CreateFileTreeCtx()} }
+func newFake() *fakeApiCtx {
+	return &fakeApiCtx{ft: filetree.CreateFileTreeCtx(), failDelete: map[string]error{}}
+}
 
 func (f *fakeApiCtx) id() string {
 	f.nextID++
@@ -64,7 +73,13 @@ func (f *fakeApiCtx) MoveEntry(src, dst *model.Node, name string) (*model.Node, 
 	doc.Parent = dst.Id()
 	return &model.Node{Document: &doc, Parent: dst}, nil
 }
-func (f *fakeApiCtx) DeleteEntry(*model.Node, bool, bool) error { return nil }
+func (f *fakeApiCtx) DeleteEntry(node *model.Node, _, _ bool) error {
+	if err, ok := f.failDelete[node.Id()]; ok {
+		return err
+	}
+	f.deletedIDs = append(f.deletedIDs, node.Id())
+	return nil
+}
 
 func newTestServer(t *testing.T) (*Server, string, string) {
 	t.Helper()
@@ -337,5 +352,74 @@ func TestUnknownAPI404(t *testing.T) {
 	rr := do(t, s, http.MethodGet, "/api/nope", nil)
 	if rr.Code != 404 {
 		t.Fatalf("unknown api = %d, want 404", rr.Code)
+	}
+}
+
+// TestDeleteEndpointPartialOutcome proves the HTTP layer reports accurate
+// partial-delete outcomes (records removed, remaining planned records, and
+// reconciliation status) instead of a bare error, while a preflight failure
+// removes nothing at all.
+func TestDeleteEndpointPartialOutcome(t *testing.T) {
+	f := newFake()
+	ai := f.add("", "ai", model.DirectoryType)
+	folder := f.add(ai.ID, "Top", model.DirectoryType)
+	docA := f.add(folder.ID, "DocA", model.DocumentType)
+	docB := f.add(folder.ID, "DocB", model.DocumentType)
+	// Deterministic plan order is by child ID; fail the second record.
+	svc := rmfiles.NewService(f, rmfiles.Config{DefaultRemoteDir: "/ai"})
+	s := NewServer(svc, Options{})
+	second := docA.ID
+	if docB.ID > second {
+		second = docB.ID
+	}
+	f.failDelete[second] = errors.New("cloud 500")
+
+	rr := do(t, s, http.MethodDelete, "/api/entries", map[string]any{
+		"ids": []string{folder.ID}, "confirm": "DELETE", "recursive": true,
+	})
+	if rr.Code != http.StatusMultiStatus {
+		t.Fatalf("partial delete status = %d body=%s", rr.Code, rr.Body.String())
+	}
+	var body struct {
+		Deleted      int      `json:"deleted"`
+		RemainingIDs []string `json:"remainingIds"`
+		FailedID     string   `json:"failedId"`
+		Reconciled   bool     `json:"reconciled"`
+		Error        struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if body.Deleted != 1 {
+		t.Fatalf("deleted = %d, want 1", body.Deleted)
+	}
+	if len(body.RemainingIDs) != 2 {
+		t.Fatalf("remainingIds = %v, want 2 entries", body.RemainingIDs)
+	}
+	if body.FailedID != second {
+		t.Fatalf("failedId = %q, want %q", body.FailedID, second)
+	}
+	if !body.Reconciled {
+		t.Fatal("reconciled should be true when reconciliation succeeded")
+	}
+	if body.Error.Code != "partial_delete" {
+		t.Fatalf("error code = %q, want partial_delete", body.Error.Code)
+	}
+	if len(f.deletedIDs) != 1 {
+		t.Fatalf("cloud deletes = %v, want exactly one record", f.deletedIDs)
+	}
+
+	// Preflight failure: unknown ID must not remove anything.
+	rr = do(t, s, http.MethodDelete, "/api/entries", map[string]any{
+		"ids": []string{"missing-id", folder.ID}, "confirm": "DELETE", "recursive": true,
+	})
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("preflight failure status = %d body=%s", rr.Code, rr.Body.String())
+	}
+	if len(f.deletedIDs) != 1 {
+		t.Fatalf("preflight failure must not delete (cloud deletes=%v)", f.deletedIDs)
 	}
 }

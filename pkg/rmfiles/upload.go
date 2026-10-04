@@ -241,18 +241,18 @@ func (s *Service) uploadOne(ctx context.Context, j *uploadJob, i int, in UploadI
 
 	j.setItem(i, JobUploading, "", "")
 	var entryID string
-	err = s.mutate(func(c api.ApiCtx) error {
+	err = s.mutate(func(c api.ApiCtx) (bool, error) {
 		parent, err := ensureDir(c, targetDir)
 		if err != nil {
-			return err
+			return false, err
 		}
 		doc, err := c.UploadDocument(parent.Id(), uploadPath, true, nil, nil, nil, nil)
 		if err != nil {
-			return errors.Wrap(err, "upload document")
+			return false, errors.Wrap(err, "upload document")
 		}
 		c.Filetree().AddDocument(doc)
 		entryID = doc.ID
-		return nil
+		return true, nil
 	})
 	if err != nil {
 		return "", err

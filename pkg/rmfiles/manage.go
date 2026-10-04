@@ -3,10 +3,12 @@ package rmfiles
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"unicode"
 
 	"github.com/juruen/rmapi/api"
+	"github.com/juruen/rmapi/filetree"
 	"github.com/juruen/rmapi/model"
 	"github.com/pkg/errors"
 )
@@ -18,21 +20,21 @@ func (s *Service) CreateFolder(parentPath, name string) (Entry, error) {
 		return Entry{}, ErrInvalid
 	}
 	var entry Entry
-	err := s.mutate(func(c api.ApiCtx) error {
+	err := s.mutate(func(c api.ApiCtx) (bool, error) {
 		parent, err := s.resolveDirLocked(parentPath)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if existing, err := parent.FindByName(name); err == nil && existing != nil {
-			return ErrConflict
+			return false, ErrConflict
 		}
 		doc, err := c.CreateDir(parent.Id(), name, true)
 		if err != nil {
-			return errors.Wrap(err, "create folder")
+			return false, errors.Wrap(err, "create folder")
 		}
 		c.Filetree().AddDocument(doc)
 		entry = nodeToEntry(c.Filetree().NodeById(doc.ID))
-		return nil
+		return true, nil
 	})
 	return entry, err
 }
@@ -44,25 +46,25 @@ func (s *Service) Rename(id, newName string) (Entry, error) {
 		return Entry{}, ErrInvalid
 	}
 	var entry Entry
-	err := s.mutate(func(c api.ApiCtx) error {
+	err := s.mutate(func(c api.ApiCtx) (bool, error) {
 		node, err := s.nodeByIDLocked(id)
 		if err != nil {
-			return err
+			return false, err
 		}
 		parent := node.Parent
 		if parent == nil {
-			return ErrInvalid
+			return false, ErrInvalid
 		}
 		if sib, err := parent.FindByName(newName); err == nil && sib.Id() != node.Id() {
-			return ErrConflict
+			return false, ErrConflict
 		}
 		n, err := c.MoveEntry(node, parent, newName)
 		if err != nil {
-			return errors.Wrap(err, "rename entry")
+			return false, errors.Wrap(err, "rename entry")
 		}
 		c.Filetree().MoveNode(node, n)
 		entry = nodeToEntry(node)
-		return nil
+		return true, nil
 	})
 	return entry, err
 }
@@ -70,53 +72,169 @@ func (s *Service) Rename(id, newName string) (Entry, error) {
 // Move moves an entry into destDirPath, keeping its name.
 func (s *Service) Move(id, destDirPath string) (Entry, error) {
 	var entry Entry
-	err := s.mutate(func(c api.ApiCtx) error {
+	err := s.mutate(func(c api.ApiCtx) (bool, error) {
 		node, err := s.nodeByIDLocked(id)
 		if err != nil {
-			return err
+			return false, err
 		}
 		dest, err := s.resolveDirLocked(destDirPath)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if isSubdir(node, dest) {
-			return errors.Wrap(ErrInvalid, "cannot move an entry into itself")
+			return false, errors.Wrap(ErrInvalid, "cannot move an entry into itself")
 		}
 		if sib, err := dest.FindByName(node.Name()); err == nil && sib.Id() != node.Id() {
-			return ErrConflict
+			return false, ErrConflict
 		}
 		n, err := c.MoveEntry(node, dest, node.Name())
 		if err != nil {
-			return errors.Wrap(err, "move entry")
+			return false, errors.Wrap(err, "move entry")
 		}
 		c.Filetree().MoveNode(node, n)
 		entry = nodeToEntry(node)
-		return nil
+		return true, nil
 	})
 	return entry, err
 }
 
-// Delete removes entries by ID. Folders require recursive=true when non-empty.
-func (s *Service) Delete(ids []string, recursive bool) (int, error) {
+// deletePlan is a validated, deduplicated removal plan. IDs are in postorder
+// (every descendant before its ancestors) so executing it children-first
+// removes every selected cloud record, which the pinned DeleteEntry never
+// does: its recursive flag only bypasses the non-empty check and HashTree
+// removes exactly one record.
+type deletePlan struct {
+	roots int           // distinct selected root entries
+	nodes []*model.Node // postorder, unique, children before parents
+}
+
+// planDeleteLocked validates the selection against live, reachable nodes and
+// builds the removal plan. It must be called before any side effect so an
+// invalid request cannot partially delete. Callers must hold s.mu.
+func (s *Service) planDeleteLocked(ids []string, recursive bool) (*deletePlan, error) {
 	if len(ids) == 0 {
+		return nil, ErrInvalid
+	}
+	plan := &deletePlan{}
+	roots := make([]*model.Node, 0, len(ids))
+	seenRoots := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		if id == "" || id == filetree.TrashID {
+			return nil, errors.Wrapf(ErrInvalid, "cannot delete protected entry %q", id)
+		}
+		node, err := s.nodeByIDLocked(id) // live + reachable
+		if err != nil {
+			return nil, err
+		}
+		if _, dup := seenRoots[id]; dup {
+			continue
+		}
+		seenRoots[id] = struct{}{}
+		plan.roots++
+		if !recursive && node.IsDirectory() && len(node.Children) > 0 {
+			return nil, errors.Wrapf(ErrInvalid, "folder %q is not empty and recursive was not requested", node.Name())
+		}
+		roots = append(roots, node)
+	}
+	// Expand each distinct selected root into a unique postorder ID plan:
+	// every descendant is planned before its ancestors, and nodes shared by
+	// overlapping selections are planned exactly once. Children are visited
+	// in ID order so the plan (and its failure boundaries) is deterministic
+	// despite Go's randomized map iteration order.
+	planned := make(map[string]struct{})
+	var expand func(n *model.Node)
+	expand = func(n *model.Node) {
+		if _, dup := planned[n.Id()]; dup {
+			return
+		}
+		children := make([]*model.Node, 0, len(n.Children))
+		for _, c := range n.Children {
+			if c.Id() == filetree.TrashID {
+				continue
+			}
+			children = append(children, c)
+		}
+		sort.Slice(children, func(i, j int) bool { return children[i].Id() < children[j].Id() })
+		for _, c := range children {
+			expand(c)
+		}
+		planned[n.Id()] = struct{}{}
+		plan.nodes = append(plan.nodes, n)
+	}
+	for _, node := range roots {
+		expand(node)
+	}
+	return plan, nil
+}
+
+// Delete removes the selected entries and, for folders, every descendant
+// record. The pinned DeleteEntry only removes the single record it is given
+// regardless of its recursive flag, so this expands the selection into an
+// explicit children-before-parent plan and deletes every record. IDs are
+// validated and deduplicated and the nonrecursive non-empty guard is applied
+// before any side effect; a preflight failure removes nothing. The returned
+// count is individual removed cloud records (selected roots may expand to
+// more); a failure after some records were removed returns a
+// *PartialDeleteError with per-outcome data, not a rollback claim.
+func (s *Service) Delete(ids []string, recursive bool) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.apiCtx == nil {
 		return 0, ErrInvalid
 	}
-	deleted := 0
-	err := s.mutate(func(c api.ApiCtx) error {
-		for _, id := range ids {
-			node, err := s.nodeByIDLocked(id)
-			if err != nil {
-				return err
+	plan, err := s.planDeleteLocked(ids, recursive)
+	if err != nil {
+		return 0, err
+	}
+	removed := 0
+	for _, node := range plan.nodes {
+		if err := s.apiCtx.DeleteEntry(node, true, true); err != nil {
+			delErr := errors.Wrapf(err, "delete %q", node.Name())
+			// Local edges may already have changed (removed descendants);
+			// keep the index consistent with the tree.
+			s.reindexLocked()
+			// The cloud method commits independently: the failed record may
+			// actually be gone (side effect before error). Reconcile with
+			// authoritative cloud state and report the true outcome.
+			reconcileErr := s.reconcileLocked()
+			// After reconciliation (or, if it failed, against current local
+			// edges), recompute which planned records are really gone.
+			removedNow, remaining := s.outcomeForPlannedLocked(plan.nodes)
+			partial := &PartialDeleteError{
+				Removed:      removedNow,
+				RemainingIDs: remaining,
+				FailedID:     node.Id(),
+				Err:          delErr,
+				ReconcileErr: reconcileErr,
 			}
-			if err := c.DeleteEntry(node, recursive, true); err != nil {
-				return errors.Wrapf(err, "delete %q", node.Name())
-			}
-			c.Filetree().DeleteNode(node)
-			deleted++
+			return removedNow, partial
 		}
-		return nil
-	})
-	return deleted, err
+		s.apiCtx.Filetree().DeleteNode(node)
+		removed++
+	}
+	if err := s.apiCtx.SyncComplete(); err != nil {
+		s.reindexLocked()
+		return removed, errors.Wrap(err, "sync cloud tree")
+	}
+	s.reindexLocked()
+	return removed, nil
+}
+
+// outcomeForPlannedLocked reports the real outcome for the planned records
+// against the current tree: how many are gone (no longer reachable) and which
+// IDs remain, in plan order. Stale node pointers are only used for their IDs.
+func (s *Service) outcomeForPlannedLocked(planned []*model.Node) (int, []string) {
+	removed := 0
+	var remaining []string
+	for _, node := range planned {
+		cur := s.apiCtx.Filetree().NodeById(node.Id())
+		if cur == nil || !s.reachableByEdgesLocked(cur) {
+			removed++
+			continue
+		}
+		remaining = append(remaining, node.Id())
+	}
+	return removed, remaining
 }
 
 // fixedDownloadStagingName is the internal staging filename used inside the
