@@ -1,12 +1,11 @@
 ---
 Title: P1 remediation implementation diary
 Ticket: RMQ-0025
-Status: in-progress
+Status: active
 Topics:
     - go
     - remarkable
     - remarquee
-    - security
     - web
 DocType: reference
 Intent: long-term
@@ -63,7 +62,7 @@ header parses with no separators, quotes, or control characters.
 
 **User prompt (verbatim):** "launch a lunaroute/glm-5.3-flash high thinking agent to taackle the P1 issues, telling them to keep a separate diary (and looking up the skil format),c ommit at appropriate intervals, and review their work when they are done."
 
-Follow-up instruction (verbatim, narrows scope to this step): "implement ONLY review finding F11 (safe download staging and attachment filenames), then STOP for parent review. Do not implement F01/F05/F02/F03 yet; parent will assign remaining P1 findings after this focused patch is reviewed. ... Use a fixed internal filename inside private tempDir, independent of all external cloud names; build a separately sanitized suggested attachment basename and use mime.FormatMediaType for the header. ... Add focused regression tests in existing service/handler test files proving traversal-shaped cloud names cannot influence FetchDocument destination, temp files are cleaned up, suggested names are safe, and attachment headers parse correctly with quotes/control characters/Unicode. Tests must simulate names imported from other cloud clients, not rely on existing UI slash validation."
+Follow-up instruction (abridged excerpt from the parent's runtime message, not the full verbatim text): "implement ONLY review finding F11 (safe download staging and attachment filenames), then STOP for parent review. Do not implement F01/F05/F02/F03 yet ... Use a fixed internal filename inside private tempDir, independent of all external cloud names; build a separately sanitized suggested attachment basename and use mime.FormatMediaType for the header. ... Add focused regression tests in existing service/handler test files proving traversal-shaped cloud names cannot influence FetchDocument destination, temp files are cleaned up, suggested names are safe, and attachment headers parse correctly with quotes/control characters/Unicode. Tests must simulate names imported from other cloud clients, not rely on existing UI slash validation."
 
 **Assistant interpretation:** F11 only: make the local download staging path
 immune to cloud display metadata and produce a standards-compliant,
@@ -72,7 +71,7 @@ the service and the HTTP layer.
 **Inferred user intent:** Close the path-trust and header-formatting gap
 before any other P1 work; hand a small, independently reviewable diff back to
 the parent.
-**Commit (code):** see the checkpoint entry below (recorded after commit).
+**Commit (code):** a693e5b — "🚑 fix(serve): stage downloads at a fixed internal path and sanitize attachment names (RMQ-0025 F11)"
 
 ### What I did
 
@@ -200,3 +199,110 @@ value is invisible in the header either way.
 - Evidence note: this step's failures are exact (FormatMediaType passthrough
   probe output; fixture-not-found test failure); no real cloud transport was
   used, all tests run against in-memory fakes.
+
+## Step 2: F11 follow-up — review repairs (Unicode/CR-LF header table, failure cleanup, metadata hygiene)
+
+Small validation follow-up after parent review of a693e5b. No production code
+changed; the fixed staging path and sanitizer were accepted provisionally.
+Added table-driven handler cases (Unicode, spaces, CR/LF, quotes) asserting the
+parsed filename parameter is the intended sanitized `.rmdoc` suggestion with no
+raw CR/LF, added a service test proving the private staging directory is
+removed when `FetchDocument` fails, fixed diary metadata to existing vocabulary
+(Status `active`, dropped non-vocabulary `security` topic), linked this diary
+from the ticket index Key Links, and recorded the F11 code commit hash plus
+excerpt labeling for abridged parent instructions.
+
+### Prompt Context
+
+**User prompt (verbatim):** see Step 1.
+**Assistant interpretation:** Repair the focused handoff: expand handler header
+tests to an HTTP encoding round trip across Unicode/spaces/CR-LF/quotes, prove
+temp cleanup on fetch failure, and fix vocabulary/metadata hygiene, without
+rewriting accepted production code.
+**Inferred user intent:** Make the F11 evidence independently verifiable at the
+HTTP boundary and leave clean, doctor-clean ticket metadata before further P1
+passes.
+**Commit (code):** see the follow-up commit recorded in the final handoff (this
+step's commit hash is added to the acceptance report; diary written just
+before the commit).
+
+### What I did
+
+- `cmd/remarquee/cmds/serve/server_test.go`: converted
+  `TestDownloadAttachmentHeaderIsSanitized` to table-driven cases
+  (`..\..\evil "quoted"`+BEL+`/slash`, `unicode é中`, `sp ace.rmdoc`,
+  `line\r\nbreak"q"`, `a"b`); each case builds a full server around a fake
+  document with that exact cloud name and asserts `mime.ParseMediaType`
+  success, `attachment` type, exact expected sanitized filename parameter
+  (including RFC 2231 round trip for Unicode/spaces), no CR/LF in the raw
+  header, and no separators/quotes/control characters in the parsed name.
+- `pkg/rmfiles/service_test.go`: fake `FetchDocument` gained a `failFetch`
+  injection flag; new `TestDownloadStagingCleanupOnFetchFailure` proves
+  `Download` returns the error and the recorded staging directory no longer
+  exists afterwards.
+- Diary frontmatter: `Status: active` (existing vocabulary), removed unknown
+  `security` topic; ticket `index.md` Key Links now links this diary.
+- Recorded F11 code commit `a693e5b` in Step 1 and relabeled the abridged
+  parent instruction as an excerpt, not full verbatim.
+
+### Why
+
+The prior handler test covered only one ASCII adversarial name, which does not
+prove the RFC 2231 HTTP encoding round trip the F11 directive required; the
+service-level Unicode unit test alone is not an HTTP round trip. Cleanup was
+only proven on the success path; the failure path must not leak temp
+directories either.
+
+### What worked
+
+- `go test ./pkg/rmfiles ./cmd/remarquee/cmds/serve -run 'TestDownload|TestSanitizeAttachmentName' -count=1` → ok, ok.
+- `go test ./pkg/rmfiles ./cmd/remarquee/cmds/serve -count=1` → ok, ok;
+  `go test -race -count=1` both packages → ok, ok.
+- `go vet` both packages clean; `gofmt -l pkg cmd` empty; `git diff --check`
+  clean; `docmgr doctor --ticket RMQ-0025` → all checks passed.
+
+### What didn't work
+
+- First version of the table's traversal case used a Go raw string with
+  doubled backslashes (`` `..\\..\\evil \"quoted\"` `` inside backticks), so the
+  actual cloud name contained two literal backslashes per separator and the
+  expected sanitized name was wrong twice over
+  (`got "..__..__evil __quoted___slash.rmdoc", want ".._.._evil _quoted_ _slash.rmdoc"`).
+  Fixed by using single backslashes in the raw string (matching the service
+  test fixture) and recomputing the expected name
+  (`.._.._evil _quoted__slash.rmdoc`). Exact diagnostics preserved above.
+
+### What I learned
+
+- Go raw-string backslash doubling from a JSON-authored edit silently changes
+  the fixture semantics; byte-level verification (`od -c`) of adversarial
+  fixture literals is worth one command.
+- `mime.ParseMediaType` decodes RFC 2231 `filename*=utf-8''...` back into the
+  plain `filename` parameter, so the round trip can be asserted directly
+  against the intended Unicode/space names.
+
+### What warrants a second pair of eyes
+
+- The CR/LF case relies on the sanitizer dropping control characters before
+  header formatting; a future sanitizer change would surface here first.
+- `TestDownloadStagingCleanupOnFetchFailure` asserts the staging dir is gone
+  via `os.IsNotExist`; acceptable for the private temp dir, but it is not a
+  proof that no other filesystem side effects occurred.
+
+### What should be done in the future
+
+- Continue P1 passes (F01, F05, then F02/F03 per parent assignment) in this
+  diary; no P2 work.
+
+### Code review instructions
+
+- `go test ./cmd/remarquee/cmds/serve -run TestDownloadAttachmentHeaderIsSanitized -count=1 -v`
+  and `go test ./pkg/rmfiles -run 'TestDownloadStaging' -count=1 -v`;
+  `docmgr doctor --ticket RMQ-0025`.
+
+### Technical details
+
+- Handler table asserts exact parsed filenames: `.._.._evil _quoted__slash.rmdoc`,
+  `unicode é中.rmdoc`, `sp ace.rmdoc.rmdoc`, `linebreak_q_.rmdoc`, `a_b.rmdoc`.
+- Cleanup-on-failure contract: `os.MkdirTemp` + `defer os.RemoveAll` covers the
+  `FetchDocument` error path; no staging file is written when fetch fails.

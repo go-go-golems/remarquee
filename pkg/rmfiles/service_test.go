@@ -1,6 +1,7 @@
 package rmfiles
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,6 +24,9 @@ type fakeApiCtx struct {
 	// lastFetchPath records the destination path of the last FetchDocument so
 	// tests can prove staging destinations are independent of cloud names.
 	lastFetchPath string
+	// failFetch makes the next FetchDocument calls fail, to exercise error
+	// paths without a network or real filesystem escapes.
+	failFetch bool
 }
 
 var _ api.ApiCtx = (*fakeApiCtx)(nil)
@@ -52,6 +56,9 @@ func (f *fakeApiCtx) ReplaceDocumentFile(string, string, bool) error {
 }
 func (f *fakeApiCtx) FetchDocument(docId, dstPath string) error {
 	f.lastFetchPath = dstPath
+	if f.failFetch {
+		return errors.New("injected fetch failure")
+	}
 	return os.WriteFile(dstPath, []byte("rmdoc-bytes"), 0o600)
 }
 
@@ -280,6 +287,26 @@ func TestSanitizeAttachmentName(t *testing.T) {
 		if got := sanitizeAttachmentName(in); got != want {
 			t.Errorf("sanitizeAttachmentName(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// TestDownloadStagingCleanupOnFetchFailure proves the private staging
+// directory is removed even when FetchDocument fails, without any network or
+// real path escapes.
+func TestDownloadStagingCleanupOnFetchFailure(t *testing.T) {
+	f, _, _, docID := tree(t)
+	f.failFetch = true
+	s := NewService(f, Config{})
+	data, name, err := s.Download(docID)
+	if err == nil {
+		t.Fatalf("Download should fail when FetchDocument fails (data=%q name=%q)", data, name)
+	}
+	if f.lastFetchPath == "" {
+		t.Fatal("FetchDocument was never called")
+	}
+	stagingDir := filepath.Dir(f.lastFetchPath)
+	if _, statErr := os.Stat(stagingDir); !os.IsNotExist(statErr) {
+		t.Fatalf("staging dir %s still exists after failed Download (err=%v)", stagingDir, statErr)
 	}
 }
 

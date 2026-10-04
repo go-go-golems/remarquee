@@ -63,6 +63,7 @@ those fixes are not implemented by the review deliverable.
 - [Second design: move directory browser, file types and sortable columns](design-doc/02-files-ui-additions-directory-picker-column-clarity-and-sorting.md)
 - [PR 29 intern-facing architecture and implementation review](analysis/01-pr-29-intern-facing-architecture-design-and-implementation-review.md)
 - [Implementation diary](reference/01-implementation-diary.md)
+- [P1 remediation implementation diary](reference/02-p1-remediation-implementation-diary.md)
 - [Task list](tasks.md)
 - **Related Files**: See frontmatter RelatedFiles field
 - **External Sources**: See frontmatter ExternalSources field
