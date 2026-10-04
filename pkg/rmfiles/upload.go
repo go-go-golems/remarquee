@@ -244,11 +244,13 @@ func (s *Service) uploadOne(ctx context.Context, j *uploadJob, i int, in UploadI
 	err = s.mutate(func(c api.ApiCtx) (bool, error) {
 		parent, err := ensureDir(c, targetDir)
 		if err != nil {
-			return false, err
+			// MkdirAll can commit earlier folders or its failing write.
+			// Conservatively reconcile; an error is not a rollback.
+			return true, err
 		}
 		doc, err := c.UploadDocument(parent.Id(), uploadPath, true, nil, nil, nil, nil)
 		if err != nil {
-			return false, errors.Wrap(err, "upload document")
+			return true, errors.Wrap(err, "upload document")
 		}
 		c.Filetree().AddDocument(doc)
 		entryID = doc.ID

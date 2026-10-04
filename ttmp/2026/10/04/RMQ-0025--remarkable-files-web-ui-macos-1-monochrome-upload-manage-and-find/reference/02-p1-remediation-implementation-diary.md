@@ -11,14 +11,22 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/manage.go
-      Note: F11 download staging path and attachment name sanitizer
     - Path: /Users/manuel.odendahl/code/go-go-golems/remarquee/cmd/remarquee/cmds/serve/handlers.go
       Note: F11 Content-Disposition via mime.FormatMediaType
-    - Path: /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/service_test.go
-      Note: F11 staging path and sanitizer regression tests
     - Path: /Users/manuel.odendahl/code/go-go-golems/remarquee/cmd/remarquee/cmds/serve/server_test.go
       Note: F11 attachment header parsing regression test
+    - Path: /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/manage.go
+      Note: F11 download staging path and attachment name sanitizer
+    - Path: /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/service_test.go
+      Note: F11 staging path and sanitizer regression tests
+    - Path: repo://cmd/remarquee/cmds/serve/delete_failure_test.go
+      Note: HTTP notification-failure outcome regression
+    - Path: repo://pkg/rmfiles/mutation_failure_test.go
+      Note: Ghost-commit and notification-failure regression cases
+    - Path: repo://ttmp/2026/10/04/RMQ-0025--remarkable-files-web-ui-macos-1-monochrome-upload-manage-and-find/scripts/03-delete-response-regression.cjs
+      Note: Actual frontend deletion response behavior tests
+    - Path: repo://ttmp/2026/10/04/RMQ-0025--remarkable-files-web-ui-macos-1-monochrome-upload-manage-and-find/sources/05-parent-failure-repair-validation.txt
+      Note: Parent integrated validation receipt
 ExternalSources: []
 Summary: Serial P1 remediation implementation diary for RMQ-0025 review findings; pass 1 covers F11 safe download staging and attachment filenames.
 LastUpdated: 2026-10-04T13:05:00-04:00
@@ -512,3 +520,158 @@ explicitly.
 - HTTP contract: 207 + `{deleted, remainingIds, failedId, reconciled[,
   reconcileError], error.code=partial_delete}`; success `{deleted: records}`;
   preflight failures unchanged 400/404 with zero writes.
+
+## Step 4: Parent repairs false-success responses and mutation failure reconciliation
+
+The worker's F01/F05 milestone committed `0d0fa53` and `6769eb6`, but its
+handoff again failed acceptance parsing. Parent inspection found three real
+correctness gaps independently of that formatting failure. The user authorized
+direct parent repair rather than another delegated retry. This entry supersedes
+Step 3's HTTP 207 contract and its claim that generic mutation errors were
+fully reconciled; historical entries are retained unchanged.
+
+The repair keeps the explicit postorder delete plan and live-ID checks, changes
+failed-delete responses to HTTP 502 with the same outcome fields, and refreshes
+the browser after failed deletion. Cloud-write errors are treated as potentially
+committed, and the index is published before notification. Full offline tests,
+creation/build checks, affected race/vet checks and actual-frontend-function
+regressions passed. The original failed worker run remains failed; parent
+acceptance is based on reviewed files and these new tests, not a repaired worker
+report. No cloud mutation, push or PR change was performed.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok fix it yourself"
+
+**Assistant interpretation:** Directly fix the three code defects explained in
+the preceding response, add regression tests, preserve the remediation diary
+and commit a validated milestone. Do not resume the worker.
+
+**Inferred user intent:** Get correct deletion/error handling without another
+agent-report repair loop.
+
+**Commit (code):** This parent repair entry is committed with the code and its
+regression tests; preceding worker milestone is `6769eb6`.
+
+### What I did
+
+- `handleDelete` returns 502 rather than 207 for `PartialDeleteError`, preserving
+  `deleted`, `remainingIds`, `failedId`, `reconciled`, optional reconciliation
+  error and the structured error. Successful deletion remains 200.
+- `confirmDelete` refreshes visible state after a failure while keeping the
+  original error toast; a failed refresh adds its diagnostic rather than
+  producing success. Cancellation still performs no request or refresh.
+- Create/rename/move return `mayHaveChanged=true` after a failing cloud-write
+  call. Upload also does so when `MkdirAll` or `UploadDocument` fails: earlier
+  directories or the failing write itself may already be committed.
+- Shared `mutate` reindexes before `SyncComplete`, which is a notification, not
+  a transaction commit. `reconcileLocked` also reindexes on refresh failure,
+  without claiming local state is then authoritative.
+- Delete notification failures return a typed outcome rather than losing the
+  committed removal count in a generic error; reconciliation recalculates the
+  outcome and preserves notification/reconciliation diagnostics.
+- Added `pkg/rmfiles/mutation_failure_test.go`,
+  `cmd/remarquee/cmds/serve/delete_failure_test.go`, and
+  `scripts/03-delete-response-regression.cjs`. Fakes commit real pinned HashTree
+  records before error injection and refresh via DocumentsFileTree.
+
+### Why
+
+HTTP 207 is a successful Fetch response (`res.ok=true`). A JSON error inside
+that response never reached the existing frontend error handler, so an incomplete
+operation was falsely reported as complete. A non-2xx response preserves the
+existing API-helper error contract without a second compatibility path.
+
+Cloud methods can commit before an error is delivered. Returning false from
+those callbacks prevented the newly introduced reconciliation path from running.
+Preflight rejections remain false; write attempts are conservatively uncertain.
+The notification happens after independent record writes, so it cannot determine
+whether local changes should become visible.
+
+### What worked
+
+- Five ghost-commit scenarios now perform exactly one reconciliation: folder
+  creation, rename, move, upload, and intermediate folder creation during upload.
+- Create/rename/move/upload notification-failure tests prove Entries equals the
+  current tree, with List and Search projections agreeing. Delete notification
+  failure preserves the removal count and rejects the deleted ID afterward.
+- A cloud error plus failed reconciliation preserves the original error and
+  explicitly reports failed reconciliation; local views remain internally
+  consistent without implying cloud agreement.
+- Five Node tests execute the real embedded `api` and `confirmDelete` functions:
+  partial failure, all-removed notification failure, ordinary success, refresh
+  failure and cancellation. These are offline behavioral tests, not a real
+  browser or cloud integration smoke test.
+- `go test ./... -count=1`, `go build ./...`,
+  `go test -race ./pkg/rmfiles ./cmd/remarquee/cmds/serve -count=1`, affected
+  `go vet`, frontend Node tests, JS syntax, gofmt and diff checks all passed.
+  Complete output: `sources/05-parent-failure-repair-validation.txt`.
+
+### What didn't work
+
+- Worker run `6f6463d5-5d45-4f54-9410-aa0f1d8df8f8` failed with:
+  `Acceptance rejected: Failed to parse acceptance-report: Invalid acceptance-report: criteriaSatisfied[1].status: expected one of "satisfied", "not-satisfied", "not-applicable"; got missing`.
+  No further delegated report retries were attempted under this user request.
+- Parent's offline Node execution of the original actual frontend handlers with
+  HTTP 207 and partial-delete JSON printed:
+  `Actual confirmDelete toast for HTTP 207: Deleted Folder`.
+- Before repair, `go test ./pkg/rmfiles -run 'TestUncertainMutation|TestSyncNotificationFailure' -count=1`
+  failed all five uncertain-write cases with `Refresh calls=0 want 1 after uncertain ...`.
+  Notification cases reported `index differs from current tree`; deletion
+  reported `notification failure lost committed deletion: count=1 error=sync cloud tree: notification failed`.
+- First post-fix targeted run found two test-fixture issues: nil versus empty
+  slice equality (`index differs from current tree: got=[] want=[]`) and a Node
+  fixture root one directory too shallow (`ENOENT` opening
+  `/Users/manuel.odendahl/code/go-go-golems/remarquee/ttmp/cmd/remarquee/cmds/serve/frontend/app.js`).
+  Corrected with `slices.Equal` and a six-level relative repository root;
+  the targeted gate then passed, followed by the broader validation above.
+
+### What I learned
+
+Green service tests and a structured HTTP payload did not establish the browser's
+success semantics. Test the actual consumer, and distinguish preflight rejection
+from an error returned after attempting a remote write.
+
+### What was tricky to build
+
+`MkdirAll` is itself a multi-write operation. A later folder failure can follow
+earlier successful folder creation; a successful directory helper can also
+precede a ghost-committed upload. Both error boundaries require reconciliation.
+The tests preserve an independent authoritative record inventory rather than
+using a fake that mutates only local edges.
+
+### What warrants a second pair of eyes
+
+- HTTP 502 represents a failed upstream operation, including notification
+  failure after all requested records were removed. Clients must inspect outcome
+  fields; a non-2xx response does not imply rollback or zero removals.
+- Failed reconciliation still means cloud outcome uncertainty. The error exposes
+  that fact; internal list/index agreement alone is not proof of remote agreement.
+- Existing per-ID edge reachability scans remain O(n); this repair introduces no
+  new scaling claim. Real-browser rendering and real-cloud transactions were not
+  tested, by design.
+
+### What should be done in the future
+
+F02 browser-request/listener security and F03 global admission/job lifecycle remain
+open. Do not treat this parent repair as overall P1 completion. Existing historical
+probe programs and review evidence are unchanged.
+
+### Code review instructions
+
+Review `handleDelete` and `confirmDelete`, then cloud-error return values in
+`manage.go`/`upload.go`, index ordering in `mutate`, and notification outcomes in
+`Delete`. Run the focused failure tests and the ticket's new Node regression
+script. Consult `sources/05-parent-failure-repair-validation.txt` for the broader
+qualified validation boundary.
+
+### Technical details
+
+- Failed delete: HTTP 502 with structured progress and error; completed delete:
+  HTTP 200; invalid selection: unchanged 400/404 before writes.
+- `FailedID` is empty when record removal completed but notification failed.
+  Error text includes the underlying cloud/notification diagnostic and removal
+  count; no false `failed at ""` message.
+- Shared callback boolean denotes a possibly changed cloud/local state, not
+  successful completion. The original error remains wrapped and recoverable.
+- No dependency, credential, listener or job-budget changes in this milestone.

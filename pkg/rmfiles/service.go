@@ -223,16 +223,19 @@ func (s *Service) reachableByEdgesLocked(node *model.Node) bool {
 // local representations cannot outlive the cloud truth. Callers must hold
 // s.mu; failures are returned for explicit reporting, never swallowed.
 func (s *Service) reconcileLocked() error {
+	// Even a failed refresh may have changed local edges. Always project
+	// the current tree, without claiming it is authoritative on failure.
+	defer s.reindexLocked()
 	if _, _, err := s.apiCtx.Refresh(); err != nil {
 		return errors.Wrap(err, "reconcile local tree with cloud state")
 	}
-	s.reindexLocked()
 	return nil
 }
 
 // mutate runs fn under the service lock, syncs the cloud tree, and reindexes.
-// fn reports whether it may have mutated the local tree or cloud records
-// before returning an error; when it did, mutate re-synchronizes local state
+// fn reports whether it attempted a cloud write (including one returning an
+// error) or changed local edges; false is reserved for preflight rejection.
+// An error cannot prove a write was not committed. mutate re-synchronizes state
 // with the authoritative cloud tree and reports a reconciliation failure
 // explicitly instead of implying rollback.
 func (s *Service) mutate(fn func(api.ApiCtx) (bool, error)) error {
@@ -253,9 +256,11 @@ func (s *Service) mutate(fn func(api.ApiCtx) (bool, error)) error {
 		}
 		return err
 	}
+	// SyncComplete is a notification, not a transaction commit. Publish
+	// already changed edges even if that notification subsequently fails.
+	s.reindexLocked()
 	if err := s.apiCtx.SyncComplete(); err != nil {
 		return errors.Wrap(err, "sync cloud tree")
 	}
-	s.reindexLocked()
 	return nil
 }

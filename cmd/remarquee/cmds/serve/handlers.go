@@ -222,7 +222,10 @@ func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 			if partial.ReconcileErr != nil {
 				body["reconcileError"] = partial.ReconcileErr.Error()
 			}
-			writeJSON(w, http.StatusMultiStatus, body)
+			// A batch containing a failed cloud operation is not success.
+			// 207 is res.ok in Fetch and previously produced a false
+			// "Deleted" toast. Preserve outcomes with a non-2xx response.
+			writeJSON(w, http.StatusBadGateway, body)
 			return
 		}
 		writeErr(w, err)

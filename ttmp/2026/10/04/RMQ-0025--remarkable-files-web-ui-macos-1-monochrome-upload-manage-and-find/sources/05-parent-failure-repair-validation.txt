@@ -1,0 +1,62 @@
+=== full tests ===
+?   	github.com/go-go-golems/remarquee	[no test files]
+ok  	github.com/go-go-golems/remarquee/cmd/build-remarquee-ui-web	0.549s
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee	3.070s
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/cmds	[no test files]
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/cloud	[no test files]
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/device	[no test files]
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/ocr	[no test files]
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/rmdoc	2.196s
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/rmdsl	[no test files]
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/serve	1.189s
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/upload	2.318s
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig	[no test files]
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee-ui	2.509s
+?   	github.com/go-go-golems/remarquee/cmd/remarquee-ui/api	[no test files]
+?   	github.com/go-go-golems/remarquee/pkg	[no test files]
+?   	github.com/go-go-golems/remarquee/pkg/devicecapture	[no test files]
+?   	github.com/go-go-golems/remarquee/pkg/deviceevents	[no test files]
+?   	github.com/go-go-golems/remarquee/pkg/doc	[no test files]
+ok  	github.com/go-go-golems/remarquee/pkg/mdpdf	16.008s
+ok  	github.com/go-go-golems/remarquee/pkg/pdfcmp	1.912s
+ok  	github.com/go-go-golems/remarquee/pkg/refimpl/remarks	2.075s
+ok  	github.com/go-go-golems/remarquee/pkg/rmcloud	1.886s
+ok  	github.com/go-go-golems/remarquee/pkg/rmdoc	2.240s
+ok  	github.com/go-go-golems/remarquee/pkg/rmdoc/debug	1.572s
+ok  	github.com/go-go-golems/remarquee/pkg/rmdoc/render	1.279s
+?   	github.com/go-go-golems/remarquee/pkg/rmdsl	[no test files]
+ok  	github.com/go-go-golems/remarquee/pkg/rmdsl/compile	1.412s
+ok  	github.com/go-go-golems/remarquee/pkg/rmfiles	1.140s
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/03-pdf-box-dump	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/11-dump-test-rmdoc-stroke-tools-page1	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/14-dump-test-page1-groups-and-stroke-bboxes	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/17-render-test-page1-programmatic-debug	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/18-rmdsl-render-to-png	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/19-rmdsl-render-to-pdf	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/21-rmdoc-v6-to-dsl-yaml	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/04-dump-rm-blocks	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/scripts	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2026/05/08/REMARQUEE-IMPROVE--improve-remarquee-skill-cli-reduce-tool-call-churn-in-agent-sessions/scripts	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2026/10/04/RMQ-0025--remarkable-files-web-ui-macos-1-monochrome-upload-manage-and-find/scripts	[no test files]
+=== build ===
+=== affected race tests ===
+ok  	github.com/go-go-golems/remarquee/pkg/rmfiles	1.884s
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/serve	1.732s
+=== affected vet ===
+=== frontend regressions ===
+✔ partial removal reports error and refreshes rather than claiming success (1.74575ms)
+✔ notification failure reports error and refreshes rather than claiming success (0.804875ms)
+✔ successful deletion still reports success and refreshes (0.403625ms)
+✔ refresh failure preserves the deletion error and adds refresh diagnostic (0.396667ms)
+✔ cancel does not write or refresh (0.315375ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 72.3495
+=== JS syntax ===
+=== formatting and diff ===

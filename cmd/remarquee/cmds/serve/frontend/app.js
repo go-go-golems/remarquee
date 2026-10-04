@@ -276,7 +276,16 @@ async function confirmDelete(entry) {
     });
     toast("Deleted " + entry.name);
     await refreshAfterMutation();
-  } catch (e) { toast("Delete failed: " + e.message, true); }
+  } catch (e) {
+    // The cloud may have committed some deletions before returning an
+    // error. Refresh the visible state without replacing the error toast
+    // with a success message or implying the operation was rolled back.
+    toast("Delete failed: " + e.message, true);
+    try { await refreshAfterMutation(); }
+    catch (refreshError) {
+      toast("Delete failed: " + e.message + "; refresh failed: " + refreshError.message, true);
+    }
+  }
 }
 
 async function refreshAfterMutation() {

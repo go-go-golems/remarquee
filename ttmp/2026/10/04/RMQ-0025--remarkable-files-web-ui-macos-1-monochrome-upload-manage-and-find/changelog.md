@@ -68,3 +68,7 @@ F01/F05 fix: Delete prevalidates and deduplicates live IDs, rejects root/trash a
 - /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/errors.go — PartialDeleteError contract
 - /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/manage.go — postorder delete plan and partial outcomes
 - /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/service.go — edge-reachable ID lookup and reconcile
+
+## 2026-10-04
+
+Parent repaired F01/F05 review blockers: failed deletes now return 502 with progress and refresh the browser; uncertain create/rename/move/upload writes reconcile; notification failures preserve current views and deletion outcomes. Full tests/build, affected race/vet and five actual-frontend regression tests passed. F02/F03 remain open; worker report gate remains failed, parent qualifies this repair independently.

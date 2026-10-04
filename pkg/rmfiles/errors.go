@@ -20,7 +20,8 @@ var (
 )
 
 // PartialDeleteError reports a delete batch that removed some records before
-// failing. Removed is the number of individual cloud records actually gone
+// failing, including failure of the final notification after all removals.
+// Removed is the number of individual cloud records actually gone
 // (verified against the reconciled cloud state when reconciliation ran);
 // RemainingIDs are planned record IDs still present after the failure;
 // FailedID is the planned record whose deletion failed. ReconcileErr is
@@ -36,8 +37,14 @@ type PartialDeleteError struct {
 }
 
 func (e *PartialDeleteError) Error() string {
-	msg := fmt.Sprintf("delete removed %d record(s) before failing at %q (%d remaining)",
-		e.Removed, e.FailedID, len(e.RemainingIDs))
+	msg := fmt.Sprintf("delete removed %d record(s) (%d remaining)",
+		e.Removed, len(e.RemainingIDs))
+	if e.FailedID != "" {
+		msg += fmt.Sprintf("; failed at %q", e.FailedID)
+	}
+	if e.Err != nil {
+		msg += fmt.Sprintf(": %v", e.Err)
+	}
 	if e.ReconcileErr != nil {
 		msg += fmt.Sprintf("; local reconciliation failed: %v", e.ReconcileErr)
 	}

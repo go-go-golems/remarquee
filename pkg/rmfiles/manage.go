@@ -30,7 +30,7 @@ func (s *Service) CreateFolder(parentPath, name string) (Entry, error) {
 		}
 		doc, err := c.CreateDir(parent.Id(), name, true)
 		if err != nil {
-			return false, errors.Wrap(err, "create folder")
+			return true, errors.Wrap(err, "create folder")
 		}
 		c.Filetree().AddDocument(doc)
 		entry = nodeToEntry(c.Filetree().NodeById(doc.ID))
@@ -60,7 +60,7 @@ func (s *Service) Rename(id, newName string) (Entry, error) {
 		}
 		n, err := c.MoveEntry(node, parent, newName)
 		if err != nil {
-			return false, errors.Wrap(err, "rename entry")
+			return true, errors.Wrap(err, "rename entry")
 		}
 		c.Filetree().MoveNode(node, n)
 		entry = nodeToEntry(node)
@@ -89,7 +89,7 @@ func (s *Service) Move(id, destDirPath string) (Entry, error) {
 		}
 		n, err := c.MoveEntry(node, dest, node.Name())
 		if err != nil {
-			return false, errors.Wrap(err, "move entry")
+			return true, errors.Wrap(err, "move entry")
 		}
 		c.Filetree().MoveNode(node, n)
 		entry = nodeToEntry(node)
@@ -212,11 +212,17 @@ func (s *Service) Delete(ids []string, recursive bool) (int, error) {
 		s.apiCtx.Filetree().DeleteNode(node)
 		removed++
 	}
-	if err := s.apiCtx.SyncComplete(); err != nil {
-		s.reindexLocked()
-		return removed, errors.Wrap(err, "sync cloud tree")
-	}
 	s.reindexLocked()
+	if err := s.apiCtx.SyncComplete(); err != nil {
+		// Record removal is already committed. Notification failure must
+		// preserve that outcome rather than become a bare generic error.
+		reconcileErr := s.reconcileLocked()
+		removedNow, remaining := s.outcomeForPlannedLocked(plan.nodes)
+		return removedNow, &PartialDeleteError{
+			Removed: removedNow, RemainingIDs: remaining,
+			Err: errors.Wrap(err, "sync cloud tree"), ReconcileErr: reconcileErr,
+		}
+	}
 	return removed, nil
 }
 

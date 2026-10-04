@@ -377,7 +377,7 @@ func TestDeleteEndpointPartialOutcome(t *testing.T) {
 	rr := do(t, s, http.MethodDelete, "/api/entries", map[string]any{
 		"ids": []string{folder.ID}, "confirm": "DELETE", "recursive": true,
 	})
-	if rr.Code != http.StatusMultiStatus {
+	if rr.Code != http.StatusBadGateway {
 		t.Fatalf("partial delete status = %d body=%s", rr.Code, rr.Body.String())
 	}
 	var body struct {
