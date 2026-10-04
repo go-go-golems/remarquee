@@ -306,3 +306,209 @@ directories either.
   `unicode é中.rmdoc`, `sp ace.rmdoc.rmdoc`, `linebreak_q_.rmdoc`, `a_b.rmdoc`.
 - Cleanup-on-failure contract: `os.MkdirTemp` + `defer os.RemoveAll` covers the
   `FetchDocument` error path; no staging file is written when fetch fails.
+
+## Step 3: F01+F05 — descendant-first deletion and live-ID integrity with explicit partial outcomes
+
+Implemented the coupled F01/F05 seam. `Service.Delete` now validates and
+deduplicates the selection against live, edge-reachable nodes and rejects
+protected entries (root, trash) and nonrecursive nonempty folders before any
+side effect, then expands the selection into a deterministic unique postorder
+plan (children sorted by ID) and deletes every record children-before-parent —
+necessary because the pinned `DeleteEntry(recursive=true)` only bypasses the
+non-empty check and `HashTree.Remove` removes exactly one record. Service ID
+lookup now requires reachability by actual child edges from the root, because
+the pinned `FileTreeCtx.DeleteNode` leaves `idToNode` entries and stale parent
+pointers behind; deleted IDs and their descendants can no longer pass
+Download/Rename/Move/Delete. On delete failure the service reindexes from
+current edges, reconciles with authoritative cloud state via `Refresh` (a
+cloud method can commit its side effect and then return an error), and returns
+a typed `PartialDeleteError` carrying removed count, remaining planned IDs,
+failed ID, and an explicit reconciliation-failure field; no rollback is
+claimed. `mutate` callbacks now report whether they may have mutated, so
+create/rename/move/upload failures reindex (and reconcile when mutated)
+instead of leaving stale indexes. `handleDelete` reports 207 Multi-Status with
+`deleted`/`remainingIds`/`failedId`/`reconciled` for partial outcomes while
+preflight failures keep 400/404 with zero writes. Tests use a
+dependency-faithful fake whose authoritative records live in a real pinned
+`sync15.HashTree` and whose `Refresh` rebuilds through the real
+`sync15.DocumentsFileTree`.
+
+### Prompt Context
+
+**User prompt (verbatim):** see Step 1.
+
+Follow-up instruction (abridged excerpt from the parent's runtime message,
+not the full verbatim text): "NEXT IMPLEMENTATION MILESTONE: F01 + F05 ONLY,
+the tightly coupled deletion/live-tree consistency seam. ... Build an explicit
+unique POSTORDER descendant-ID plan so every cloud record is removed
+children-before-parent, including parent+child or repeated selections. ...
+Prevent disconnected/deleted nodes or descendants from being accepted by
+nodeByIDLocked ... On callback partial failure, tree snapshots/index must not
+disagree. ... Report accurate partial-delete progress/per-ID outcomes at HTTP
+boundary; preflight failure means no writes."
+
+**Assistant interpretation:** Fix recursive deletion semantics and live-ID
+integrity together, with honest partial-failure reporting, keeping the
+existing Delete signature and UI contract.
+**Inferred user intent:** Make "delete folder and contents" actually delete
+every cloud record, make ID lookup mean "live reachable entry", and make
+failure outcomes truthful and observable.
+**Commit (code):** 0d0fa53 — "🚑 fix(rmfiles): descendant-first cloud deletion
+and live-ID integrity with explicit partial outcomes (RMQ-0025 F01/F05)".
+
+### What I did
+
+- `pkg/rmfiles/manage.go`: `deletePlan` + `planDeleteLocked` (prevalidation,
+  dedup, protected-entry rejection, nonrecursive nonempty guard, postorder
+  expansion with ID-sorted children); `Delete` rewritten with its own locked
+  flow (not generic `mutate`) implementing plan execution, per-record
+  `DeleteEntry`, `DeleteNode` detach, failure reconciliation, and typed
+  partial outcomes; `CreateFolder`/`Rename`/`Move` callbacks now return
+  `(mutated bool, err error)`.
+- `pkg/rmfiles/service.go`: `nodeByIDLocked` now rejects root/trash and
+  requires `reachableByEdgesLocked` (edge BFS from root, ignoring stale
+  `idToNode` and stale parent pointers); new `reconcileLocked` (Refresh +
+  reindex); `mutate` signature `(func(api.ApiCtx) (bool, error))` with
+  reindex-on-error and reconcile-on-mutated-error semantics.
+- `pkg/rmfiles/upload.go`: `uploadOne` callback returns the mutated flag.
+- `pkg/rmfiles/errors.go`: new `PartialDeleteError` with `Removed`,
+  `RemainingIDs`, `FailedID`, `Err`, `ReconcileErr` and `Unwrap`.
+- `cmd/remarquee/cmds/serve/handlers.go`: `handleDelete` renders 207
+  Multi-Status partial outcomes; success body documents that `deleted` counts
+  individual cloud records.
+- `pkg/rmfiles/service_test.go`: dependency-faithful `cloudFake` (real pinned
+  `sync15.HashTree` inventory, single-record `Remove`, real
+  `DocumentsFileTree` rebuild on Refresh, failure/ghost-commit injection) plus
+  nine new tests: recursive absence after rebuild, dedup/overlap,
+  nonrecursive guard, protected/unknown preflight, partial outcomes,
+  side-effect-then-error reconciliation, reconciliation failure, live-lookup
+  rejection of deleted IDs/descendants, retry after partial, trash guard.
+- `cmd/remarquee/cmds/serve/server_test.go`: fake gained `failDelete`/
+  `deletedIDs`; new `TestDeleteEndpointPartialOutcome` (207 body fields +
+  preflight 404 with zero writes).
+- Reran the tracked offline probe
+  (`ttmp/.../scripts/01-review-backend.go`); new output for the delete lines:
+  `partial delete: deleted=0 error=entry not found listContains=true indexContains=true`
+  (preflight now rejects before any write — previously `deleted=1 ... listContains=false indexContains=true`);
+  `download deleted ID using fake storage: bytes=12 error=<nil>` (the probe's
+  batch now fails prevalidation on the unknown ID, so nothing was deleted and
+  the document legitimately remains live);
+  `after recursive service delete: childIDLookup=true visibleIndex=0`
+  (documents the pinned stale `idToNode` state the service now rejects, as
+  proven by `TestLiveLookupRejectsDeletedAndDescendantIDs`).
+
+### Why
+
+The pinned dependency's recursive flag does not provide recursive semantics,
+and its DeleteNode leaves stale lookup state; both require explicit service
+logic. Postorder execution is the smallest correct contract that guarantees
+every cloud record is removed while keeping each `DeleteEntry` call
+single-record faithful. Reachability by child edges is the only sound check:
+parent pointers survive deletion stale. Reconciliation via `Refresh` rebuilds
+both tree and `idToNode` from authoritative cloud state, resolving
+side-effect-then-error uncertainty without pretending rollback.
+
+### What worked
+
+- Full gate: `go build ./...` (including the tracked probe), `go test
+  ./pkg/rmfiles ./cmd/remarquee/cmds/serve -count=1` ok, `go test -race
+  -count=1` ok both packages, `gofmt -l pkg cmd` empty, `git diff --check`
+  clean; tracked probe rerun confirms new no-write preflight behavior.
+
+### What didn't work
+
+- First `planDeleteLocked` draft contained leftover scaffolding from an
+  earlier design iteration (a redundant second expansion loop); caught during
+  self-review before testing and rewritten as a single clean expansion.
+- Flake investigation: full-suite runs intermittently failed
+  `TestDeleteRecursiveRemovesEveryCloudRecord` with
+  `removal order = "leaf2,leaf,mid,top", want children-before-parent leaf,leaf2,mid,top`
+  and related order assertions. Root cause: `n.Children` is a Go map, so
+  sibling visit order (and therefore plan order and failure boundaries) was
+  randomized between runs; isolated runs passed while full runs failed.
+  Fixed by sorting children by ID during plan expansion, making the plan and
+  its failure boundaries deterministic. Exact diagnostics preserved.
+- `TestDeleteSideEffectThenErrorReconciles` first failed with
+  `Removed = 0, want 1 (ghost-committed leaf)` because `Delete` still reported
+  the local counter instead of the reconciled outcome; fixed by recomputing
+  removed/remaining against the current (reconciled) tree
+  (`outcomeForPlannedLocked`).
+- `TestDeleteRetryAfterPartialResult` first failed with
+  `record "leaf2" still present after retry` because `f.failDelete["leaf2"] = nil`
+  kept the map key and the fake's `if err, ok := ...; ok { return err }`
+  returned nil before removing the record; fixed with `delete(f.failDelete, ...)`.
+- A heredoc append of `TestDeleteEndpointPartialOutcome` was silently lost
+  (file tail unchanged); re-applied with the edit tool and verified by
+  recompilation and test run.
+- `TestDeleteEndpointPartialOutcome` first failed with `deleted = 0, want 1`:
+  the test's own "second record" selection inverted the comparison (`docA.ID >
+  docB.ID` picks the *earlier* ID), failing the first planned record instead
+  of the second; fixed to select the maximum ID. A scratch debug test
+  (since removed) proved the service behavior was already correct.
+
+### What I learned
+
+- The old partial-delete probe output (`deleted=1 error=... listContains=false
+  indexContains=true`) was itself the F05 symptom: prevalidation turns that
+  class of failure into a no-write rejection.
+- Deterministic planning needs explicit child ordering; map iteration order
+  leaks into behavioral contracts (failure boundaries) unless sorted.
+- The pinned `idToNode` staleness means any future feature relying on
+  `NodeById` alone would regress; the service now owns the live-projection
+  rule in one place (`nodeByIDLocked`).
+
+### What was tricky to build
+
+Reconcile semantics: after a failed `DeleteEntry`, the record may or may not
+have been removed cloud-side. `outcomeForPlannedLocked` recomputes removed and
+remaining from the reconciled tree so the reported outcome reflects cloud
+truth (a ghost-committed record counts as removed; a failed-but-present record
+is listed in RemainingIDs). When reconciliation itself fails, the outcome is
+computed against current local edges and `ReconcileErr` is reported
+explicitly.
+
+### What warrants a second pair of eyes
+
+- Reconcile uses a full `Refresh` (network re-mirror) on mutated-error paths;
+  correctness-first but a latency cost on errors. Acceptable now, revisit if
+  error paths become hot.
+- Edge-BFS reachability is O(n) per lookup under the service mutex; fine for
+  current account sizes (13k docs observed) but worth noting for scale.
+- HTTP 207 Multi-Status for partial deletes is a new response shape; the UI
+  treats non-2xx as failure toast (unchanged behavior), but parent should
+  confirm the status choice.
+- `Delete` no longer uses generic `mutate`, so it does not run
+  `SyncComplete` on partial failures (only on full success); confirm that is
+  the desired notification policy.
+
+### What should be done in the future
+
+- Remaining P1 passes: F02 (request guard/listener restriction) and F03
+  (global job/admission lifecycle) per parent assignment; F01/F05 closed
+  pending parent review.
+
+### Code review instructions
+
+- Start at `pkg/rmfiles/manage.go` (`planDeleteLocked`, `Delete`,
+  `outcomeForPlannedLocked`), `pkg/rmfiles/service.go`
+  (`nodeByIDLocked`, `reachableByEdgesLocked`, `reconcileLocked`, `mutate`),
+  `pkg/rmfiles/errors.go` (`PartialDeleteError`),
+  `cmd/remarquee/cmds/serve/handlers.go` (`handleDelete`).
+- Validate with:
+  `go test ./pkg/rmfiles ./cmd/remarquee/cmds/serve -count=1 -run 'TestDelete|TestLive|TestTrash' -v`,
+  then `go test -race ./pkg/rmfiles ./cmd/remarquee/cmds/serve -count=1`,
+  then `go run ttmp/2026/10/04/RMQ-0025--remarkable-files-web-ui-macos-1-monochrome-upload-manage-and-find/scripts/01-review-backend.go`
+  and compare the delete-line outputs quoted above.
+
+### Technical details
+
+- Plan contract: unique postorder IDs, children sorted by ID, trash excluded,
+  protected entries rejected preflight, nonrecursive nonempty guard on
+  selected roots only (descendants inside a recursive selection are fine).
+- Outcome contract: `Removed` counts individual cloud records verified gone
+  against the reconciled tree; `RemainingIDs` are planned IDs still reachable;
+  `FailedID` is the record whose `DeleteEntry` errored; `ReconcileErr != nil`
+  means local representation may still disagree with the cloud.
+- HTTP contract: 207 + `{deleted, remainingIds, failedId, reconciled[,
+  reconcileError], error.code=partial_delete}`; success `{deleted: records}`;
+  preflight failures unchanged 400/404 with zero writes.

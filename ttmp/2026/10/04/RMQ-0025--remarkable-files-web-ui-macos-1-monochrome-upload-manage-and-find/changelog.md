@@ -57,3 +57,14 @@ F11 fix: download staging uses fixed internal filename (document.rmdoc) in priva
 
 - /Users/manuel.odendahl/code/go-go-golems/remarquee/cmd/remarquee/cmds/serve/handlers.go — mime.FormatMediaType attachment header
 - /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/manage.go — Fixed staging filename and sanitizeAttachmentName
+
+## 2026-10-04
+
+F01/F05 fix: Delete prevalidates and deduplicates live IDs, rejects root/trash and nonrecursive nonempty folders before writes, and executes a deterministic postorder plan removing every cloud record; service ID lookup requires edge reachability so deleted IDs/descendants fail; failures reindex, reconcile via Refresh, and return typed PartialDeleteError; HTTP reports 207 partial outcomes with deleted/remainingIds/failedId/reconciled; dependency-faithful HashTree/Rebuild tests added
+
+### Related Files
+
+- /Users/manuel.odendahl/code/go-go-golems/remarquee/cmd/remarquee/cmds/serve/handlers.go — 207 partial-delete reporting
+- /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/errors.go — PartialDeleteError contract
+- /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/manage.go — postorder delete plan and partial outcomes
+- /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/service.go — edge-reachable ID lookup and reconcile

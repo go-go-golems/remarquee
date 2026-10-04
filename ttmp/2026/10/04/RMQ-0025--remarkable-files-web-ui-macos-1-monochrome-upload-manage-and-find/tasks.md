@@ -50,7 +50,7 @@
 - [ ] Opt-in integration test guarded by an env var
 - [ ] Revisit `WriteTimeout: 0` and `Download` holding the mutex across I/O
 - [x] Review PR 29 against the design, document evidence-backed findings and intern implementation guidance, and upload the review to reMarkable <!-- t:zxus -->
-- [ ] PR review F01/F05: implement descendant-first cloud deletion, live-ID integrity and explicit partial outcomes; qualify against rebuilt state <!-- t:mum9 -->
+- [x] PR review F01/F05: implement descendant-first cloud deletion, live-ID integrity and explicit partial outcomes; qualify against rebuilt state <!-- t:mum9 -->
 - [ ] PR review F03: bound jobs and queued bytes globally, own cancellation/shutdown and evict terminal job records <!-- t:983u -->
 - [ ] PR review F04/F07/F12: reject effective-name upload conflicts, preserve explicit root destination and define Markdown folder asset policy <!-- t:e2as -->
 - [ ] PR review F06/F08/F09: fix response ordering and view mode, route encoding, picker reset and dialog/job lifecycle <!-- t:wx8g -->
