@@ -48,3 +48,12 @@ Created a second proposed design for the requested move directory browser, subtl
 ### Related Files
 
 - /Users/manuel.odendahl/code/go-go-golems/remarquee/ttmp/2026/10/04/RMQ-0025--remarkable-files-web-ui-macos-1-monochrome-upload-manage-and-find/design-doc/02-files-ui-additions-directory-picker-column-clarity-and-sorting.md — Second additions design
+
+## 2026-10-04
+
+F11 fix: download staging uses fixed internal filename (document.rmdoc) in private temp dir; suggested attachment names are sanitized (control chars dropped, separators/quotes replaced, dot-only fallback) and Content-Disposition is built with mime.FormatMediaType; regression tests at service and handler level
+
+### Related Files
+
+- /Users/manuel.odendahl/code/go-go-golems/remarquee/cmd/remarquee/cmds/serve/handlers.go — mime.FormatMediaType attachment header
+- /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/manage.go — Fixed staging filename and sanitizeAttachmentName

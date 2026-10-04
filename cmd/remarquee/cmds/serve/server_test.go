@@ -3,6 +3,7 @@ package serve
 import (
 	"bytes"
 	"encoding/json"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -166,6 +167,53 @@ func TestDownloadEndpoint(t *testing.T) {
 	}
 	if rr.Body.Len() == 0 {
 		t.Fatal("expected download bytes")
+	}
+}
+
+// TestDownloadAttachmentHeaderIsSanitized proves a traversal-shaped,
+// control-laden cloud display name (simulating metadata imported from another
+// cloud client, bypassing UI validation) produces a Content-Disposition header
+// that parses cleanly and never carries separators, quotes, or control
+// characters into the suggested filename.
+func TestDownloadAttachmentHeaderIsSanitized(t *testing.T) {
+	f := newFake()
+	ai := f.add("", "ai", model.DirectoryType)
+	evil := f.add(ai.ID, `..\\..\\evil \"quoted\"`+"\x07/slash", model.DocumentType)
+	s := NewServer(rmfiles.NewService(f, rmfiles.Config{DefaultRemoteDir: "/ai"}), Options{})
+	rr := do(t, s, http.MethodGet, "/api/entries/"+evil.ID+"/download", nil)
+	if rr.Code != 200 {
+		t.Fatalf("download = %d body=%s", rr.Code, rr.Body.String())
+	}
+	raw := rr.Header().Get("Content-Disposition")
+	if raw == "" {
+		t.Fatal("missing Content-Disposition header")
+	}
+	mediatype, params, err := mime.ParseMediaType(raw)
+	if err != nil {
+		t.Fatalf("Content-Disposition %q does not parse: %v", raw, err)
+	}
+	if mediatype != "attachment" {
+		t.Fatalf("disposition type = %q, want attachment", mediatype)
+	}
+	name, ok := params["filename"]
+	if !ok {
+		t.Fatalf("Content-Disposition %q has no filename parameter", raw)
+	}
+	if strings.ContainsAny(name, `/\\"`) {
+		t.Fatalf("filename %q contains separators or quotes", name)
+	}
+	for _, r := range name {
+		if r < 0x20 || r == 0x7f {
+			t.Fatalf("filename %q contains control character %q", name, r)
+		}
+	}
+	if name == evil.Name {
+		t.Fatal("filename still equals the raw cloud name")
+	}
+	// The raw header value must never contain a carriage return or newline,
+	// which would enable header injection.
+	if strings.ContainsAny(raw, "\r\n") {
+		t.Fatalf("header value %q contains CR/LF", raw)
 	}
 }
 

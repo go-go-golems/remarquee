@@ -3,6 +3,7 @@ package rmfiles
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -19,6 +20,9 @@ type fakeApiCtx struct {
 	syncCount int
 	moved     int
 	deleted   int
+	// lastFetchPath records the destination path of the last FetchDocument so
+	// tests can prove staging destinations are independent of cloud names.
+	lastFetchPath string
 }
 
 var _ api.ApiCtx = (*fakeApiCtx)(nil)
@@ -47,6 +51,7 @@ func (f *fakeApiCtx) ReplaceDocumentFile(string, string, bool) error {
 	return nil
 }
 func (f *fakeApiCtx) FetchDocument(docId, dstPath string) error {
+	f.lastFetchPath = dstPath
 	return os.WriteFile(dstPath, []byte("rmdoc-bytes"), 0o600)
 }
 
@@ -195,6 +200,86 @@ func TestDelete(t *testing.T) {
 	}
 	if _, err := s.Delete(nil, false); err != ErrInvalid {
 		t.Fatalf("empty delete error = %v, want ErrInvalid", err)
+	}
+}
+
+// TestDownloadStagingPathIsFixed proves a traversal-shaped, control-laden
+// cloud display name (as imported by another client) can never influence the
+// local FetchDocument destination or the suggested filename, and that the
+// private staging directory is removed afterwards.
+func TestDownloadStagingPathIsFixed(t *testing.T) {
+	f, _, _, docID := tree(t)
+	evil := f.add("", `..\..\evil "quoted"`+"\x07/slash", model.DocumentType)
+	s := NewService(f, Config{})
+	data, name, err := s.Download(evil.ID)
+	if err != nil {
+		t.Fatalf("Download: %v", err)
+	}
+	if string(data) != "rmdoc-bytes" {
+		t.Fatalf("download bytes = %q", data)
+	}
+	if f.lastFetchPath == "" {
+		t.Fatal("FetchDocument was never called")
+	}
+	if got := filepath.Base(f.lastFetchPath); got != "document.rmdoc" {
+		t.Fatalf("staging filename = %q, want fixed document.rmdoc", got)
+	}
+	// The private staging directory must be cleaned up after the call.
+	stagingDir := filepath.Dir(f.lastFetchPath)
+	if _, err := os.Stat(stagingDir); !os.IsNotExist(err) {
+		t.Fatalf("staging dir %s still exists after Download (err=%v)", stagingDir, err)
+	}
+	// The suggested filename must be a safe single component.
+	if !strings.HasSuffix(name, ".rmdoc") {
+		t.Fatalf("suggested name %q lacks .rmdoc suffix", name)
+	}
+	if strings.ContainsAny(name, `/\"`) {
+		t.Fatalf("suggested name %q contains separators or quotes", name)
+	}
+	for _, r := range name {
+		if r < 0x20 || r == 0x7f {
+			t.Fatalf("suggested name %q contains control character %q", name, r)
+		}
+	}
+	base := strings.TrimSuffix(name, ".rmdoc")
+	if base == "" || base == "." || base == ".." {
+		t.Fatalf("suggested base name %q is a path component hazard", base)
+	}
+	if name == evil.Name+".rmdoc" {
+		t.Fatal("suggested name still equals the raw cloud name")
+	}
+	// Normal names must still round-trip as the suggestion.
+	_, normalName, err := s.Download(docID)
+	if err != nil {
+		t.Fatalf("Download normal: %v", err)
+	}
+	if normalName != "Project Plan.rmdoc" {
+		t.Fatalf("normal suggested name = %q, want Project Plan.rmdoc", normalName)
+	}
+}
+
+// TestSanitizeAttachmentName pins the exact sanitization contract for
+// untrusted cloud names.
+func TestSanitizeAttachmentName(t *testing.T) {
+	cases := map[string]string{
+		"../../etc/passwd": ".._.._etc_passwd",
+		"..\\..\\win":      ".._.._win",
+		`a"b`:              "a_b",
+		"ctl\x07name":      "ctlname",
+		"del\x7fete":       "delete",
+		"":                 "document",
+		"   ":              "document",
+		"..":               "document",
+		".":                "document",
+		"unicode é中":       "unicode é中",
+		"sp ace.rmdoc":     "sp ace.rmdoc",
+		"/":                "_",
+		"\\":               "_",
+	}
+	for in, want := range cases {
+		if got := sanitizeAttachmentName(in); got != want {
+			t.Errorf("sanitizeAttachmentName(%q) = %q, want %q", in, got, want)
+		}
 	}
 }
 

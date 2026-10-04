@@ -54,7 +54,7 @@
 - [ ] PR review F03: bound jobs and queued bytes globally, own cancellation/shutdown and evict terminal job records <!-- t:983u -->
 - [ ] PR review F04/F07/F12: reject effective-name upload conflicts, preserve explicit root destination and define Markdown folder asset policy <!-- t:e2as -->
 - [ ] PR review F06/F08/F09: fix response ordering and view mode, route encoding, picker reset and dialog/job lifecycle <!-- t:wx8g -->
-- [ ] PR review F11: stage downloads at fixed internal paths and safely format suggested attachment names <!-- t:v91p -->
+- [x] PR review F11: stage downloads at fixed internal paths and safely format suggested attachment names <!-- t:v91p -->
 - [ ] PR review: enforce monochrome danger surfaces and keyboard access; repair historical API/dev docs and add browser/failure-oriented tests <!-- t:4681 -->
 - [x] Design the requested move directory browser, subtle directory text color, actual file-type column, non-wrapping dates and column sorting in a second design document <!-- t:2ro4 -->
 - [ ] Second design: implement an isolated directory browser for Move with breadcrumbs, root/empty-folder selection, subtree guards and keyboard/cancel handling <!-- t:baaq -->

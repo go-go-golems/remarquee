@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"github.com/juruen/rmapi/api"
 	"github.com/juruen/rmapi/model"
@@ -118,7 +119,15 @@ func (s *Service) Delete(ids []string, recursive bool) (int, error) {
 	return deleted, err
 }
 
+// fixedDownloadStagingName is the internal staging filename used inside the
+// private per-download temporary directory. It is deliberately independent of
+// cloud display names: cloud metadata may come from other clients and is not
+// validated, so it must never influence a local output path.
+const fixedDownloadStagingName = "document.rmdoc"
+
 // Download fetches a document as an .rmdoc archive and returns its bytes and a
+// suggested filename. The staging path is a fixed name inside a private temp
+// directory; the cloud display name only feeds the separately sanitized
 // suggested filename.
 func (s *Service) Download(id string) ([]byte, string, error) {
 	s.mu.Lock()
@@ -135,7 +144,7 @@ func (s *Service) Download(id string) ([]byte, string, error) {
 		return nil, "", err
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
-	out := filepath.Join(tmpDir, node.Name()+".rmdoc")
+	out := filepath.Join(tmpDir, fixedDownloadStagingName)
 	if err := s.apiCtx.FetchDocument(id, out); err != nil {
 		return nil, "", errors.Wrap(err, "fetch document")
 	}
@@ -143,7 +152,32 @@ func (s *Service) Download(id string) ([]byte, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	return data, node.Name() + ".rmdoc", nil
+	return data, sanitizeAttachmentName(node.Name()) + ".rmdoc", nil
+}
+
+// sanitizeAttachmentName converts untrusted cloud display metadata into a
+// safe, single-component suggested filename. It removes path separators,
+// quotes and control characters so the result cannot traverse directories or
+// corrupt a Content-Disposition header; legitimate Unicode and spaces are
+// preserved. Degenerate results (empty, all whitespace, or pure dot
+// components) fall back to "document".
+func sanitizeAttachmentName(name string) string {
+	var b strings.Builder
+	for _, r := range name {
+		switch {
+		case unicode.IsControl(r):
+			// Drop control characters: they can break header parsing.
+		case r == '/' || r == '\\' || r == '"':
+			b.WriteByte('_')
+		default:
+			b.WriteRune(r)
+		}
+	}
+	cleaned := b.String()
+	if cleaned == "" || cleaned == "." || cleaned == ".." || strings.TrimSpace(cleaned) == "" {
+		return "document"
+	}
+	return cleaned
 }
 
 // isSubdir reports whether child is the same node as parent or nested beneath

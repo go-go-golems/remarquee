@@ -15,12 +15,20 @@ Topics:
 DocType: index
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: repo://cmd/remarquee/cmds/serve/handlers.go
+      Note: F11 Content-Disposition via mime.FormatMediaType
+    - Path: repo://cmd/remarquee/cmds/serve/server_test.go
+      Note: F11 attachment header parsing regression test
+    - Path: repo://pkg/rmfiles/manage.go
+      Note: F11 download staging path and attachment name sanitizer
+    - Path: repo://pkg/rmfiles/service_test.go
+      Note: F11 staging path and sanitizer regression tests
 ExternalSources: []
-Summary: "Design, implementation, and PR 29 review for remarquee serve: an embedded no-build files UI backed by a serialized rmfiles service. The intern-facing review identifies correctness and security changes required before merge."
+Summary: 'Design, implementation, and PR 29 review for remarquee serve: an embedded no-build files UI backed by a serialized rmfiles service. The intern-facing review identifies correctness and security changes required before merge.'
 LastUpdated: 2026-10-04T07:22:39.678261-04:00
-WhatFor: "Explaining, reviewing, and improving the reMarkable files web UI (Go HTTP API plus embedded vanilla JavaScript frontend)."
-WhenToUse: "When reviewing PR 29, addressing its findings, or debugging the service and browser boundary."
+WhatFor: Explaining, reviewing, and improving the reMarkable files web UI (Go HTTP API plus embedded vanilla JavaScript frontend).
+WhenToUse: When reviewing PR 29, addressing its findings, or debugging the service and browser boundary.
 ---
 
 # Remarkable files web UI: macOS 1 monochrome upload, manage, and find

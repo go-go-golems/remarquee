@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"mime"
 	"net/http"
 	"strconv"
 	"strings"
@@ -217,7 +218,13 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", "attachment; filename=\""+strings.ReplaceAll(name, "\"", "")+"\"")
+	// The service sanitizes the suggested name; FormatMediaType additionally
+	// applies RFC 2231 encoding so quotes, spaces and Unicode round-trip.
+	disposition := mime.FormatMediaType("attachment", map[string]string{"filename": name})
+	if disposition == "" {
+		disposition = "attachment; filename=\"document.rmdoc\""
+	}
+	w.Header().Set("Content-Disposition", disposition)
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(data); err != nil {
 		log.Error().Err(err).Msg("serve: write download")
