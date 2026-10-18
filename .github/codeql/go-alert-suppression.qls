@@ -1,6 +1,0 @@
-# Run the standard alert-suppression query alongside the default code-scanning
-# suite so inline `// codeql[...]` annotations in the codebase are honored by
-# code scanning (suppressed alerts are not reported as new alerts).
-- description: Alert suppression annotations for Go
-- query: AlertSuppression.ql
-  from: codeql/go-queries

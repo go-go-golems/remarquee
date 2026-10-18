@@ -205,6 +205,16 @@ func (s *Service) uploadOne(ctx context.Context, j *uploadJob, i int, in UploadI
 	ext := strings.ToLower(path.Ext(baseName))
 	stem := strings.TrimSuffix(baseName, path.Ext(baseName))
 	safe := sanitizeStem(stem)
+	// filepath.IsLocal proves safe and ext are plain, unrooted names without
+	// ".." components, so the temp paths built from them stay inside tmpDir.
+	// (sanitizeStem's allowlist already strips separators; this is a recognized
+	// path-traversal guard, and pathological names such as "..png" are rejected.)
+	if !filepath.IsLocal(safe) {
+		return "", errors.Wrap(ErrInvalid, "invalid document name")
+	}
+	if !filepath.IsLocal(ext) {
+		return "", errors.Wrap(ErrInvalid, "invalid file extension")
+	}
 	targetDir := joinRemote(dest, dirPart)
 
 	tmpDir, err := os.MkdirTemp("", "rmfiles-up-")
@@ -218,9 +228,6 @@ func (s *Service) uploadOne(ctx context.Context, j *uploadJob, i int, in UploadI
 	case ".md", ".markdown":
 		j.setItem(i, JobConverting, "", "")
 		mdPath := filepath.Join(tmpDir, safe+".md")
-		// safe comes from sanitizeStem, an allowlist that strips every character
-		// outside [a-zA-Z0-9_.-], so it cannot carry path separators or "..".
-		// codeql[go/path-injection]
 		if err := os.WriteFile(mdPath, in.Data, 0o600); err != nil {
 			return "", err
 		}
@@ -231,9 +238,6 @@ func (s *Service) uploadOne(ctx context.Context, j *uploadJob, i int, in UploadI
 		}
 	case ".pdf", ".epub":
 		uploadPath = filepath.Join(tmpDir, safe+ext)
-		// safe is allowlist-sanitized (see above) and ext is a fixed literal;
-		// the combined path cannot escape tmpDir.
-		// codeql[go/path-injection]
 		if err := os.WriteFile(uploadPath, in.Data, 0o600); err != nil {
 			return "", err
 		}

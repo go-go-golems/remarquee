@@ -194,18 +194,18 @@ func copyImageToTemp(imgPath string, sourceDir string, imagesDir string, filenam
 		return "", false
 	}
 
-	// Resolve relative to the original Markdown file's directory. The image
-	// target comes from user-authored Markdown, so after resolving and cleaning,
-	// require the result to stay inside sourceDir: a ../ target must not read
-	// or copy files outside the source file's own directory tree.
-	resolvedPath := filepath.Clean(filepath.Join(sourceDir, imgPath))
-	if !withinDir(sourceDir, resolvedPath) {
+	// Require a local, non-traversal target: user-authored Markdown must not
+	// read or copy files outside the source file's own directory tree
+	// (filepath.IsLocal rejects ".." segments and rooted paths).
+	if !filepath.IsLocal(imgPath) {
 		return "", false
 	}
 
-	// Check if the file exists. resolvedPath is contained inside sourceDir
-	// by the withinDir guard above, so it cannot point outside it.
-	// codeql[go/path-injection]
+	// Resolve relative to the original Markdown file's directory. The IsLocal
+	// guard above guarantees the joined path stays inside sourceDir.
+	resolvedPath := filepath.Clean(filepath.Join(sourceDir, imgPath))
+
+	// Check if the file exists.
 	info, err := os.Stat(resolvedPath)
 	if err != nil || info.IsDir() {
 		// Image not found: leave unchanged, don't error.
@@ -243,61 +243,25 @@ func isURL(path string) bool {
 		strings.HasPrefix(path, "data:")
 }
 
-// withinDir reports whether path resolves to a location inside dir (or dir
-// itself). Both are made absolute and cleaned first; it is the path-traversal
-// guard for user-provided image targets resolved against sourceDir.
-func withinDir(dir, path string) bool {
-	abs := func(p string) (string, bool) {
-		if !filepath.IsAbs(p) {
-			var err error
-			p, err = filepath.Abs(p)
-			if err != nil {
-				return "", false
-			}
-		}
-		return filepath.Clean(p), true
-	}
-	dir, ok := abs(dir)
-	if !ok {
-		return false
-	}
-	path, ok = abs(path)
-	if !ok {
-		return false
-	}
-	rel, err := filepath.Rel(dir, path)
-	if err != nil {
-		return false
-	}
-	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
-}
-
 // copyFile copies a single file from src to dst.
 func copyFile(src, dst string) error {
-	// src is contained by the caller's withinDir guard; dst is Join(imagesDir,
-	// prefix+Base(src)), and Base strips directory components, so neither can
-	// escape the intended directories.
-	// codeql[go/path-injection]
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("failed to open source file %q: %w", src, err)
 	}
 	defer func() { _ = srcFile.Close() }()
 
-	// codeql[go/path-injection]
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return fmt.Errorf("failed to create destination file %q: %w", dst, err)
 	}
 	defer func() { _ = dstFile.Close() }()
 
-	// codeql[go/path-injection]
 	if _, err := io.Copy(dstFile, srcFile); err != nil {
 		return fmt.Errorf("failed to copy %q to %q: %w", src, dst, err)
 	}
 
-	// Preserve the source file's mode. src is contained as documented above.
-	// codeql[go/path-injection]
+	// Preserve the source file's mode.
 	srcInfo, err := os.Stat(src)
 	if err != nil {
 		return nil // non-fatal

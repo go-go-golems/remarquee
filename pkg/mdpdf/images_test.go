@@ -379,31 +379,3 @@ func TestResolveImagePaths_TraversalRefRejected(t *testing.T) {
 		t.Fatalf("expected no copied image for traversal reference, stat err: %v", err)
 	}
 }
-
-func TestWithinDir(t *testing.T) {
-	dir := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(dir, "sub"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	inner := filepath.Join(dir, "sub", "file.txt")
-	if err := os.WriteFile(inner, []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	cases := []struct {
-		path string
-		want bool
-	}{
-		{dir, true},
-		{inner, true},
-		{filepath.Join(dir, ".."), false},
-		{filepath.Join(dir, "..", "elsewhere.txt"), false},
-		{dir + string(filepath.Separator) + ".." + string(filepath.Separator) + "x", false},
-		{"/etc/passwd", false},
-	}
-	for _, c := range cases {
-		if got := withinDir(dir, c.path); got != c.want {
-			t.Errorf("withinDir(%q) = %v, want %v", c.path, got, c.want)
-		}
-	}
-}
