@@ -198,10 +198,7 @@ func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	// Recursive defaults to true because the UI already gates deletion behind an
 	// explicit typed confirmation; non-empty folders otherwise cannot be removed.
-	recursive := true
-	if !req.Recursive && len(req.IDs) > 0 {
-		recursive = false
-	}
+	recursive := req.Recursive || len(req.IDs) == 0
 	n, err := s.svc.Delete(req.IDs, recursive)
 	if err != nil {
 		var partial *rmfiles.PartialDeleteError

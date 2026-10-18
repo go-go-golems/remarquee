@@ -8,28 +8,45 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-go-golems/glazed/pkg/cli"
+	glazecmds "github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	"github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig"
 	"github.com/go-go-golems/remarquee/pkg/rmcloud"
 	"github.com/go-go-golems/remarquee/pkg/rmfiles"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
-// Settings holds the `remarquee serve` flags.
-type Settings struct {
-	Addr             string
-	Dev              bool
-	DefaultRemoteDir string
-	IncludeTemplates bool
-	Workers          int
+// ServeCommand wraps the glazed command description for `remarquee serve`.
+type ServeCommand struct {
+	*glazecmds.CommandDescription
 }
 
-// NewServeCommand builds the `serve` subcommand.
-func NewServeCommand() *cobra.Command {
-	s := &Settings{}
-	cmd := &cobra.Command{
-		Use:   "serve",
-		Short: "Serve a local web UI to upload, manage, and search reMarkable files",
-		Long: strings.TrimSpace(`
+// ServeSettings holds the `remarquee serve` flags.
+type ServeSettings struct {
+	Addr             string `glazed:"addr"`
+	Dev              bool   `glazed:"dev"`
+	DefaultRemoteDir string `glazed:"remote-dir"`
+	IncludeTemplates bool   `glazed:"include-templates"`
+	Workers          int    `glazed:"workers"`
+}
+
+var _ glazecmds.BareCommand = &ServeCommand{}
+
+// NewServeCommand builds the glazed `serve` command description.
+func NewServeCommand() (*ServeCommand, error) {
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
+	if err != nil {
+		return nil, err
+	}
+
+	cmdDesc := glazecmds.NewCommandDescription(
+		"serve",
+		glazecmds.WithShort("Serve a local web UI to upload, manage, and search reMarkable files"),
+		glazecmds.WithLong(strings.TrimSpace(`
 Serve a local, loopback-only web UI for your reMarkable cloud files.
 
 The UI lets you upload Markdown/PDF/EPUB files, browse and search the cloud
@@ -41,23 +58,67 @@ Examples:
   remarquee serve --addr 127.0.0.1:9090
   remarquee serve --remote-dir /ai
   remarquee serve --include-templates --workers 4
-`),
-		SilenceUsage: true,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runServe(cmd.Context(), s)
-		},
-	}
+`)),
+		glazecmds.WithFlags(
+			fields.New(
+				"addr",
+				fields.TypeString,
+				fields.WithDefault("127.0.0.1:8080"),
+				fields.WithHelp("HTTP listen address (loopback by default)"),
+			),
+			fields.New(
+				"dev",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Disable static asset caching while editing the frontend"),
+			),
+			fields.New(
+				"remote-dir",
+				fields.TypeString,
+				fields.WithDefault("/"),
+				fields.WithHelp("Default upload destination directory"),
+			),
+			fields.New(
+				"include-templates",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Show template documents (hidden by default)"),
+			),
+			fields.New(
+				"workers",
+				fields.TypeInteger,
+				fields.WithDefault(2),
+				fields.WithHelp("Concurrent conversions per upload job"),
+			),
+		),
+		glazecmds.WithSections(commandSettingsLayer),
+	)
 
-	cmd.Flags().StringVar(&s.Addr, "addr", "127.0.0.1:8080", "HTTP listen address (loopback by default)")
-	cmd.Flags().BoolVar(&s.Dev, "dev", false, "Disable static asset caching while editing the frontend")
-	cmd.Flags().StringVar(&s.DefaultRemoteDir, "remote-dir", "/", "Default upload destination directory")
-	cmd.Flags().BoolVar(&s.IncludeTemplates, "include-templates", false, "Show template documents (hidden by default)")
-	cmd.Flags().IntVar(&s.Workers, "workers", 2, "Concurrent conversions per upload job")
-
-	return cmd
+	return &ServeCommand{CommandDescription: cmdDesc}, nil
 }
 
-func runServe(ctx context.Context, s *Settings) error {
+// Run executes `remarquee serve` with the parsed flag values.
+func (c *ServeCommand) Run(ctx context.Context, parsedValues *values.Values) error {
+	s := &ServeSettings{}
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
+		return err
+	}
+	return runServe(ctx, s)
+}
+
+// NewServeCobraCommand builds the cobra command for `remarquee serve`.
+func NewServeCobraCommand() (*cobra.Command, error) {
+	cmd, err := NewServeCommand()
+	if err != nil {
+		return nil, err
+	}
+
+	return cli.BuildCobraCommand(cmd,
+		cli.WithParserConfig(appconfig.DefaultParserConfig()),
+	)
+}
+
+func runServe(ctx context.Context, s *ServeSettings) error {
 	log.Info().Str("remote_dir", s.DefaultRemoteDir).Msg("remarquee serve: initializing cloud context (first run may take a while)")
 
 	svc, err := rmfiles.NewServiceFromCloud(ctx, rmfiles.Config{

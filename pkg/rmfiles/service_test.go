@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/juruen/rmapi/api"
@@ -18,7 +17,6 @@ import (
 // fakeApiCtx is a minimal in-memory implementation of api.ApiCtx for tests.
 type fakeApiCtx struct {
 	ft        filetree.FileTreeCtx
-	mu        sync.Mutex
 	nextID    int
 	syncCount int
 	moved     int

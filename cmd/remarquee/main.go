@@ -38,7 +38,17 @@ func main() {
 	rootCmd.AddCommand(ocr_cmd.NewOCRCommand())
 	rootCmd.AddCommand(rmdsl_cmd.NewRmdslCommand())
 	rootCmd.AddCommand(rmdoc_cmd.NewRmdocCommand())
-	rootCmd.AddCommand(serve_cmd.NewServeCommand())
+	if serveCobraCmd, err := serve_cmd.NewServeCobraCommand(); err != nil {
+		rootCmd.AddCommand(&cobra.Command{
+			Use:   "serve",
+			Short: "Serve a local web UI for reMarkable files (unavailable due to init error)",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return err
+			},
+		})
+	} else {
+		rootCmd.AddCommand(serveCobraCmd)
+	}
 	rootCmd.AddCommand(upload.NewUploadCommand())
 
 	// ExecuteContext propagates SIGINT cancellation to the verbs. The wrapper

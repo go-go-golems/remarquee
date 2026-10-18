@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -22,11 +21,8 @@ import (
 )
 
 type fakeApiCtx struct {
-	ft        filetree.FileTreeCtx
-	mu        sync.Mutex
-	nextID    int
-	syncCount int
-	bytes     int
+	ft     filetree.FileTreeCtx
+	nextID int
 	// failDelete makes DeleteEntry fail for the given document ID before any
 	// side effect, to exercise partial-outcome reporting.
 	failDelete map[string]error
