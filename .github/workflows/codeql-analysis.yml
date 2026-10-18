@@ -25,7 +25,7 @@ jobs:
         languages: go
         # Run the alert-suppression query so inline `// codeql[...]`
         # annotations in the codebase are honored by code scanning.
-        queries: .github/codeql/go-alert-suppression.qls
+        queries: ./.github/codeql/go-alert-suppression.qls
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4
