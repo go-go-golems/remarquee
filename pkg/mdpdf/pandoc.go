@@ -162,6 +162,10 @@ func ConvertMarkdownFileToPDF(ctx context.Context, mdPath string, outPDF string,
 		opts.Geometry = "margin=1in"
 	}
 
+	// mdPath is the input Markdown file path provided by the caller: a CLI
+	// argument the user chose themselves, or (for serve uploads) a temp path
+	// with an allowlist-sanitized filename inside a fresh os.MkdirTemp dir.
+	// codeql[go/path-injection]
 	mdBytes, err := os.ReadFile(mdPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to read markdown file")

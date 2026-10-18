@@ -218,6 +218,9 @@ func (s *Service) uploadOne(ctx context.Context, j *uploadJob, i int, in UploadI
 	case ".md", ".markdown":
 		j.setItem(i, JobConverting, "", "")
 		mdPath := filepath.Join(tmpDir, safe+".md")
+		// safe comes from sanitizeStem, an allowlist that strips every character
+		// outside [a-zA-Z0-9_.-], so it cannot carry path separators or "..".
+		// codeql[go/path-injection]
 		if err := os.WriteFile(mdPath, in.Data, 0o600); err != nil {
 			return "", err
 		}
@@ -228,6 +231,9 @@ func (s *Service) uploadOne(ctx context.Context, j *uploadJob, i int, in UploadI
 		}
 	case ".pdf", ".epub":
 		uploadPath = filepath.Join(tmpDir, safe+ext)
+		// safe is allowlist-sanitized (see above) and ext is a fixed literal;
+		// the combined path cannot escape tmpDir.
+		// codeql[go/path-injection]
 		if err := os.WriteFile(uploadPath, in.Data, 0o600); err != nil {
 			return "", err
 		}
