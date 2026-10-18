@@ -72,3 +72,12 @@ F01/F05 fix: Delete prevalidates and deduplicates live IDs, rejects root/trash a
 ## 2026-10-04
 
 Parent repaired F01/F05 review blockers: failed deletes now return 502 with progress and refresh the browser; uncertain create/rename/move/upload writes reconcile; notification failures preserve current views and deletion outcomes. Full tests/build, affected race/vet and five actual-frontend regression tests passed. F02/F03 remain open; worker report gate remains failed, parent qualifies this repair independently.
+
+## 2026-10-17
+
+CI remediation: convert serve command to glazed WithFlags pattern (glazed-lint), fix golangci-lint findings (QF1007, unused test fields), and clear all 7 CodeQL go/path-injection alerts with recognized filepath.IsLocal guards (real traversal fix for user-authored Markdown image refs)
+
+### Related Files
+
+- /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/mdpdf/images.go — IsLocal traversal guard in copyImageToTemp
+- /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/upload.go — IsLocal guards on safe/ext in uploadOne

@@ -675,3 +675,65 @@ qualified validation boundary.
 - Shared callback boolean denotes a possibly changed cloud/local state, not
   successful completion. The original error remains wrapped and recoverable.
 - No dependency, credential, listener or job-budget changes in this milestone.
+
+## Step 5: CI remediation — glazed-lint flag pattern, golangci-lint findings, and CodeQL path-injection alerts
+
+The PR had accumulated three failing checks from local commits that never ran the
+repo's CI gates: glazed-lint, golangci-lint, and CodeQL. This step made all seven
+PR checks pass again without hiding findings behind configuration.
+
+### What was done
+
+- `serve.NewServeCommand` was a raw cobra command defining flags via
+  `cmd.Flags()`; converted it to the glazed `CommandDescription` +
+  `cmds.WithFlags(fields.New(...))` pattern used by the `cloud` commands, with
+  `cli.BuildCobraCommand` and `appconfig.DefaultParserConfig()` wiring, and
+  error-fallback registration in `main.go`. glazed-lint and `serve --help`
+  verified locally (commit eb7f9d6).
+- golangci-lint (pinned v2.12.2) flagged a mergeable conditional
+  (QF1007) in `handleDelete` and unused fake fields in the two test harnesses;
+  fixed all five findings.
+- CodeQL reported 7 new `go/path-injection` (high, 7.5) alerts. Diagnosed via
+  `check-runs/{id}/annotations` (the alerts API needs scopes this token lacks)
+  and reproduced locally with CodeQL CLI 2.27.2 + `codeql/go-queries:code-scanning`.
+
+### What failed before the final fix
+
+- A hand-rolled `withinDir` containment guard plus inline
+  `// codeql[go/path-injection]` suppressions: the default code-scanning suite
+  excludes `@kind alert-suppression` queries, so suppressions are not honored by
+  the PR check; the advanced-security demo suppression pack uses the old
+  same-line comment semantics, incompatible with line-above placement. An
+  intermediate commit also wired a repo-local suppression suite into the
+  workflow — reverted in favor of the real fix (f5f32e0).
+- An `if !filepath.IsLocal(safe) { safe = "document" }` fallback did not stop
+  the taint: barrier guards require the guard to dominate the tainted use, and a
+  reassignment at the join point breaks dominance.
+
+### The actual root cause and fix
+
+All seven alerts trace to one taint chain: multipart filename → `sanitizeStem`
+(regex allowlist CodeQL cannot model) → temp `.md` path → `filepath.Dir(mdPath)`
+as pandoc `sourceDir` → image resolution. Fixed with guards the TaintedPath
+query recognizes (`IsLocalCheck` in `TaintedPathCustomizations.qll`):
+
+- `uploadOne`: early-return `filepath.IsLocal(safe)` / `filepath.IsLocal(ext)`
+  checks (behavior-neutral except pathological names like `..png` now failing
+  with `ErrInvalid`).
+- `copyImageToTemp`: early-return `filepath.IsLocal(imgPath)`, so `../` targets
+  in user-authored Markdown are rejected (regression test added). This also
+  removes the genuine (if local-only) traversal vector where an uploaded
+  Markdown could copy `../../../etc/...` images into the rendered PDF.
+
+Local verification: CodeQL 2.27.2 full-suite run now reports only the
+pre-existing `cmd/remarquee-ui/api/render.go:88` alert (baseline, not counted on
+the PR). CI after push: all 7 checks pass (`test`, `lint`, `Analyze`, `CodeQL`,
+GoSec, govulncheck, TruffleHog).
+
+### Code review instructions
+
+- Review `pkg/rmfiles/upload.go` (IsLocal guards in `uploadOne`),
+  `pkg/mdpdf/images.go` (`copyImageToTemp` guard), and the glazed conversion of
+  `cmd/remarquee/cmds/serve/command.go`.
+- CodeQL behavior can be reproduced locally: build a database with the CLI and
+  run `codeql/go-queries:code-scanning`.
