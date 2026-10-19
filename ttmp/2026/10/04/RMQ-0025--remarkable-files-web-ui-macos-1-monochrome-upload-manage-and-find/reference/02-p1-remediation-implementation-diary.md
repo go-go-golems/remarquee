@@ -737,3 +737,51 @@ GoSec, govulncheck, TruffleHog).
   `cmd/remarquee/cmds/serve/command.go`.
 - CodeQL behavior can be reproduced locally: build a database with the CLI and
   run `codeql/go-queries:code-scanning`.
+
+## Step 6: P2 review fixes — streamed downloads and root-relative static assets
+
+Two bot P2 findings on PR #29 (commit af76001):
+
+### Stream large download archives instead of buffering them
+
+`Service.Download` returned the whole staged .rmdoc as `[]byte` via
+`os.ReadFile`. The service lock is released on return, so concurrent slow
+downloads each retained a full archive in heap; a large document could
+exhaust server memory.
+
+Fix: `Download` now returns `*DownloadResult` — the staged file open for
+reading, the sanitized suggested filename, and the exact size. `Close` closes
+the file and removes the private staging directory, so the archive bytes stay
+on disk and each in-flight download holds one open FD, not a heap copy.
+`handleDownload` streams with `io.Copy` after setting an exact `Content-Length`
+(no sniffing; clients get progress without server-side buffering).
+
+Design notes:
+
+- Error paths in `Download` remove the staging dir eagerly (`fail` helper);
+  the old `defer os.RemoveAll` would now leak because the dir must outlive
+  the call.
+- Lifetime contract moved from "call-scoped" to "caller-owned": the service
+  test now asserts the staging dir survives while the stream is open and is
+  removed by `Close`.
+- Cleanup on client disconnect is guaranteed by the handler's `defer Close`.
+
+### Use root-relative assets in fallback pages
+
+`index.html` referenced relative `styles.css`/`app.js`; opening a nested URL
+(e.g. `/some/client/route`) served the SPA fallback, whose relative asset URLs
+then resolved to `/some/client/styles.css` — the same fallback answered HTML,
+so the stylesheet was ignored and the module rejected as text/html.
+
+Fix: `index.html` now references `/styles.css` and `/app.js`, and
+`handleStatic` returns 404 for missing asset-like paths (a last path segment
+with a file extension) instead of falling back to index.html. API fetches were
+already root-relative.
+
+### Validation
+
+- `go test ./...` green; new assertions: exact `Content-Length` at the HTTP
+  boundary, staging-lifetime at the service boundary, root-relative asset pins,
+  missing-asset 404s (incl. `/favicon.ico`, `.woff2`, nested `styles.css`).
+- glazed-lint, golangci-lint (0 issues), and a local CodeQL 2.27.2
+  code-scanning run show no new alerts.

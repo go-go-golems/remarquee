@@ -81,3 +81,12 @@ CI remediation: convert serve command to glazed WithFlags pattern (glazed-lint),
 
 - /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/mdpdf/images.go — IsLocal traversal guard in copyImageToTemp
 - /Users/manuel.odendahl/code/go-go-golems/remarquee/pkg/rmfiles/upload.go — IsLocal guards on safe/ext in uploadOne
+
+## 2026-10-19
+
+P2 review fixes: stream .rmdoc downloads from the staged file with caller-owned Close cleanup (no whole-archive heap buffering; exact Content-Length), and root-relative static asset URLs plus 404 for missing asset-like paths instead of SPA fallback
+
+### Related Files
+
+- /Users/manuel.odendahl/code/go-go-golems/remarquee/cmd/remarquee/cmds/serve/server.go — asset-like 404 guard in handleStatic
+- /Users/manuel.odendohl/code/go-go-golems/remarquee/pkg/rmfiles/manage.go — DownloadResult streaming download and staging-dir lifetime
