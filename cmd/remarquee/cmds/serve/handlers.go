@@ -235,21 +235,28 @@ func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	data, name, err := s.svc.Download(id)
+	res, err := s.svc.Download(id)
 	if err != nil {
 		writeErr(w, err)
 		return
 	}
+	// The archive is streamed from the staged file; Close removes the private
+	// staging directory once the response (or its failure) completes.
+	defer func() { _ = res.Close() }()
+
 	w.Header().Set("Content-Type", "application/octet-stream")
 	// The service sanitizes the suggested name; FormatMediaType additionally
 	// applies RFC 2231 encoding so quotes, spaces and Unicode round-trip.
-	disposition := mime.FormatMediaType("attachment", map[string]string{"filename": name})
+	disposition := mime.FormatMediaType("attachment", map[string]string{"filename": res.Name})
 	if disposition == "" {
 		disposition = "attachment; filename=\"document.rmdoc\""
 	}
 	w.Header().Set("Content-Disposition", disposition)
+	// Content-Length lets clients show progress without buffering the archive
+	// in server memory first.
+	w.Header().Set("Content-Length", strconv.FormatInt(res.Size(), 10))
 	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write(data); err != nil {
+	if _, err := io.Copy(w, res.File); err != nil {
 		log.Error().Err(err).Msg("serve: write download")
 	}
 }

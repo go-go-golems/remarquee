@@ -3,6 +3,7 @@ package rmfiles
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -212,29 +213,46 @@ func TestDelete(t *testing.T) {
 
 // TestDownloadStagingPathIsFixed proves a traversal-shaped, control-laden
 // cloud display name (as imported by another client) can never influence the
-// local FetchDocument destination or the suggested filename, and that the
-// private staging directory is removed afterwards.
+// local FetchDocument destination or the suggested filename, that the archive
+// streams from the staged file, and that the private staging directory is
+// removed only once the caller closes the stream.
 func TestDownloadStagingPathIsFixed(t *testing.T) {
 	f, _, _, docID := tree(t)
 	evil := f.add("", `..\..\evil "quoted"`+"\x07/slash", model.DocumentType)
 	s := NewService(f, Config{})
-	data, name, err := s.Download(evil.ID)
+	res, err := s.Download(evil.ID)
 	if err != nil {
 		t.Fatalf("Download: %v", err)
+	}
+	defer func() { _ = res.Close() }()
+	data, err := io.ReadAll(res.File)
+	if err != nil {
+		t.Fatalf("read stream: %v", err)
 	}
 	if string(data) != "rmdoc-bytes" {
 		t.Fatalf("download bytes = %q", data)
 	}
+	if res.Size() != int64(len("rmdoc-bytes")) {
+		t.Fatalf("size = %d, want %d", res.Size(), len("rmdoc-bytes"))
+	}
+	name := res.Name
 	if f.lastFetchPath == "" {
 		t.Fatal("FetchDocument was never called")
 	}
 	if got := filepath.Base(f.lastFetchPath); got != "document.rmdoc" {
 		t.Fatalf("staging filename = %q, want fixed document.rmdoc", got)
 	}
-	// The private staging directory must be cleaned up after the call.
+	// The private staging directory stays alive until the stream is closed...
 	stagingDir := filepath.Dir(f.lastFetchPath)
+	if _, err := os.Stat(stagingDir); err != nil {
+		t.Fatalf("staging dir removed while stream open: %v", err)
+	}
+	if err := res.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	// ...and is cleaned up afterwards.
 	if _, err := os.Stat(stagingDir); !os.IsNotExist(err) {
-		t.Fatalf("staging dir %s still exists after Download (err=%v)", stagingDir, err)
+		t.Fatalf("staging dir %s still exists after Close (err=%v)", stagingDir, err)
 	}
 	// The suggested filename must be a safe single component.
 	if !strings.HasSuffix(name, ".rmdoc") {
@@ -256,12 +274,13 @@ func TestDownloadStagingPathIsFixed(t *testing.T) {
 		t.Fatal("suggested name still equals the raw cloud name")
 	}
 	// Normal names must still round-trip as the suggestion.
-	_, normalName, err := s.Download(docID)
+	normalRes, err := s.Download(docID)
 	if err != nil {
 		t.Fatalf("Download normal: %v", err)
 	}
-	if normalName != "Project Plan.rmdoc" {
-		t.Fatalf("normal suggested name = %q, want Project Plan.rmdoc", normalName)
+	defer func() { _ = normalRes.Close() }()
+	if normalRes.Name != "Project Plan.rmdoc" {
+		t.Fatalf("normal suggested name = %q, want Project Plan.rmdoc", normalRes.Name)
 	}
 }
 
@@ -297,9 +316,12 @@ func TestDownloadStagingCleanupOnFetchFailure(t *testing.T) {
 	f, _, _, docID := tree(t)
 	f.failFetch = true
 	s := NewService(f, Config{})
-	data, name, err := s.Download(docID)
+	res, err := s.Download(docID)
+	if res != nil {
+		t.Fatal("Download must not return a stream on failure")
+	}
 	if err == nil {
-		t.Fatalf("Download should fail when FetchDocument fails (data=%q name=%q)", data, name)
+		t.Fatal("Download should fail when FetchDocument fails")
 	}
 	if f.lastFetchPath == "" {
 		t.Fatal("FetchDocument was never called")
@@ -742,7 +764,7 @@ func TestLiveLookupRejectsDeletedAndDescendantIDs(t *testing.T) {
 		t.Fatal("precondition: pinned idToNode still holds the deleted leaf")
 	}
 	for _, id := range []string{top, mid, leaf} {
-		if _, _, err := s.Download(id); !errors.Is(err, ErrNotFound) {
+		if _, err := s.Download(id); !errors.Is(err, ErrNotFound) {
 			t.Fatalf("Download(%q) error = %v, want ErrNotFound", id, err)
 		}
 		if _, err := s.Rename(id, "x"); !errors.Is(err, ErrNotFound) {

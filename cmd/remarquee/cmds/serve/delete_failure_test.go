@@ -45,7 +45,7 @@ func TestDeleteNotificationFailureReportsCommittedOutcome(t *testing.T) {
 	if err != nil || len(listed) != 0 {
 		t.Fatalf("deleted record remains in List: %v %v", listed, err)
 	}
-	if _, _, err := svc.Download(doc.ID); !errors.Is(err, rmfiles.ErrNotFound) {
+	if _, err := svc.Download(doc.ID); !errors.Is(err, rmfiles.ErrNotFound) {
 		t.Fatalf("deleted ID download error=%v", err)
 	}
 }

@@ -121,8 +121,15 @@ func main() {
 	must(listErr)
 	fmt.Printf("partial delete: deleted=%d error=%v listContains=%t indexContains=%t\n", n, err, contains(es, d.ID), contains(s.Entries(), d.ID))
 	// ID lookup survives DeleteNode in the pinned filetree implementation.
-	data, _, err := s.Download(d.ID)
-	fmt.Printf("download deleted ID using fake storage: bytes=%d error=%v\n", len(data), err)
+	res, err := s.Download(d.ID)
+	if res != nil {
+		defer func() { _ = res.Close() }()
+	}
+	dlBytes := int64(0)
+	if err == nil {
+		dlBytes = res.Size()
+	}
+	fmt.Printf("download deleted ID using fake storage: bytes=%d error=%v\n", dlBytes, err)
 	// Directly exercise the actual pinned hash-tree Remove, with no transport.
 	ht := sync15.HashTree{SchemaVersion: sync15.SchemaVersionV4, Docs: []*sync15.BlobDoc{
 		sync15.NewBlobDoc("folder", "parent", model.DirectoryType, ""), sync15.NewBlobDoc("child", "child", model.DocumentType, "parent")}}

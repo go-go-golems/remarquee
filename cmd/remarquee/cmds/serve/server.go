@@ -3,6 +3,7 @@ package serve
 import (
 	"io/fs"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/go-go-golems/remarquee/pkg/rmfiles"
@@ -66,13 +67,26 @@ func (s *Server) handleStatic(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=3600")
 	}
 
-	// SPA fallback: unknown non-asset paths return index.html.
+	// SPA fallback: unknown non-asset paths return index.html. Asset-like
+	// requests (anything with a file extension) must 404 instead: the fallback
+	// document references root-relative assets, and serving HTML for a missing
+	// stylesheet or module makes the browser drop it (MIME type text/html).
 	p := strings.TrimPrefix(r.URL.Path, "/")
 	if p == "" {
 		p = "index.html"
 	}
 	if _, statErr := fs.Stat(root, p); statErr != nil {
+		if isAssetLikePath(r.URL.Path) {
+			http.NotFound(w, r)
+			return
+		}
 		r = cloneURLPath(r, "/")
 	}
 	http.FileServer(http.FS(root)).ServeHTTP(w, r)
+}
+
+// isAssetLikePath reports whether the URL names a static asset rather than a
+// client-side route: the last path segment carries a file extension.
+func isAssetLikePath(p string) bool {
+	return path.Ext(path.Base(p)) != ""
 }

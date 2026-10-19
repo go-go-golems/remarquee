@@ -249,34 +249,76 @@ func (s *Service) outcomeForPlannedLocked(planned []*model.Node) (int, []string)
 // validated, so it must never influence a local output path.
 const fixedDownloadStagingName = "document.rmdoc"
 
-// Download fetches a document as an .rmdoc archive and returns its bytes and a
-// suggested filename. The staging path is a fixed name inside a private temp
-// directory; the cloud display name only feeds the separately sanitized
-// suggested filename.
-func (s *Service) Download(id string) ([]byte, string, error) {
+// DownloadResult is a streamed .rmdoc download staged in a private temp
+// directory. The archive bytes stay on disk and are streamed to the client, so
+// concurrent downloads each hold one open file instead of a full archive in
+// memory. Close must always be called; it removes the staging directory.
+type DownloadResult struct {
+	// File is the staged archive, open for reading.
+	File *os.File
+	// Name is the sanitized suggested filename for the Content-Disposition.
+	Name string
+
+	size int64
+}
+
+// Size returns the staged archive size in bytes.
+func (r *DownloadResult) Size() int64 { return r.size }
+
+// Close closes the stream and removes the private staging directory. It is
+// safe to call on nil or already-closed results.
+func (r *DownloadResult) Close() error {
+	if r == nil || r.File == nil {
+		return nil
+	}
+	dir := filepath.Dir(r.File.Name())
+	err := r.File.Close()
+	r.File = nil
+	_ = os.RemoveAll(dir)
+	return err
+}
+
+// Download fetches a document as an .rmdoc archive and returns a streamed
+// result and suggested filename. The staging path is a fixed name inside a
+// private temp directory; the cloud display name only feeds the separately
+// sanitized suggested filename. The caller owns the staged file's lifetime and
+// must Close the result, which removes the staging directory.
+func (s *Service) Download(id string) (*DownloadResult, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	node, err := s.nodeByIDLocked(id)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	if node.IsDirectory() {
-		return nil, "", ErrUnsupported
+		return nil, ErrUnsupported
 	}
 	tmpDir, err := os.MkdirTemp("", "rmfiles-dl-")
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	defer func() { _ = os.RemoveAll(tmpDir) }()
+	fail := func(err error) (*DownloadResult, error) {
+		_ = os.RemoveAll(tmpDir)
+		return nil, err
+	}
 	out := filepath.Join(tmpDir, fixedDownloadStagingName)
 	if err := s.apiCtx.FetchDocument(id, out); err != nil {
-		return nil, "", errors.Wrap(err, "fetch document")
+		return fail(errors.Wrap(err, "fetch document"))
 	}
-	data, err := os.ReadFile(out)
+	f, err := os.Open(out)
 	if err != nil {
-		return nil, "", err
+		return fail(err)
 	}
-	return data, sanitizeAttachmentName(node.Name()) + ".rmdoc", nil
+	info, err := f.Stat()
+	if err != nil {
+		_ = f.Close()
+		return fail(err)
+	}
+	return &DownloadResult{
+		File: f,
+		Name: sanitizeAttachmentName(node.Name()) + ".rmdoc",
+		size: info.Size(),
+	}, nil
 }
 
 // sanitizeAttachmentName converts untrusted cloud display metadata into a

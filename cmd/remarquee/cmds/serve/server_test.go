@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -179,6 +180,11 @@ func TestDownloadEndpoint(t *testing.T) {
 	if rr.Body.Len() == 0 {
 		t.Fatal("expected download bytes")
 	}
+	// Downloads stream from the staged file with an exact Content-Length, so
+	// the archive is never buffered whole in server memory.
+	if got := rr.Header().Get("Content-Length"); got != strconv.Itoa(rr.Body.Len()) {
+		t.Fatalf("Content-Length = %q, want %d (streamed length)", got, rr.Body.Len())
+	}
 }
 
 // TestDownloadAttachmentHeaderIsSanitized proves adversarial cloud display
@@ -340,6 +346,31 @@ func TestStaticServesIndexAndFallsBack(t *testing.T) {
 	rr = do(t, s, http.MethodGet, "/some/client/route", nil)
 	if rr.Code != 200 || !strings.Contains(rr.Body.String(), "REMARQUEE FILES") {
 		t.Fatalf("spa fallback = %d", rr.Code)
+	}
+	// The index must reference root-relative assets so a nested fallback still
+	// loads styles.css and app.js from the site root.
+	index := do(t, s, http.MethodGet, "/", nil).Body.String()
+	if !strings.Contains(index, `href="/styles.css"`) {
+		t.Fatal("index.html stylesheet URL is not root-relative")
+	}
+	if !strings.Contains(index, `src="/app.js"`) {
+		t.Fatal("index.html module URL is not root-relative")
+	}
+	// Missing asset requests must 404 rather than fall back to HTML: the
+	// browser rejects stylesheets and modules served as text/html.
+	for _, missing := range []string{"/some/route/styles.css", "/missing-font.woff2", "/favicon.ico"} {
+		rr := do(t, s, http.MethodGet, missing, nil)
+		if rr.Code != 404 {
+			t.Fatalf("missing asset %q = %d, want 404", missing, rr.Code)
+		}
+		if strings.Contains(rr.Body.String(), "REMARQUEE FILES") {
+			t.Fatalf("missing asset %q served the SPA fallback", missing)
+		}
+	}
+	// Real assets still resolve from any nested URL context.
+	rr = do(t, s, http.MethodGet, "/styles.css", nil)
+	if rr.Code != 200 || !strings.Contains(rr.Header().Get("Content-Type"), "text/css") {
+		t.Fatalf("styles.css = %d content-type=%q", rr.Code, rr.Header().Get("Content-Type"))
 	}
 }
 
