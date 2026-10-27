@@ -349,3 +349,33 @@ func TestResolveImagePaths_EscapedAltRoundTrip(t *testing.T) {
 		t.Fatalf("expected escaped alt to round-trip, got: %q", result)
 	}
 }
+
+func TestResolveImagePaths_TraversalRefRejected(t *testing.T) {
+	// A user-authored Markdown file must not be able to reference images
+	// outside its own directory: ../ targets are left unrewritten and never
+	// copied, even when the referenced file exists on disk.
+	outsideDir := t.TempDir()
+	secret := filepath.Join(outsideDir, "secret.png")
+	if err := os.WriteFile(secret, []byte("secret-data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	srcDir := filepath.Join(outsideDir, "src")
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+
+	body := "![leak](../secret.png)\n"
+	result, err := ResolveImagePaths(body, srcDir, tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != body {
+		t.Fatalf("expected traversal reference to be left unchanged, got: %q", result)
+	}
+
+	if _, err := os.Stat(filepath.Join(tmpDir, "images", "secret.png")); !os.IsNotExist(err) {
+		t.Fatalf("expected no copied image for traversal reference, stat err: %v", err)
+	}
+}

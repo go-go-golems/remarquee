@@ -47,6 +47,14 @@ topics:
       description: Dependency pins and bumps (go.mod replace directives, fork tracking)
     - slug: rmcloud
       description: pkg/rmcloud — remarquee's thin rmapi sync15 glue layer
+    - slug: web
+      description: Web UI and browser-facing surfaces
+    - slug: frontend
+      description: Frontend application code and styling
+    - slug: ui
+      description: User-interface design and interaction
+    - slug: react
+      description: React component and state work
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

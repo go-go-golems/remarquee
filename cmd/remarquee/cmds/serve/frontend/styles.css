@@ -1,0 +1,223 @@
+/* macOS 1 / System 1 inspired monochrome design tokens.
+   Modern fonts only; no period bitmap typeface. Color is used only as text
+   highlights, never as large fills. */
+
+:root {
+  --paper: #ffffff;
+  --ink: #000000;
+  --ink-soft: #333333;
+  --ink-faint: #6b6b6b;
+  --accent: #0b5fff;
+  --danger: #c1272d;
+  --success: #1a7f37;
+  --warn: #b26a00;
+
+  --font: "Inter", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; border-radius: 0; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+a { color: var(--accent); }
+
+/* ---------- top bar ---------- */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ink);
+}
+.bar .title {
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-size: 12px;
+}
+.bar .toolbar { display: flex; gap: 6px; margin-left: auto; }
+
+.btn {
+  font-family: var(--font);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.btn:hover { background: var(--ink); color: var(--paper); }
+.btn:active { background: var(--ink); color: var(--paper); }
+.btn:disabled { color: var(--ink-faint); border-color: var(--ink-faint); background: var(--paper); cursor: default; }
+.btn.danger { color: var(--danger); }
+.btn.danger:hover { background: var(--danger); color: var(--paper); border-color: var(--danger); }
+
+/* ---------- search ---------- */
+.searchbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper);
+}
+.searchbar label { font-size: 11px; letter-spacing: 0.1em; background: var(--paper); padding: 0 4px; }
+.searchbar input {
+  flex: 1;
+  font-family: var(--font);
+  font-size: 13px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 5px 8px;
+}
+.searchbar .count { font-size: 11px; background: var(--paper); padding: 0 4px; }
+
+/* ---------- status banner ---------- */
+.status {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ink);
+  font-size: 12px;
+}
+.status.warn { color: var(--warn); }
+.status.error { color: var(--danger); }
+.status.ok { color: var(--success); }
+
+/* ---------- layout ---------- */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  min-height: calc(100vh - 90px);
+}
+.listpane { border-right: 1px solid var(--ink); overflow: auto; }
+.detailpane { overflow: auto; padding: 12px; }
+
+.crumbs {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--paper);
+}
+.crumbs span { background: var(--paper); padding: 0 2px; }
+
+/* ---------- table ---------- */
+table.files { width: 100%; border-collapse: collapse; }
+table.files th {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  border-bottom: 1px solid var(--ink);
+  padding: 6px 12px;
+}
+table.files td { padding: 5px 12px; border-bottom: 1px dotted var(--ink-faint); }
+table.files tr.row {
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+table.files tr.row:hover td { background: #f2f2f2; }
+table.files tr.row.selected td { background: var(--ink); color: var(--paper); }
+table.files tr.row.selected td a { color: var(--paper); text-decoration: underline; }
+td.name { font-weight: 500; }
+td.type, td.mod { font-family: var(--mono); font-size: 11px; color: var(--ink-soft); }
+.badge { font-size: 10px; letter-spacing: 0.06em; }
+.folder::before { content: "[DIR] "; font-family: var(--mono); font-size: 10px; }
+.file::before { content: "[DOC] "; font-family: var(--mono); font-size: 10px; }
+
+.empty, .muted { color: var(--ink-faint); padding: 12px; }
+
+/* ---------- detail ---------- */
+.detail dl { margin: 0; }
+.detail dt { font-size: 10px; letter-spacing: 0.1em; margin-top: 8px; }
+.detail dd { margin: 2px 0 0; font-family: var(--mono); font-size: 12px; word-break: break-all; }
+.detail .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+
+/* ---------- dialogs ---------- */
+dialog {
+  border: 1px solid var(--ink);
+  padding: 0;
+  min-width: 360px;
+  color: var(--ink);
+  background: var(--paper);
+}
+dialog::backdrop { background: rgba(0,0,0,0.25); }
+.dialog-head {
+  background: var(--paper);
+  border-bottom: 1px solid var(--ink);
+  padding: 6px 10px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.dialog-body { padding: 12px; display: grid; gap: 8px; }
+.dialog-body label { font-size: 11px; letter-spacing: 0.08em; }
+.dialog-body input[type="text"], .dialog-body input[type="file"], .dialog-body select {
+  width: 100%;
+  font-family: var(--font);
+  font-size: 13px;
+  border: 1px solid var(--ink);
+  padding: 5px 8px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.dialog-actions { display: flex; justify-content: flex-end; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--ink); }
+.hint { font-size: 11px; color: var(--ink-soft); }
+
+/* ---------- job progress ---------- */
+.job { border: 1px solid var(--ink); padding: 8px; margin-top: 8px; }
+.job ul { margin: 6px 0 0; padding-left: 16px; font-family: var(--mono); font-size: 11px; }
+.job .state-done { color: var(--success); }
+.job .state-failed { color: var(--danger); }
+
+/* ---------- staged upload summary ---------- */
+.staged {
+  border: 1px solid var(--ink);
+  padding: 6px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  max-height: 120px;
+  overflow: auto;
+}
+.staged div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- drag & drop overlay ---------- */
+.drop-overlay {
+  position: fixed;
+  inset: 12px;
+  border: 2px dashed var(--ink);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+  z-index: 50;
+}
+/* display:flex above would otherwise beat the UA [hidden]{display:none}. */
+.drop-overlay[hidden] { display: none; }
+
+/* ---------- toast ---------- */
+.toast {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 12px;
+  font-size: 12px;
+  max-width: 60ch;
+}
+.toast.error { background: var(--danger); border-color: var(--danger); }

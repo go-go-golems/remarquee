@@ -1,0 +1,21 @@
+foreign Origin + text/plain create-folder: HTTP 201
+{"level":"debug","input_dir_path":"/ai","normalized_dir_path":"/ai","time":"2026-10-04T07:56:05-04:00","message":"rmcloud mkdir-all: ensure remote directory"}
+{"level":"debug","dir_path":"/ai","node_id":"probe-1","time":"2026-10-04T07:56:05-04:00","message":"rmcloud mkdir-all: directory already exists"}
+explicit root upload with default /ai: dest=/ai state=done
+{"level":"debug","input_dir_path":"/ai","normalized_dir_path":"/ai","time":"2026-10-04T07:56:05-04:00","message":"rmcloud mkdir-all: ensure remote directory"}
+{"level":"debug","dir_path":"/ai","node_id":"probe-1","time":"2026-10-04T07:56:05-04:00","message":"rmcloud mkdir-all: directory already exists"}
+{"level":"debug","input_dir_path":"/ai","normalized_dir_path":"/ai","time":"2026-10-04T07:56:05-04:00","message":"rmcloud mkdir-all: ensure remote directory"}
+{"level":"debug","dir_path":"/ai","node_id":"probe-1","time":"2026-10-04T07:56:05-04:00","message":"rmcloud mkdir-all: directory already exists"}
+sanitized upload collisions: 2 sibling documents named a_b
+partial delete: deleted=1 error=entry not found listContains=false indexContains=true
+download deleted ID using fake storage: bytes=12 error=<nil>
+ERROR: 2026/10/04 07:56:05 blobdoc.go:201: missing hash for: child
+pinned HashTree.Remove(parent): remaining=1 childStillPresent=true
+after recursive service delete: childIDLookup=true visibleIndex=0
+create folder named '..': error=<nil>
+create-folder with trailing JSON: HTTP 201
+out-of-order folder responses: cwd=/B rows=A-entry
+navigate from search: cwd=/Target query=proj
+literal percent-encoded-looking name parses as: /literal name
+reopen upload: input value still=old-selection.pdf
+All probes reproduced current behavior; these assertions document defects, not a passing product contract.

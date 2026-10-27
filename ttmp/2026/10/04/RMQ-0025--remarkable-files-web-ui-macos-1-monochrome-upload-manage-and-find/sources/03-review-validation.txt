@@ -1,0 +1,58 @@
+Revision: f2dd68ce4a19467ace9891eeafdddfb1443b2b70
+
+=== go build ./... ===
+EXIT=0
+
+=== go test ./... ===
+?   	github.com/go-go-golems/remarquee	[no test files]
+ok  	github.com/go-go-golems/remarquee/cmd/build-remarquee-ui-web	(cached)
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee	3.128s
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/cmds	[no test files]
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/cloud	[no test files]
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/device	[no test files]
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/ocr	[no test files]
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/rmdoc	(cached)
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/rmdsl	[no test files]
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/serve	(cached)
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/upload	(cached)
+?   	github.com/go-go-golems/remarquee/cmd/remarquee/internal/appconfig	[no test files]
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee-ui	(cached)
+?   	github.com/go-go-golems/remarquee/cmd/remarquee-ui/api	[no test files]
+?   	github.com/go-go-golems/remarquee/pkg	[no test files]
+?   	github.com/go-go-golems/remarquee/pkg/devicecapture	[no test files]
+?   	github.com/go-go-golems/remarquee/pkg/deviceevents	[no test files]
+?   	github.com/go-go-golems/remarquee/pkg/doc	[no test files]
+ok  	github.com/go-go-golems/remarquee/pkg/mdpdf	(cached)
+ok  	github.com/go-go-golems/remarquee/pkg/pdfcmp	(cached)
+ok  	github.com/go-go-golems/remarquee/pkg/refimpl/remarks	(cached)
+ok  	github.com/go-go-golems/remarquee/pkg/rmcloud	(cached)
+ok  	github.com/go-go-golems/remarquee/pkg/rmdoc	(cached)
+ok  	github.com/go-go-golems/remarquee/pkg/rmdoc/debug	(cached)
+ok  	github.com/go-go-golems/remarquee/pkg/rmdoc/render	(cached)
+?   	github.com/go-go-golems/remarquee/pkg/rmdsl	[no test files]
+ok  	github.com/go-go-golems/remarquee/pkg/rmdsl/compile	(cached)
+ok  	github.com/go-go-golems/remarquee/pkg/rmfiles	(cached)
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/14/RMQ-0001--build-remarquee-tool-unify-rmapi-remarks-upload-stream-ocr/scripts	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/03-pdf-box-dump	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/11-dump-test-rmdoc-stroke-tools-page1	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/14-dump-test-page1-groups-and-stroke-bboxes	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/17-render-test-page1-programmatic-debug	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/18-rmdsl-render-to-png	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/19-rmdsl-render-to-pdf	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2025/12/24/RMQ-0006--rmdoc-rendering-testing-validation-golden-runner/scripts/21-rmdoc-v6-to-dsl-yaml	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2026/01/10/RMQ-0009--compile-rmdoc-dsl-to-rmdoc/scripts/04-dump-rm-blocks	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2026/01/12/RMQ-0013--pdf-render-crops-right-edge/scripts	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2026/05/08/REMARQUEE-IMPROVE--improve-remarquee-skill-cli-reduce-tool-call-churn-in-agent-sessions/scripts	[no test files]
+?   	github.com/go-go-golems/remarquee/ttmp/2026/10/04/RMQ-0025--remarkable-files-web-ui-macos-1-monochrome-upload-manage-and-find/scripts	[no test files]
+EXIT=0
+
+=== go test -race ./pkg/rmfiles ./cmd/remarquee/cmds/serve ===
+ok  	github.com/go-go-golems/remarquee/pkg/rmfiles	1.646s
+ok  	github.com/go-go-golems/remarquee/cmd/remarquee/cmds/serve	1.858s
+EXIT=0
+
+=== go vet ./pkg/rmfiles ./cmd/remarquee/cmds/serve ===
+EXIT=0
+
+=== node --check app.js ===
+EXIT=0

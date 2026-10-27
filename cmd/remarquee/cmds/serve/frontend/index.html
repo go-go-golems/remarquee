@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>remarquee files</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="title">REMARQUEE FILES</div>
+      <div class="toolbar">
+        <button id="upload-btn" class="btn" type="button">Upload</button>
+        <button id="uploadfolder-btn" class="btn" type="button">Upload Folder</button>
+        <button id="newfolder-btn" class="btn" type="button">New Folder</button>
+        <button id="refresh-btn" class="btn" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <div class="searchbar">
+      <label for="search">SEARCH</label>
+      <input id="search" type="search" placeholder="type to filter by name or path" autocomplete="off" spellcheck="false" />
+      <span id="search-count" class="count"></span>
+    </div>
+
+    <div id="status" class="status" hidden></div>
+
+    <main class="layout">
+      <section class="listpane">
+        <div id="crumbs" class="crumbs"></div>
+        <table class="files">
+          <thead>
+            <tr><th>NAME</th><th>TYPE</th><th>MODIFIED</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div id="empty" class="empty" hidden>no entries</div>
+      </section>
+
+      <aside class="detailpane">
+        <div id="detail" class="detail">
+          <p class="muted">Select an entry to see details.</p>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Upload dialog -->
+    <dialog id="upload-dialog">
+      <form method="dialog" id="upload-form">
+        <div class="dialog-head">UPLOAD FILES</div>
+        <div class="dialog-body">
+          <label for="upload-dest">DESTINATION (REMOTE PATH)</label>
+          <input id="upload-dest" name="dest" type="text" />
+          <label for="upload-files">FILES (.md converts to PDF; .pdf and .epub upload directly)</label>
+          <input id="upload-files" name="files" type="file" multiple />
+          <label for="upload-dir">FOLDER (structure is preserved under the destination)</label>
+          <input id="upload-dir" name="dir" type="file" webkitdirectory directory multiple />
+          <p class="hint">Markdown is converted with pandoc + XeLaTeX before upload. You can also drag files or folders anywhere onto the page.</p>
+          <div id="staged" class="staged" hidden></div>
+          <div id="job-progress"></div>
+        </div>
+        <div class="dialog-actions">
+          <button value="cancel" class="btn" type="button" id="upload-cancel">Close</button>
+          <button value="ok" class="btn" type="submit" id="upload-submit">Upload</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- New folder dialog -->
+    <dialog id="newfolder-dialog">
+      <form method="dialog" id="newfolder-form">
+        <div class="dialog-head">NEW FOLDER</div>
+        <div class="dialog-body">
+          <label for="newfolder-parent">PARENT (REMOTE PATH)</label>
+          <input id="newfolder-parent" type="text" />
+          <label for="newfolder-name">NAME</label>
+          <input id="newfolder-name" type="text" />
+        </div>
+        <div class="dialog-actions">
+          <button value="cancel" class="btn" type="button" id="newfolder-cancel">Cancel</button>
+          <button value="ok" class="btn" type="submit">Create</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Rename / move dialog -->
+    <dialog id="prompt-dialog">
+      <form method="dialog" id="prompt-form">
+        <div class="dialog-head" id="prompt-title">RENAME</div>
+        <div class="dialog-body">
+          <label id="prompt-label" for="prompt-input">NEW NAME</label>
+          <input id="prompt-input" type="text" />
+        </div>
+        <div class="dialog-actions">
+          <button value="cancel" class="btn" type="button" id="prompt-cancel">Cancel</button>
+          <button value="ok" class="btn" type="submit">OK</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Delete confirmation -->
+    <dialog id="confirm-dialog">
+      <form method="dialog" id="confirm-form">
+        <div class="dialog-head">CONFIRM DELETE</div>
+        <div class="dialog-body">
+          <p id="confirm-text" class="hint"></p>
+          <label for="confirm-input">TYPE DELETE TO CONFIRM</label>
+          <input id="confirm-input" type="text" autocomplete="off" />
+        </div>
+        <div class="dialog-actions">
+          <button value="cancel" class="btn" type="button" id="confirm-cancel">Cancel</button>
+          <button value="ok" class="btn danger" type="submit">Delete</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="drop-overlay" class="drop-overlay" hidden>DROP FILES OR FOLDERS TO UPLOAD</div>
+    <div id="toast" class="toast" hidden></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

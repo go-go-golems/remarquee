@@ -194,9 +194,16 @@ func copyImageToTemp(imgPath string, sourceDir string, imagesDir string, filenam
 		return "", false
 	}
 
-	// Resolve relative to the original Markdown file's directory.
-	resolvedPath := filepath.Join(sourceDir, imgPath)
-	resolvedPath = filepath.Clean(resolvedPath)
+	// Require a local, non-traversal target: user-authored Markdown must not
+	// read or copy files outside the source file's own directory tree
+	// (filepath.IsLocal rejects ".." segments and rooted paths).
+	if !filepath.IsLocal(imgPath) {
+		return "", false
+	}
+
+	// Resolve relative to the original Markdown file's directory. The IsLocal
+	// guard above guarantees the joined path stays inside sourceDir.
+	resolvedPath := filepath.Clean(filepath.Join(sourceDir, imgPath))
 
 	// Check if the file exists.
 	info, err := os.Stat(resolvedPath)
